@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 from itertools import product
 from pathlib import Path
 
@@ -85,12 +86,13 @@ class Setter(OpenFOAMCase):
     def set_root_case(self, root):
         self.root = root
 
-    def set_up(self):
+    def set_up(self, test_path):
         self.enviroment_setter.case_name = self.child.root.case
+        self.enviroment_setter.root = self.child.root.of_case_path
         self.enviroment_setter.local_path = self.path
-        self.enviroment_setter.set_up()
+        self.enviroment_setter.set_up(test_path)
         for other in self.others:
-            other.set_up()
+            other.set_up(test_path)
 
     def clean_up(self):
         self.enviroment_setter.clean_up()
@@ -156,7 +158,7 @@ class SolverSetter(Setter):
         self.min_iters = min_iters
         self.max_iters = max_iters
 
-    def set_up(self):
+    def set_up(self, _):
         print("setting solver")
         matrix_solver = self.prefix + self.solver
         executor = "none"
@@ -223,7 +225,7 @@ class PrepareOMPMaxThreads:
     def __init__(self):
         self.processes = 1
 
-    def set_up(self):
+    def set_up(self, _):
         print(" use ", self.processes, " threads")
         os.environ["OMP_NUM_THREADS"] = str(self.processes)
 
@@ -248,13 +250,50 @@ class CellsPrepare(CachePrepare):
         super().__init__(name="mesh")
         self.cells = cells
 
-    def set_up(self):
+    def set_up_cache(self, path):
+        print("setup cache", path)
+        cache_case = OpenFOAMCase()
+        cache_case.set_parent_path(Path(path))
+        cache_case.child = self
+        print(cache_case.controlDict)
+        #     deltaT = 0.1 * 16 / self.cells
+        #     new_cells = "{} {} {}".format(
+        #         self.resolution, self.resolution, self.resolution
+        #     )
+        #     set_cells(self.blockMeshDict, "16 16 16", new_cells)
+        #     set_mesh_boundary_type_to_wall(self.blockMeshDict)
+        #     set_p_init_value(self.init_p)
+        #     set_U_init_value(self.init_U)
+        #     add_libOGL_so(self.controlDict)
+        #     set_end_time(self.controlDict, 10 * deltaT)
+        #     set_deltaT(self.controlDict, deltaT)
+        #     set_writeInterval(self.controlDict)
+        #     clear_solver_settings(self.fvSolution)
+        #     print("Meshing", self.path)
+        #     check_output(["blockMesh"], cwd=self.path)
+        #     return
+
+
+    def set_up(self, test_path):
+        cache_path = test_path / self.cache_path(str(self.cells), self.case_name)
+        target_path =   test_path / self.local_path,
+        if not os.path.exists(cache_path):
+            print("cache does not exist")
+            print(self.root)
+            print(
+                "copying from",
+                self.root,
+                " to ",
+                cache_path
+            )
+            self.set_up_cache(cache_path)
+
         # check if cache_path exists otherwise copy
         print(
             "copying from",
-            self.cache_path(str(self.cells), self.case_name),
+            cache_path,
             " to ",
-            self.local_path,
+            target_path
         )
 
     def clean_up(self):
@@ -313,8 +352,7 @@ class ParameterStudy:
         cases = product(*self.setters)
         cases_combined = map(combine, cases)
         for case in cases_combined:
-            print(case.path)
-            case.set_up()
+            case.set_up(self.test_path)
             # check if solver supported by executor
             # path = test_path / e.local_path / str(n.value)
             # exist = os.path.isdir(path)
