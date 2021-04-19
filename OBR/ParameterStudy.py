@@ -2,10 +2,10 @@
 import os
 from itertools import product
 from pathlib import Path
-import setFunctions as sf
-
 from subprocess import check_output
 from copy import deepcopy
+
+from . import setFunctions as sf
 
 class OpenFOAMCase:
 
@@ -110,6 +110,16 @@ class Setter(OpenFOAMCase):
     def combine(self, other):
         self.others.append(other)
         return self
+
+    def query_attr(self, attr, default):
+        """ check if attr is set on this object or others """
+        if hasattr(self, attr):
+            return getattr(self,attr)
+        if hasattr(self.others[0], attr):
+            return getattr(self.others[0],attr)
+        # TODO implement
+        return default
+
 
     @property
     def own_path(self):
@@ -349,13 +359,65 @@ def combine(setters):
     """ combines a tuple of setters """
     primary = deepcopy(setters[0])
     primary.others.append(setters[1])
-    # TODO find a better way to propagate the root case 
+    # TODO find a better way to propagate the root case
     # cases need a way to check if they have a primary case
     if hasattr(primary, "root"):
         primary.others[0].root = primary.root
     primary.others[0].primary = primary
     return primary
 
+class CaseRunner:
+
+    def __init__(self, solver, base_path, results_aggregator, arguments):
+        self.base_path = base_path
+        self.results = results_aggregator
+        self.arguments = arguments
+        self.solver = solver
+        self.time_runs = int( arguments["--time_runs"])
+        self.min_runs = int( arguments["--min_runs"])
+
+    def run(self, case):
+        import datetime
+        for processes in [1]:
+            print("start runs", processes)
+
+            # self.executor.prepare_enviroment(processes)
+
+            self.results.set_case(
+                domain=case.query_attr("domain", ""),
+                executor=case.query_attr("executor", ""),
+                solver=case.query_attr("solver", ""),
+                number_of_iterations=0, #self.iterations,
+                resolution=case.query_attr("cells", ""),
+                processes=processes,
+            )
+            accumulated_time = 0
+            iters = 0
+            ret = ""
+            while accumulated_time < self.time_runs or iters < self.min_runs:
+                iters += 1
+                start = datetime.datetime.now()
+                success = 0
+                try:
+                    print(case.path)
+                    ret = check_output([self.solver], cwd=self.base_path / case.path, timeout=15 * 60)
+                    success = 1
+                except Exception as e:
+                    print(e)
+                    break
+                end = datetime.datetime.now()
+                run_time = (end - start).total_seconds()  # - self.init_time
+                self.results.add(run_time, success)
+                accumulated_time += run_time
+            #self.executor.clean_enviroment()
+            try:
+                with open(
+                    self.log_path.with_suffix("." + str(processes)), "a+"
+                ) as log_handle:
+                    log_handle.write(ret.decode("utf-8"))
+            except Exception as e:
+                print(e)
+                pass
 
 class ParameterStudy:
     """A class to create a range of cases and potentially run them
@@ -364,10 +426,11 @@ class ParameterStudy:
     a set of cases is defined via
     """
 
-    def __init__(self, test_path, results_aggregator, setters):
+    def __init__(self, test_path, results_aggregator, setters, runner):
         self.test_path = test_path
         self.results_aggregator = results_aggregator
         self.setters = setters
+        self.runner = runner
 
     def build_parameter_study(self): # test_path, results, executor, setter, arguments):
         cases = product(*self.setters)
@@ -377,7 +440,7 @@ class ParameterStudy:
             # check if solver supported by executor
             # path = test_path / e.local_path / str(n.value)
             # exist = os.path.isdir(path)
-            # skip = False
+            skip = False
             # clean = arguments["--clean"]
             # if exist and clean:
             #     shutil.rmtree(path)
@@ -389,25 +452,12 @@ class ParameterStudy:
             #     test_path / Path("base") / Path("p-" + s.name) / str(n.value)
             # )
 
-            # if e.domain == "base":
-            #     print("is base case")
-            #     is_base_case = True
-
-            # if not skip:
-            #     case = Case(
-            #         test_base=test_path,
-            #         solver=s.name,
-            #         executor=e,
-            #         base_case=base_case_path,
-            #         results=results,
-            #         is_base_case=is_base_case,
-            #     )
             #     n.run(case)
-            #     case.create()
-            #     case.run(
-            #         results,
-            #         int(arguments["--min_runs"]),
-            #         int(arguments["--run_time"]),
-            #     )
+            self.runner.run(case)
+            # .run(
+            #     results,
+            #     int(arguments["--min_runs"]),
+            #     int(arguments["--run_time"]),
+            # )
             # else:
             #     print("skipping")
