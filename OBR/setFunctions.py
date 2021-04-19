@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from subprocess import check_output
 
 
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):

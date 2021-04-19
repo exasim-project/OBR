@@ -2,11 +2,15 @@
 import os
 from itertools import product
 from pathlib import Path
+import setFunctions as sf
 
+from subprocess import check_output
+from copy import deepcopy
 
 class OpenFOAMCase:
 
     parent_path_ = "."
+    path_ = None
     child = None
 
     def set_parent_path(self, parent_path):
@@ -22,6 +26,8 @@ class OpenFOAMCase:
 
     @property
     def path(self):
+        if self.path_:
+            return self.path_
         return self.base_path / self.child.local_path / self.child.root.case
 
     @property
@@ -75,6 +81,8 @@ class Setter(OpenFOAMCase):
 
     """
 
+    primary = None
+
     def __init__(self, name, child):
         self.others = []
         self.name = name
@@ -117,9 +125,12 @@ class Setter(OpenFOAMCase):
            |___ previous setter from combine
 
         """
+        if self.primary:
+            return self.primary.local_path
+
         ret = self.own_path
         for other in self.others:
-            ret += "/" + other.name
+            ret += "/" +  other.name
         return Path(ret)
 
 
@@ -158,7 +169,7 @@ class SolverSetter(Setter):
         self.min_iters = min_iters
         self.max_iters = max_iters
 
-    def set_up(self, _):
+    def set_up(self, test_path):
         print("setting solver")
         matrix_solver = self.prefix + self.solver
         executor = "none"
@@ -187,14 +198,19 @@ class SolverSetter(Setter):
             )
         )
         # fmt: on
-        print(solver_str)
-        # sed(fn, "p{}", solver_str)
+        self.path_ = Path(test_path/self.local_path) / self.root.case
+        print(solver_str, self.controlDict)
+        print(solver_str, self.controlDict)
+        sf.sed(self.fvSolution, "p{}", solver_str)
 
 
 class CG(SolverSetter):
-    def __init__(self, namespace, prefix, field):
+    def __init__(self, namespace, prefix, field, suffix=None):
+        name = "CG"
+        if suffix:
+            name += suffix
         super().__init__(
-            namespace=namespace, prefix=prefix, solver="CG", field=field, child=self
+            namespace=namespace, prefix=prefix, solver=name, field=field, child=self
         )
 
 
@@ -254,37 +270,35 @@ class CellsPrepare(CachePrepare):
         print("setup cache", path)
         cache_case = OpenFOAMCase()
         cache_case.set_parent_path(Path(path))
-        cache_case.child = self
-        print(cache_case.controlDict)
-        #     deltaT = 0.1 * 16 / self.cells
-        #     new_cells = "{} {} {}".format(
-        #         self.resolution, self.resolution, self.resolution
-        #     )
-        #     set_cells(self.blockMeshDict, "16 16 16", new_cells)
-        #     set_mesh_boundary_type_to_wall(self.blockMeshDict)
-        #     set_p_init_value(self.init_p)
-        #     set_U_init_value(self.init_U)
-        #     add_libOGL_so(self.controlDict)
-        #     set_end_time(self.controlDict, 10 * deltaT)
-        #     set_deltaT(self.controlDict, deltaT)
-        #     set_writeInterval(self.controlDict)
-        #     clear_solver_settings(self.fvSolution)
-        #     print("Meshing", self.path)
-        #     check_output(["blockMesh"], cwd=self.path)
-        #     return
+        cache_case.path_ = path
+        deltaT = 0.1 * 16 / self.cells
+        new_cells = "{} {} {}".format(
+            self.cells, self.cells, self.cells
+        )
+        sf.set_cells(cache_case.blockMeshDict, "16 16 16", new_cells)
+        sf.set_mesh_boundary_type_to_wall(cache_case.blockMeshDict)
+        sf.set_p_init_value(cache_case.init_p)
+        sf.set_U_init_value(cache_case.init_U)
+        sf.add_libOGL_so(cache_case.controlDict)
+        sf.set_end_time(cache_case.controlDict, 10 * deltaT)
+        sf.set_deltaT(cache_case.controlDict, deltaT)
+        sf.set_writeInterval(cache_case.controlDict)
+        sf.clear_solver_settings(cache_case.fvSolution)
+        print("Meshing", cache_case.path)
+        check_output(["blockMesh"], cwd=cache_case.path)
 
 
     def set_up(self, test_path):
         cache_path = test_path / self.cache_path(str(self.cells), self.case_name)
-        target_path =   test_path / self.local_path,
+        target_path =   test_path / self.local_path
+        sf.ensure_path(cache_path.parent)
         if not os.path.exists(cache_path):
             print("cache does not exist")
-            print(self.root)
-            print(
-                "copying from",
+            check_output([
+                "cp", "-r",
                 self.root,
-                " to ",
                 cache_path
+                ]
             )
             self.set_up_cache(cache_path)
 
@@ -295,6 +309,12 @@ class CellsPrepare(CachePrepare):
             " to ",
             target_path
         )
+        sf.ensure_path(target_path.parent)
+        check_output([
+            "cp", "-r",
+            cache_path,
+            target_path.parent
+            ])
 
     def clean_up(self):
         pass
@@ -321,18 +341,19 @@ class OMP(GKOExecutor):
 
 class GKOCG(CG):
     def __init__(self, gko_executor, field):
-        super().__init__(namespace="GKO", prefix="GKO", field=field)
         self.executor = gko_executor
-
-    @property
-    def local_path(self):
-        return Path(super().local_path + "-" + self.executor.name)
+        super().__init__(namespace="GKO", prefix="GKO", field=field, suffix=gko_executor.name)
 
 
 def combine(setters):
     """ combines a tuple of setters """
-    primary = setters[0]
+    primary = deepcopy(setters[0])
     primary.others.append(setters[1])
+    # TODO find a better way to propagate the root case 
+    # cases need a way to check if they have a primary case
+    if hasattr(primary, "root"):
+        primary.others[0].root = primary.root
+    primary.others[0].primary = primary
     return primary
 
 
