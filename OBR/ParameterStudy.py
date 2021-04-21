@@ -7,6 +7,7 @@ from copy import deepcopy
 
 from . import setFunctions as sf
 
+
 class OpenFOAMCase:
 
     parent_path_ = "."
@@ -114,12 +115,11 @@ class Setter(OpenFOAMCase):
     def query_attr(self, attr, default):
         """ check if attr is set on this object or others """
         if hasattr(self, attr):
-            return getattr(self,attr)
+            return getattr(self, attr)
         if hasattr(self.others[0], attr):
-            return getattr(self.others[0],attr)
+            return getattr(self.others[0], attr)
         # TODO implement
         return default
-
 
     @property
     def own_path(self):
@@ -140,7 +140,7 @@ class Setter(OpenFOAMCase):
 
         ret = self.own_path
         for other in self.others:
-            ret += "/" +  other.name
+            ret += "/" + other.name
         return Path(ret)
 
 
@@ -208,7 +208,7 @@ class SolverSetter(Setter):
             )
         )
         # fmt: on
-        self.path_ = Path(test_path/self.local_path) / self.root.case
+        self.path_ = Path(test_path / self.local_path) / self.root.case
         print(solver_str, self.controlDict)
         print(solver_str, self.controlDict)
         sf.sed(self.fvSolution, "p{}", solver_str)
@@ -282,9 +282,7 @@ class CellsPrepare(CachePrepare):
         cache_case.set_parent_path(Path(path))
         cache_case.path_ = path
         deltaT = 0.1 * 16 / self.cells
-        new_cells = "{} {} {}".format(
-            self.cells, self.cells, self.cells
-        )
+        new_cells = "{} {} {}".format(self.cells, self.cells, self.cells)
         sf.set_cells(cache_case.blockMeshDict, "16 16 16", new_cells)
         sf.set_mesh_boundary_type_to_wall(cache_case.blockMeshDict)
         sf.set_p_init_value(cache_case.init_p)
@@ -297,34 +295,19 @@ class CellsPrepare(CachePrepare):
         print("Meshing", cache_case.path)
         check_output(["blockMesh"], cwd=cache_case.path)
 
-
     def set_up(self, test_path):
         cache_path = test_path / self.cache_path(str(self.cells), self.case_name)
-        target_path =   test_path / self.local_path
+        target_path = test_path / self.local_path
         sf.ensure_path(cache_path.parent)
         if not os.path.exists(cache_path):
             print("cache does not exist")
-            check_output([
-                "cp", "-r",
-                self.root,
-                cache_path
-                ]
-            )
+            check_output(["cp", "-r", self.root, cache_path])
             self.set_up_cache(cache_path)
 
         # check if cache_path exists otherwise copy
-        print(
-            "copying from",
-            cache_path,
-            " to ",
-            target_path
-        )
+        print("copying from", cache_path, " to ", target_path)
         sf.ensure_path(target_path.parent)
-        check_output([
-            "cp", "-r",
-            cache_path,
-            target_path.parent
-            ])
+        check_output(["cp", "-r", cache_path, target_path.parent])
 
     def clean_up(self):
         pass
@@ -352,7 +335,9 @@ class OMP(GKOExecutor):
 class GKOCG(CG):
     def __init__(self, gko_executor, field):
         self.executor = gko_executor
-        super().__init__(namespace="GKO", prefix="GKO", field=field, suffix=gko_executor.name)
+        super().__init__(
+            namespace="GKO", prefix="GKO", field=field, suffix=gko_executor.name
+        )
 
 
 def combine(setters):
@@ -366,18 +351,19 @@ def combine(setters):
     primary.others[0].primary = primary
     return primary
 
-class CaseRunner:
 
+class CaseRunner:
     def __init__(self, solver, base_path, results_aggregator, arguments):
         self.base_path = base_path
         self.results = results_aggregator
         self.arguments = arguments
         self.solver = solver
-        self.time_runs = int( arguments["--time_runs"])
-        self.min_runs = int( arguments["--min_runs"])
+        self.time_runs = int(arguments["--time_runs"])
+        self.min_runs = int(arguments["--min_runs"])
 
     def run(self, case):
         import datetime
+
         for processes in [1]:
             print("start runs", processes)
 
@@ -387,7 +373,7 @@ class CaseRunner:
                 domain=case.query_attr("domain", ""),
                 executor=case.query_attr("executor", ""),
                 solver=case.query_attr("solver", ""),
-                number_of_iterations=0, #self.iterations,
+                number_of_iterations=0,  # self.iterations,
                 resolution=case.query_attr("cells", ""),
                 processes=processes,
             )
@@ -400,7 +386,9 @@ class CaseRunner:
                 success = 0
                 try:
                     print(case.path)
-                    ret = check_output([self.solver], cwd=self.base_path / case.path, timeout=15 * 60)
+                    ret = check_output(
+                        [self.solver], cwd=self.base_path / case.path, timeout=15 * 60
+                    )
                     success = 1
                 except Exception as e:
                     print(e)
@@ -409,7 +397,7 @@ class CaseRunner:
                 run_time = (end - start).total_seconds()  # - self.init_time
                 self.results.add(run_time, success)
                 accumulated_time += run_time
-            #self.executor.clean_enviroment()
+            # self.executor.clean_enviroment()
             try:
                 with open(
                     self.log_path.with_suffix("." + str(processes)), "a+"
@@ -418,6 +406,26 @@ class CaseRunner:
             except Exception as e:
                 print(e)
                 pass
+
+
+def build_with_executors(arguments):
+
+    solvers = []
+
+    if arguments["--ir"]:
+        pass
+
+    if arguments["--cg"]:
+        pass
+
+    if arguments["--bicgstab"]:
+        pass
+
+    if arguments["--smooth"]:
+        pass
+
+    return solvers
+
 
 class ParameterStudy:
     """A class to create a range of cases and potentially run them
@@ -432,7 +440,9 @@ class ParameterStudy:
         self.setters = setters
         self.runner = runner
 
-    def build_parameter_study(self): # test_path, results, executor, setter, arguments):
+    def build_parameter_study(
+        self,
+    ):  # test_path, results, executor, setter, arguments):
         cases = product(*self.setters)
         cases_combined = map(combine, cases)
         for case in cases_combined:
