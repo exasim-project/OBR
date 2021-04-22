@@ -10,7 +10,8 @@
         -v --version        Print version and exit
         --folder=<folder>   Target folder  [default: Test].
         --report=<filename> Target file to store stats [default: report.csv].
-        --of                Generate default of cases [default: False].
+        --of                Generate OF cases [default: False].
+        --gko               Generate GKO cases [default: False].
         --ref               Generate ref cases [default: False].
         --cuda              Generate cuda cases [default: False].
         --omp               Generate omp cases [default: False].
@@ -27,18 +28,22 @@
         --min_runs=<n>      Number of applications runs [default: 5]
         --time_runs=<s>      Time to applications runs [default: 60]
 """
+
 from docopt import docopt
 from subprocess import check_output
 from pathlib import Path
 import os
 import shutil
 import datetime
-from itertools import product
+from itertools import product, starmap
+from functools import partial
 
 from pathlib import Path
 from OBR import Case as cs
 from OBR import ParameterStudy as ps
+from OBR import CaseRunner as cr
 from OBR import ResultsAggregator as ra
+
 
 def resolution_study(test_path, solver, arguments, runner):
 
@@ -60,40 +65,10 @@ def resolution_study(test_path, solver, arguments, runner):
     for cell_setter in cell_setters:
         cell_setter.set_root_case(root)
 
-    parameter_study = ps.ParameterStudy(test_path, results, [cell_setters, solver], runner)
+    parameter_study = ps.ParameterStudy(
+        test_path, results, [cell_setters, solver], runner
+    )
     parameter_study.build_parameter_study()
-
-
-class IR:
-    def __init__(self):
-        self.OF = False
-        self.GKO = True
-        self.base = True
-        self.name = "IR"
-
-
-class CG:
-    def __init__(self):
-        self.OF = True
-        self.GKO = True
-        self.base = True
-        self.name = "CG"
-
-
-class BiCGStab:
-    def __init__(self):
-        self.OF = True
-        self.base = True
-        self.GKO = True
-        self.name = "BiCGStab"
-
-
-class smoothSolver:
-    def __init__(self):
-        self.base = True
-        self.OF = True
-        self.GKO = False
-        self.name = "smoothSolver"
 
 
 if __name__ == "__main__":
@@ -101,40 +76,45 @@ if __name__ == "__main__":
     arguments = docopt(__doc__, version="runBench 0.1")
     print(arguments)
 
-    solvers = []
+    solver = []
 
     if arguments["--ir"]:
-        solvers.append(IR())
+        pass
 
     if arguments["--cg"]:
-        solvers.append(CG())
+        solver.append("CG")
 
     if arguments["--bicgstab"]:
-        solvers.append(BiCGStab())
+        pass
 
     if arguments["--smooth"]:
-        solvers.append(smoothSolver())
+        pass
 
-    preconditioner = []
+    executor = []
 
     if arguments["--cuda"]:
-        pass
-
-    if arguments["--of"]:
-        pass
+        executor.append("CUDA")
 
     if arguments["--ref"]:
-        pass
+        executor.append("Ref")
 
     if arguments["--omp"]:
-        pass
+        executor.append("OMP")
 
+    domains = []
+    if arguments["--of"]:
+        domains.append("OF")
+
+    if arguments["--gko"]:
+        domains.append("GKO")
+
+    construct = partial(ps.construct, "p")  # for do a partial apply field="p"
+    solvers = starmap(construct, product(solver, domains, executor))
+    print(list(solvers))
 
     test_path = Path(arguments.get("--folder", "Test")) / "name"
 
     results = ra.Results(arguments.get("--report", "report.csv"))
-    runner = ps.CaseRunner("dnsFoam", test_path, results, arguments)
+    runner = cr.CaseRunner("dnsFoam", test_path, results, arguments)
 
-    ofcg = ps.OFCG("p")
-    gkocg = ps.GKOCG(gko_executor=ps.OMP(), field="p")
-    resolution_study(test_path, [ofcg, gkocg], arguments, runner)
+    resolution_study(test_path, [], arguments, runner)

@@ -74,13 +74,7 @@ class OpenFOAMCase:
 
 
 class Setter(OpenFOAMCase):
-    """base class to set case properties
-
-    TODO merge with Executor
-    needs to support following operations:
-    - get solver prefix ie P or GKO or none
-
-    """
+    """base class to set case properties"""
 
     primary = None
 
@@ -88,6 +82,9 @@ class Setter(OpenFOAMCase):
         self.others = []
         self.name = name
         self.child = child
+
+    def add_property(self, prop_name):
+        self.name += "-" + prop_name
 
     def set_enviroment_setter(self, enviroment_setter):
         self.enviroment_setter = enviroment_setter
@@ -143,6 +140,9 @@ class Setter(OpenFOAMCase):
             ret += "/" + other.name
         return Path(ret)
 
+    def set_domain_handler(self, name):
+        pass
+
 
 class CellSetter(Setter):
     def __init__(self, cells):
@@ -158,8 +158,6 @@ class CellSetter(Setter):
 class SolverSetter(Setter):
     def __init__(
         self,
-        namespace,
-        prefix,
         solver,
         field,
         child,
@@ -170,14 +168,22 @@ class SolverSetter(Setter):
         update_sys_matrix="no",
     ):
 
-        super().__init__(name="{}-{}-{}".format(field, namespace, solver), child=child)
-        self.prefix = prefix
+        super().__init__(name="{}-{}".format(field, solver), child=child)
         self.solver = solver
         self.preconditioner = preconditioner
         self.update_sys_matrix = update_sys_matrix
         self.tolerance = tolerance
         self.min_iters = min_iters
         self.max_iters = max_iters
+
+    def set_domain(self, domain):
+        self.domain = self.avail_domain_handler[domain]
+        self.add_property(self.domain)
+        return self
+
+    def set_executor(self, executor):
+        self.domain.executor = executor
+        self.add_property(executor.name)
 
     def set_up(self, test_path):
         print("setting solver")
@@ -214,24 +220,77 @@ class SolverSetter(Setter):
         sf.sed(self.fvSolution, "p{}", solver_str)
 
 
-class CG(SolverSetter):
-    def __init__(self, namespace, prefix, field, suffix=None):
-        name = "CG"
-        if suffix:
-            name += suffix
-        super().__init__(
-            namespace=namespace, prefix=prefix, solver=name, field=field, child=self
-        )
+class OF:
 
+    name = "OF"
+    executor = None
 
-class OFCG(CG):
-    def __init__(self, field):
-        super().__init__(namespace="OF", prefix="P", field=field)
+    def __init__(self, prefix="P"):
+        self.prefix = prefix
 
 
 class GKOExecutor:
     def __init__(self, name):
         self.name = name
+
+
+class RefExecutor(GKOExecutor):
+    def __init__(self):
+        super().__init__(name="Reference")
+
+
+class OMPExecutor(GKOExecutor):
+    def __init__(self):
+        super().__init__(name="omp")
+
+
+class CUDAExecutor(GKOExecutor):
+    def __init__(self):
+        super().__init__(name="cuda")
+
+
+class GKO:
+
+    name = "GKO"
+    prefix = "GKO"
+    executor = None
+
+    def __init__(self):
+        pass
+
+
+class CG(SolverSetter):
+    def __init__(self, field):
+        name = "CG"
+        super().__init__(solver=name, field=field, child=self)
+        self.avail_domain_handler = {"OF": OF(), "GKO": GKO()}
+
+
+def construct(field, solver, domain, executor=None, preconditioner=None):
+    """
+    construct case variant from string arguments
+
+    usage:
+       solver = construct("CG", "GKO", "OMP")
+    """
+    executor_inst = None
+    if executor == "Ref":
+        executor_inst = RefExecutor()
+    if executor == "OMP":
+        executor_inst = OMPExecutor()
+    if executor == "CUDA":
+        executor_inst = CUDAExecutor()
+
+    if solver == "CG":
+        cg = CG(field)
+        cg.set_executor(executor_inst)
+        try:
+            # try to set domain this fails if the domain is not in the map
+            # of domains which implement the given solver
+            cg.set_domain(domain)
+            return True, cg
+        except:
+            return False, None
 
 
 class DefaultPrepareEnviroment:
@@ -327,19 +386,6 @@ class OpenFOAMTutorialCase:
         return Path(foam_tutorials / self.tutorial_domain / self.solver / self.case)
 
 
-class OMP(GKOExecutor):
-    def __init__(self):
-        super().__init__(name="omp")
-
-
-class GKOCG(CG):
-    def __init__(self, gko_executor, field):
-        self.executor = gko_executor
-        super().__init__(
-            namespace="GKO", prefix="GKO", field=field, suffix=gko_executor.name
-        )
-
-
 def combine(setters):
     """ combines a tuple of setters """
     primary = deepcopy(setters[0])
@@ -352,65 +398,15 @@ def combine(setters):
     return primary
 
 
-class CaseRunner:
-    def __init__(self, solver, base_path, results_aggregator, arguments):
-        self.base_path = base_path
-        self.results = results_aggregator
-        self.arguments = arguments
-        self.solver = solver
-        self.time_runs = int(arguments["--time_runs"])
-        self.min_runs = int(arguments["--min_runs"])
-
-    def run(self, case):
-        import datetime
-
-        for processes in [1]:
-            print("start runs", processes)
-
-            # self.executor.prepare_enviroment(processes)
-
-            self.results.set_case(
-                domain=case.query_attr("domain", ""),
-                executor=case.query_attr("executor", ""),
-                solver=case.query_attr("solver", ""),
-                number_of_iterations=0,  # self.iterations,
-                resolution=case.query_attr("cells", ""),
-                processes=processes,
-            )
-            accumulated_time = 0
-            iters = 0
-            ret = ""
-            while accumulated_time < self.time_runs or iters < self.min_runs:
-                iters += 1
-                start = datetime.datetime.now()
-                success = 0
-                try:
-                    print(case.path)
-                    ret = check_output(
-                        [self.solver], cwd=self.base_path / case.path, timeout=15 * 60
-                    )
-                    success = 1
-                except Exception as e:
-                    print(e)
-                    break
-                end = datetime.datetime.now()
-                run_time = (end - start).total_seconds()  # - self.init_time
-                self.results.add(run_time, success)
-                accumulated_time += run_time
-            # self.executor.clean_enviroment()
-            try:
-                with open(
-                    self.log_path.with_suffix("." + str(processes)), "a+"
-                ) as log_handle:
-                    log_handle.write(ret.decode("utf-8"))
-            except Exception as e:
-                print(e)
-                pass
-
-
 def build_with_executors(arguments):
 
     solvers = []
+
+    domains = []
+    if arguments["--gko"]:
+        domains.append("GKO")
+    if arguments["--of"]:
+        domains.append("OF")
 
     if arguments["--ir"]:
         pass
@@ -464,10 +460,3 @@ class ParameterStudy:
 
             #     n.run(case)
             self.runner.run(case)
-            # .run(
-            #     results,
-            #     int(arguments["--min_runs"]),
-            #     int(arguments["--run_time"]),
-            # )
-            # else:
-            #     print("skipping")
