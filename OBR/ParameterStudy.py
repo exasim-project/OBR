@@ -1,228 +1,36 @@
 #!/usr/bin/env python3
+from OBR.EnviromentSetters import DefaultPrepareEnviroment
 import os
 from itertools import product
 from pathlib import Path
 from subprocess import check_output
 from copy import deepcopy
+from OBR.Setter import Setter
+from OBR.MatrixSolver import SolverSetter
+from OBR.EnviromentSetters import CellsPrepare
 
 from . import setFunctions as sf
 
 
-class OpenFOAMCase:
-
-    parent_path_ = "."
-    path_ = None
-    child = None
-
-    def set_parent_path(self, parent_path):
-        self.parent_path_ = parent_path
-
-    @property
-    def parent_path(self):
-        return Path(self.parent_path_)
-
-    @property
-    def base_path(self):
-        return self.parent_path
-
-    @property
-    def path(self):
-        if self.path_:
-            return self.path_
-        return self.base_path / self.child.local_path / self.child.root.case
-
-    @property
-    def system_folder(self):
-        return self.path / "system"
-
-    @property
-    def zero_folder(self):
-        return self.path / "0"
-
-    @property
-    def init_p(self):
-        return self.zero_folder / "p"
-
-    @property
-    def init_U(self):
-        return self.zero_folder / "U.orig"
-
-    @property
-    def controlDict(self):
-        return self.system_folder / "controlDict"
-
-    @property
-    def blockMeshDict(self):
-        return self.system_folder / "blockMeshDict"
-
-    @property
-    def fvSolution(self):
-        return self.system_folder / "fvSolution"
-
-    def create(self):
-        ensure_path(self.base_path)
-        self.copy_base(self.child.cache_path, self.base_path)
-        # self.set_matrix_solver(self.fvSolution)
-
-    @property
-    def base_case_path(self):
-        return self.base_case_path_ / self.of_base_case
-
-    @property
-    def log_path(self):
-        return self.path / "log"
-
-
-class Setter(OpenFOAMCase):
-    """base class to set case properties"""
-
-    primary = None
-
-    def __init__(self, name, child):
-        self.others = []
-        self.name = name
-        self.child = child
-
-    def add_property(self, prop_name):
-        self.name += "-" + prop_name
-
-    def set_enviroment_setter(self, enviroment_setter):
-        self.enviroment_setter = enviroment_setter
-
-    def set_root_case(self, root):
-        self.root = root
-
-    def set_up(self, test_path):
-        self.enviroment_setter.case_name = self.child.root.case
-        self.enviroment_setter.root = self.child.root.of_case_path
-        self.enviroment_setter.local_path = self.path
-        self.enviroment_setter.set_up(test_path)
-        for other in self.others:
-            other.set_up(test_path)
-
-    def clean_up(self):
-        self.enviroment_setter.clean_up()
-        for other in self.clean_up:
-            other.clean_up()
-
-    def combine(self, other):
-        self.others.append(other)
-        return self
-
-    def query_attr(self, attr, default):
-        """ check if attr is set on this object or others """
-        if hasattr(self, attr):
-            return getattr(self, attr)
-        if hasattr(self.others[0], attr):
-            return getattr(self.others[0], attr)
-        # TODO implement
-        return default
-
-    @property
-    def own_path(self):
-        return self.name
-
-    @property
-    def local_path(self):
-        """returns just the base path of the current case
-        ie 4/cuda-p-IR-BJ/
-           |  |   |   |_ solver
-           |  |   |______field
-           |  |__________executor
-           |___ previous setter from combine
-
-        """
-        if self.primary:
-            return self.primary.local_path
-
-        ret = self.own_path
-        for other in self.others:
-            ret += "/" + other.name
-        return Path(ret)
-
-    def set_domain_handler(self, name):
-        pass
-
-
 class CellSetter(Setter):
-    def __init__(self, cells):
+    def __init__(self, base_path, cells, case_name):
         self.cells = cells
-        super().__init__(name="{}".format(cells), child=self)
-        super().set_enviroment_setter(CellsPrepare(cells))
+        super().__init__(
+            base_path=base_path,
+            variation_name="{}".format(cells),
+            case_name=case_name,
+        )
+        super().set_enviroment_setter(CellsPrepare(self.path))
 
     @property
     def cache_path(self):
         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
 
 
-class SolverSetter(Setter):
-    def __init__(
-        self,
-        solver,
-        field,
-        child,
-        preconditioner="none",
-        tolerance="1e-06",
-        min_iters="0",
-        max_iters="1000",
-        update_sys_matrix="no",
-    ):
-
-        super().__init__(name="{}-{}".format(field, solver), child=child)
-        self.solver = solver
-        self.preconditioner = preconditioner
-        self.update_sys_matrix = update_sys_matrix
-        self.tolerance = tolerance
-        self.min_iters = min_iters
-        self.max_iters = max_iters
-
-    def set_domain(self, domain):
-        self.domain = self.avail_domain_handler[domain]
-        self.add_property(self.domain)
-        return self
-
-    def set_executor(self, executor):
-        self.domain.executor = executor
-        self.add_property(executor.name)
-
-    def set_up(self, test_path):
-        print("setting solver")
-        matrix_solver = self.prefix + self.solver
-        executor = "none"
-        if hasattr(self.child, "executor"):
-            executor = self.child.executor
-        # fmt: off
-        solver_str = (
-            '"p.*"{\\n'
-            + "solver {};\
-\\ntolerance {};\
-\\nrelTol 0.0;\
-\\nsmoother none;\
-\\npreconditioner {};\
-\\nminIter {};\
-\\nmaxIter {};\
-\\nupdateSysMatrix {};\
-\\nsort yes;\
-\\nexecutor {};".format(
-                matrix_solver,
-                self.tolerance,
-                self.preconditioner,
-                self.min_iters,
-                self.max_iters,
-                self.update_sys_matrix,
-                executor
-            )
-        )
-        # fmt: on
-        self.path_ = Path(test_path / self.local_path) / self.root.case
-        print(solver_str, self.controlDict)
-        print(solver_str, self.controlDict)
-        sf.sed(self.fvSolution, "p{}", solver_str)
-
-
 class OF:
 
     name = "OF"
+    executor_support = False
     executor = None
 
     def __init__(self, prefix="P"):
@@ -253,6 +61,7 @@ class GKO:
 
     name = "GKO"
     prefix = "GKO"
+    executor_support = True
     executor = None
 
     def __init__(self):
@@ -260,13 +69,25 @@ class GKO:
 
 
 class CG(SolverSetter):
-    def __init__(self, field):
+    def __init__(
+        self,
+        base_path,
+        field,
+        case_name,
+    ):
         name = "CG"
-        super().__init__(solver=name, field=field, child=self)
+        super().__init__(
+            base_path=base_path,
+            solver=name,
+            field=field,
+            case_name=case_name,
+        )
         self.avail_domain_handler = {"OF": OF(), "GKO": GKO()}
 
 
-def construct(field, solver, domain, executor=None, preconditioner=None):
+def construct(
+    base_path, case_name, field, solver, domain, executor=None, preconditioner=None
+):
     """
     construct case variant from string arguments
 
@@ -282,94 +103,16 @@ def construct(field, solver, domain, executor=None, preconditioner=None):
         executor_inst = CUDAExecutor()
 
     if solver == "CG":
-        cg = CG(field)
-        cg.set_executor(executor_inst)
+        cg = CG(base_path, field, case_name)
         try:
             # try to set domain this fails if the domain is not in the map
             # of domains which implement the given solver
             cg.set_domain(domain)
+            cg.set_executor(executor_inst)
             return True, cg
-        except:
+        except Exception as e:
+            print(e)
             return False, None
-
-
-class DefaultPrepareEnviroment:
-    def __init__(self):
-        pass
-
-    def set_up(self):
-        pass
-
-    def clean_up(self):
-        pass
-
-
-class PrepareOMPMaxThreads:
-    """ Sets the enviroment variable for OMP """
-
-    def __init__(self):
-        self.processes = 1
-
-    def set_up(self, _):
-        print(" use ", self.processes, " threads")
-        os.environ["OMP_NUM_THREADS"] = str(self.processes)
-
-    def clean_up(self):
-        pass
-
-
-class CachePrepare:
-    """ copies cases from a base """
-
-    def __init__(self, name):
-        self.name = name
-
-    def cache_path(self, path, case):
-        return Path(path) / (self.name + "-cache") / case
-
-
-class CellsPrepare(CachePrepare):
-    """ sets the number of cells or copies from a base to avoid remeshing """
-
-    def __init__(self, cells):
-        super().__init__(name="mesh")
-        self.cells = cells
-
-    def set_up_cache(self, path):
-        print("setup cache", path)
-        cache_case = OpenFOAMCase()
-        cache_case.set_parent_path(Path(path))
-        cache_case.path_ = path
-        deltaT = 0.1 * 16 / self.cells
-        new_cells = "{} {} {}".format(self.cells, self.cells, self.cells)
-        sf.set_cells(cache_case.blockMeshDict, "16 16 16", new_cells)
-        sf.set_mesh_boundary_type_to_wall(cache_case.blockMeshDict)
-        sf.set_p_init_value(cache_case.init_p)
-        sf.set_U_init_value(cache_case.init_U)
-        sf.add_libOGL_so(cache_case.controlDict)
-        sf.set_end_time(cache_case.controlDict, 10 * deltaT)
-        sf.set_deltaT(cache_case.controlDict, deltaT)
-        sf.set_writeInterval(cache_case.controlDict)
-        sf.clear_solver_settings(cache_case.fvSolution)
-        print("Meshing", cache_case.path)
-        check_output(["blockMesh"], cwd=cache_case.path)
-
-    def set_up(self, test_path):
-        cache_path = test_path / self.cache_path(str(self.cells), self.case_name)
-        target_path = test_path / self.local_path
-        sf.ensure_path(cache_path.parent)
-        if not os.path.exists(cache_path):
-            print("cache does not exist")
-            check_output(["cp", "-r", self.root, cache_path])
-            self.set_up_cache(cache_path)
-
-        # check if cache_path exists otherwise copy
-        print("copying from", cache_path, " to ", target_path)
-        sf.ensure_path(target_path.parent)
-        check_output(["cp", "-r", cache_path, target_path.parent])
-
-    def clean_up(self):
-        pass
 
 
 class OpenFOAMTutorialCase:
@@ -390,37 +133,10 @@ def combine(setters):
     """ combines a tuple of setters """
     primary = deepcopy(setters[0])
     primary.others.append(setters[1])
-    # TODO find a better way to propagate the root case
-    # cases need a way to check if they have a primary case
     if hasattr(primary, "root"):
         primary.others[0].root = primary.root
     primary.others[0].primary = primary
     return primary
-
-
-def build_with_executors(arguments):
-
-    solvers = []
-
-    domains = []
-    if arguments["--gko"]:
-        domains.append("GKO")
-    if arguments["--of"]:
-        domains.append("OF")
-
-    if arguments["--ir"]:
-        pass
-
-    if arguments["--cg"]:
-        pass
-
-    if arguments["--bicgstab"]:
-        pass
-
-    if arguments["--smooth"]:
-        pass
-
-    return solvers
 
 
 class ParameterStudy:

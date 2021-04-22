@@ -25,55 +25,6 @@ class Case:
         # self.of_tutorial_domain = of_tutorial_domain
         # self.number_of_processes = number_of_processes
 
-    @property
-    def base_path(self):
-        return self.parent_path / self.variation.local_path
-
-    @property
-    def path(self):
-        return self.base_path / self.variation.root.case
-
-    @property
-    def system_folder(self):
-        return self.path / "system"
-
-    @property
-    def zero_folder(self):
-        return self.path / "0"
-
-    @property
-    def init_p(self):
-        return self.zero_folder / "p"
-
-    @property
-    def init_U(self):
-        return self.zero_folder / "U.orig"
-
-    @property
-    def controlDict(self):
-        return self.system_folder / "controlDict"
-
-    @property
-    def blockMeshDict(self):
-        return self.system_folder / "blockMeshDict"
-
-    @property
-    def fvSolution(self):
-        return self.system_folder / "fvSolution"
-
-    def create(self):
-        ensure_path(self.base_path)
-        self.copy_base(self.variation.base_path, self.base_path)
-        # self.set_matrix_solver(self.fvSolution)
-
-    @property
-    def base_case_path(self):
-        return self.base_case_path_ / self.of_base_case
-
-    @property
-    def log_path(self):
-        return self.path / "log"
-
     def copy_base(self, src, dst):
         print("copying base case", src, dst)
         check_output(["cp", "-r", src, dst])

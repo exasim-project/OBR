@@ -58,12 +58,12 @@ def resolution_study(test_path, solver, arguments, runner):
     if arguments["--very-large-cases"]:
         number_of_cells += [128, 256]
 
-    root = ps.OpenFOAMTutorialCase("DNS", "dnsFoam", "boxTurb16")
+    case_name = "boxTurb16"
+    root = ps.OpenFOAMTutorialCase("DNS", "dnsFoam", case_name)
 
-    cell_setters = [ps.CellSetter(num_cells) for num_cells in number_of_cells]
-
-    for cell_setter in cell_setters:
-        cell_setter.set_root_case(root)
+    cell_setters = [
+        ps.CellSetter(test_path, num_cells, case_name) for num_cells in number_of_cells
+    ]
 
     parameter_study = ps.ParameterStudy(
         test_path, results, [cell_setters, solver], runner
@@ -108,13 +108,15 @@ if __name__ == "__main__":
     if arguments["--gko"]:
         domains.append("GKO")
 
-    construct = partial(ps.construct, "p")  # for do a partial apply field="p"
+    # for do a partial apply field="p"
+    test_path = Path(arguments.get("--folder", "Test"))
+    construct = partial(ps.construct, test_path, "boxTurb16", "p")
     solvers = starmap(construct, product(solver, domains, executor))
     print(list(solvers))
 
-    test_path = Path(arguments.get("--folder", "Test")) / "name"
-
     results = ra.Results(arguments.get("--report", "report.csv"))
-    runner = cr.CaseRunner("dnsFoam", test_path, results, arguments)
+    runner = cr.CaseRunner(
+        solver="dnsFoam", results_aggregator=results, arguments=arguments
+    )
 
     resolution_study(test_path, [], arguments, runner)

@@ -5,8 +5,7 @@ import datetime
 
 
 class CaseRunner:
-    def __init__(self, solver, base_path, results_aggregator, arguments):
-        self.base_path = base_path
+    def __init__(self, solver, results_aggregator, arguments):
         self.results = results_aggregator
         self.arguments = arguments
         self.solver = solver
@@ -37,9 +36,7 @@ class CaseRunner:
                 success = 0
                 try:
                     print(case.path)
-                    ret = check_output(
-                        [self.solver], cwd=self.base_path / case.path, timeout=15 * 60
-                    )
+                    ret = check_output([self.solver], cwd=case.path, timeout=15 * 60)
                     success = 1
                 except Exception as e:
                     print(e)
