@@ -13,76 +13,20 @@ from . import setFunctions as sf
 
 
 class CellSetter(Setter):
-    def __init__(self, base_path, cells, case_name):
+    def __init__(self, base_path, cells, case_name, root):
         self.cells = cells
         super().__init__(
             base_path=base_path,
             variation_name="{}".format(cells),
             case_name=case_name,
         )
-        super().set_enviroment_setter(CellsPrepare(self.path))
+        prepare_mesh = CellsPrepare(self.path)
+        prepare_mesh.root = root.path
+        super().set_enviroment_setter(prepare_mesh)
 
     @property
     def cache_path(self):
         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
-
-
-class OF:
-
-    name = "OF"
-    executor_support = ["MPI", "Ref"]
-    executor = None
-
-    def __init__(self, prefix="P"):
-        self.prefix = prefix
-
-
-class GKOExecutor:
-    def __init__(self, name):
-        self.name = name
-
-
-class RefExecutor(GKOExecutor):
-    def __init__(self):
-        super().__init__(name="Reference")
-
-
-class OMPExecutor(GKOExecutor):
-    def __init__(self):
-        super().__init__(name="omp")
-
-
-class CUDAExecutor(GKOExecutor):
-    def __init__(self):
-        super().__init__(name="cuda")
-
-
-class GKO:
-
-    name = "GKO"
-    prefix = "GKO"
-    executor_support = ["OMP", "CUDA", "Ref"]
-    executor = None
-
-    def __init__(self):
-        pass
-
-
-class CG(SolverSetter):
-    def __init__(
-        self,
-        base_path,
-        field,
-        case_name,
-    ):
-        name = "CG"
-        super().__init__(
-            base_path=base_path,
-            solver=name,
-            field=field,
-            case_name=case_name,
-        )
-        self.avail_domain_handler = {"OF": OF(), "GKO": GKO()}
 
 
 def construct(
@@ -94,6 +38,9 @@ def construct(
     usage:
        solver = construct("CG", "GKO", "OMP")
     """
+    from OBR.MatrixSolver import CUDAExecutor, RefExecutor, OMPExecutor
+    import OBR.MatrixSolver as ms
+
     executor_inst = None
     if executor == "Ref":
         executor_inst = RefExecutor()
@@ -102,18 +49,18 @@ def construct(
     if executor == "CUDA":
         executor_inst = CUDAExecutor()
 
-    if solver == "CG":
-        cg = CG(base_path, field, case_name)
-        try:
-            # try to set domain this fails if the domain is not in the map
-            # of domains which implement the given solver
-            cg.set_domain(domain)
-            cg.set_executor(executor_inst)
-            # cg.set_up()
-            return True, cg
-        except Exception as e:
-            print(e)
-            return False, None
+    solver_setter = getattr(ms, solver)(base_path, field, case_name)
+    try:
+        # try to set domain this fails if the domain is not in the map
+        # of domains which implement the given solver
+        solver_setter.set_domain(domain)
+        if not executor in solver_setter.domain.executor_support:
+            0 / 0
+        solver_setter.set_executor(executor_inst)
+        return True, solver_setter
+    except Exception as e:
+        print(e)
+        return False, None
 
 
 class OpenFOAMTutorialCase:
@@ -123,7 +70,7 @@ class OpenFOAMTutorialCase:
         self.case = case
 
     @property
-    def of_case_path(self):
+    def path(self):
         import os
 
         foam_tutorials = Path(os.environ["FOAM_TUTORIALS"])
@@ -160,9 +107,6 @@ class ParameterStudy:
         for case in cases_combined:
             print("setting up", case)
             case.set_up()
-            # check if solver supported by executor
-            # path = test_path / e.local_path / str(n.value)
-            # exist = os.path.isdir(path)
             skip = False
             # clean = arguments["--clean"]
             # if exist and clean:
@@ -174,6 +118,4 @@ class ParameterStudy:
             # base_case_path = (
             #     test_path / Path("base") / Path("p-" + s.name) / str(n.value)
             # )
-
-            #     n.run(case)
             self.runner.run(case)

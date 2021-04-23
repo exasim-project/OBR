@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import OBR.setFunctions as sf
+from OBR.OpenFOAMCase import OpenFOAMCase
 import os
 from subprocess import check_output
 
@@ -37,14 +38,19 @@ class CachePrepare(DefaultPrepareEnviroment):
     def __init__(self, path):
         """ prepare a cache folder for the target folder in path """
         self.path = path
+        self.alternative_cache_path_ = None
 
     @property
     def cache_path(self):
         """ append cache to the current path name """
+        path = self.path
+        if self.alternative_cache_path_:
+            path = self.alternative_cache_path_
 
-        base_path = Path(self.path.parent).parent
-        variant_name = self.path.parent.name
+        base_path = Path(path.parent).parent
+        variant_name = path.parent.name
         case_name = self.path.name
+        print("EnviromentSetters:53", case_name, variant_name, base_path)
         return base_path / (variant_name + "-cache") / case_name
 
 
@@ -53,14 +59,12 @@ class CellsPrepare(CachePrepare):
 
     def __init__(self, path):
         super().__init__(path=path)
-        self.cells = path.name
+        self.cells = Path(path.parent).name
 
     def set_up_cache(self):
         print("setup cache", self.path)
-        cache_case = OpenFOAMCase()
-        cache_case.set_parent_path(self.path)
-        cache_case.path_ = path
-        deltaT = 0.1 * 16 / self.cells
+        cache_case = OpenFOAMCase(self.cache_path)
+        deltaT = 0.1 * 16 / float(self.cells)
         new_cells = "{} {} {}".format(self.cells, self.cells, self.cells)
         sf.set_cells(cache_case.blockMeshDict, "16 16 16", new_cells)
         sf.set_mesh_boundary_type_to_wall(cache_case.blockMeshDict)
@@ -84,8 +88,8 @@ class CellsPrepare(CachePrepare):
 
         # check if cache_path exists otherwise copy
         print("copying from", self.cache_path, " to ", target_path)
-        sf.ensure_path(target_path.parent)
-        check_output(["cp", "-r", cache_path, target_path.parent])
+        sf.ensure_path(target_path)
+        check_output(["cp", "-r", self.cache_path, target_path])
 
     def clean_up(self):
         pass

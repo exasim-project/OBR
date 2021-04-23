@@ -62,7 +62,8 @@ def resolution_study(test_path, solver, arguments, runner):
     root = ps.OpenFOAMTutorialCase("DNS", "dnsFoam", case_name)
 
     cell_setters = [
-        ps.CellSetter(test_path, num_cells, case_name) for num_cells in number_of_cells
+        ps.CellSetter(test_path, num_cells, case_name, root)
+        for num_cells in number_of_cells
     ]
 
     parameter_study = ps.ParameterStudy(
@@ -80,16 +81,16 @@ if __name__ == "__main__":
     solver = []
 
     if arguments["--ir"]:
-        pass
+        solver.append("IR")
 
     if arguments["--cg"]:
         solver.append("CG")
 
     if arguments["--bicgstab"]:
-        pass
+        solver.append("BiCGStab")
 
     if arguments["--smooth"]:
-        pass
+        solver.append("smooth")
 
     executor = []
 
@@ -112,7 +113,13 @@ if __name__ == "__main__":
     # for do a partial apply field="p"
     test_path = Path(arguments.get("--folder", "Test"))
     construct = partial(ps.construct, test_path, "boxTurb16", "p")
-    solvers = starmap(construct, product(solver, domains, executor))
+    # construct returns a tuple where  the first element is bool
+    # indicating a valid combination of Domain and Solver and Executor
+    valid_solvers_tuples = filter(
+        lambda x: x[0], starmap(construct, product(solver, domains, executor))
+    )
+    # just unpack the solver setters to a list
+    solvers = map(lambda x: x[1], valid_solvers_tuples)
 
     results = ra.Results(arguments.get("--report", "report.csv"))
     runner = cr.CaseRunner(

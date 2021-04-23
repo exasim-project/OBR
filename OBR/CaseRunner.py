@@ -20,7 +20,7 @@ class CaseRunner:
             # self.executor.prepare_enviroment(processes)
 
             self.results.set_case(
-                domain=case.query_attr("domain", ""),
+                domain=case.query_attr("domain", "").name,
                 executor=case.query_attr("executor", ""),
                 solver=case.query_attr("solver", ""),
                 number_of_iterations=0,  # self.iterations,

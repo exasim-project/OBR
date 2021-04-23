@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from OBR.OpenFOAMCase import OpenFOAMCase
+from pathlib import Path
 
 
 class Setter(OpenFOAMCase):
@@ -15,7 +16,7 @@ class Setter(OpenFOAMCase):
 
         super().__init__(path=self.get_full_path(base_path, variation_name, case_name))
         self.base_path = base_path
-        self.case_name = variation_name
+        self.case_name = case_name
 
         self.others = []
         self.name = variation_name
@@ -25,10 +26,6 @@ class Setter(OpenFOAMCase):
         fp = base_path / variation_name / case_name
         print("fp", fp)
         return fp
-
-    def combine(self, other):
-        self.others.append(other)
-        print("other", other.case_name)
 
     def add_property(self, prop_name):
         """ add a new property to the path name and update the base class path """
@@ -56,8 +53,30 @@ class Setter(OpenFOAMCase):
         for other in self.others:
             other.clean_up()
 
+    def add_to_base(self, path):
+        """add a path as new base to self.path
+        eg. Tests/p-CG-OF/boxTurb => Tests/8/p-CG-OF/boxTurb
+        """
+        self.path_ = self.get_full_path(
+            self.base_path, Path(path) / self.name, self.case_name
+        )
+
+    def add_to_path(self, path):
+        """add a path as new base to self.path
+        eg. Tests/8/boxTurb => Tests/8/p-CG-OF/boxTurb
+        """
+        self.path_ = self.get_full_path(
+            self.base_path, self.name / Path(path), self.case_name
+        )
+
     def combine(self, other):
+        print("combine", other, self.name)
         self.others.append(other)
+        other.add_to_base(self.name)
+        self.add_to_path(other.name)
+        print("path", self.path, "other", other.path)
+        self.enviroment_setter.alternative_cache_path_ = Path(self.path.parent)
+        self.enviroment_setter.path = self.path
         return self
 
     def query_attr(self, attr, default):

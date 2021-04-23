@@ -2,6 +2,7 @@
 
 from OBR.Setter import Setter
 from pathlib import Path
+import OBR.setFunctions as sf
 
 
 class SolverSetter(Setter):
@@ -67,3 +68,121 @@ class SolverSetter(Setter):
         # fmt: on
         print(solver_str, self.controlDict)
         sf.sed(self.fvSolution, "p{}", solver_str)
+
+
+# Executor
+
+
+class GKOExecutor:
+    def __init__(self, name):
+        self.name = name
+
+
+class RefExecutor(GKOExecutor):
+    def __init__(self):
+        super().__init__(name="Reference")
+
+
+class OMPExecutor(GKOExecutor):
+    def __init__(self):
+        super().__init__(name="omp")
+
+
+class CUDAExecutor(GKOExecutor):
+    def __init__(self):
+        super().__init__(name="cuda")
+
+
+# Domain handler
+
+
+class OF:
+
+    name = "OF"
+    executor_support = ["MPI", "Ref"]
+    executor = None
+
+    def __init__(self, prefix="P"):
+        self.prefix = prefix
+
+
+class GKO:
+
+    name = "GKO"
+    prefix = "GKO"
+    executor_support = ["OMP", "CUDA", "Ref"]
+    executor = None
+
+    def __init__(self):
+        pass
+
+
+# Solver
+
+
+class CG(SolverSetter):
+    def __init__(
+        self,
+        base_path,
+        field,
+        case_name,
+    ):
+        name = "CG"
+        super().__init__(
+            base_path=base_path,
+            solver=name,
+            field=field,
+            case_name=case_name,
+        )
+        self.avail_domain_handler = {"OF": OF(), "GKO": GKO()}
+
+
+class BiCGStab(SolverSetter):
+    def __init__(
+        self,
+        base_path,
+        field,
+        case_name,
+    ):
+        name = "BiCGStab"
+        super().__init__(
+            base_path=base_path,
+            solver=name,
+            field=field,
+            case_name=case_name,
+        )
+        self.avail_domain_handler = {"OF": OF(), "GKO": GKO()}
+
+
+class smooth(SolverSetter):
+    def __init__(
+        self,
+        base_path,
+        field,
+        case_name,
+    ):
+        name = "smooth"
+        super().__init__(
+            base_path=base_path,
+            solver=name,
+            field=field,
+            case_name=case_name,
+        )
+        self.avail_domain_handler = {"OF": OF(prefix="")}
+
+
+class IR(SolverSetter):
+    def __init__(
+        self,
+        base_path,
+        field,
+        case_name,
+    ):
+        name = "IR"
+        super().__init__(
+            base_path=base_path,
+            solver=name,
+            field=field,
+            case_name=case_name,
+        )
+        self.avail_domain_handler = {"GKO": GKO()}
