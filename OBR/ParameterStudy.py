@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+from OBR.EnviromentSetters import DefaultPrepareEnviroment
+import os
+from itertools import product
+from pathlib import Path
+from subprocess import check_output
+from copy import deepcopy
+from OBR.Setter import Setter
+from OBR.MatrixSolver import SolverSetter
+from OBR.EnviromentSetters import CellsPrepare
+
+from . import setFunctions as sf
+
+
+class CellSetter(Setter):
+    def __init__(self, base_path, cells, case_name, root):
+        self.cells = cells
+        super().__init__(
+            base_path=base_path,
+            variation_name="{}".format(cells),
+            case_name=case_name,
+        )
+        prepare_mesh = CellsPrepare(self.path)
+        prepare_mesh.root = root.path
+        super().set_enviroment_setter(prepare_mesh)
+
+    @property
+    def cache_path(self):
+        return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+
+
+def construct(
+    base_path, case_name, field, solver, domain, executor=None, preconditioner=None
+):
+    """
+    construct case variant from string arguments
+
+    usage:
+       solver = construct("CG", "GKO", "OMP")
+    """
+    from OBR.MatrixSolver import CUDAExecutor, RefExecutor, OMPExecutor
+    import OBR.MatrixSolver as ms
+
+    executor_inst = None
+    if executor == "Ref":
+        executor_inst = RefExecutor()
+    if executor == "OMP":
+        executor_inst = OMPExecutor()
+    if executor == "CUDA":
+        executor_inst = CUDAExecutor()
+
+    solver_setter = getattr(ms, solver)(base_path, field, case_name)
+    try:
+        # try to set domain this fails if the domain is not in the map
+        # of domains which implement the given solver
+        solver_setter.set_domain(domain)
+        if not executor in solver_setter.domain.executor_support:
+            0 / 0
+        solver_setter.set_executor(executor_inst)
+        return True, solver_setter
+    except Exception as e:
+        print(e)
+        return False, None
+
+
+class OpenFOAMTutorialCase:
+    def __init__(self, tutorial_domain, solver, case):
+        self.tutorial_domain = tutorial_domain
+        self.solver = solver
+        self.case = case
+
+    @property
+    def path(self):
+        import os
+
+        foam_tutorials = Path(os.environ["FOAM_TUTORIALS"])
+        return Path(foam_tutorials / self.tutorial_domain / self.solver / self.case)
+
+
+def combine(setters):
+    """ combines a tuple of setters """
+    print("combine")
+    primary = deepcopy(setters[0])
+    primary.combine(setters[1])
+    return primary
+
+
+class ParameterStudy:
+    """A class to create a range of cases and potentially run them
+
+    Here parameter studies are created the following way. First,
+    a set of cases is defined via
+    """
+
+    def __init__(self, test_path, results_aggregator, setters, runner):
+        self.test_path = test_path
+        self.results_aggregator = results_aggregator
+        self.setters = setters
+        self.runner = runner
+
+    def build_parameter_study(self):
+        # test_path, results, executor, setter, arguments):
+        print("build_param_study")
+        print("self setters", self.setters)
+        cases = product(*self.setters)
+        cases_combined = map(combine, cases)
+        for case in cases_combined:
+            print("setting up", case)
+            case.set_up()
+            skip = False
+            # clean = arguments["--clean"]
+            # if exist and clean:
+            #     shutil.rmtree(path)
+            #     skip = False
+            # if exist and not clean:
+            #     skip = True
+            # is_base_case = False
+            # base_case_path = (
+            #     test_path / Path("base") / Path("p-" + s.name) / str(n.value)
+            # )
+            self.runner.run(case)
