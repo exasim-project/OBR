@@ -22,7 +22,13 @@ class Setter(OpenFOAMCase):
 
     def get_full_path(self, base_path, variation_name, case_name):
         """ compute full path from different components """
-        return base_path / variation_name / case_name
+        fp = base_path / variation_name / case_name
+        print("fp", fp)
+        return fp
+
+    def combine(self, other):
+        self.others.append(other)
+        print("other", other.case_name)
 
     def add_property(self, prop_name):
         """ add a new property to the path name and update the base class path """
@@ -34,6 +40,10 @@ class Setter(OpenFOAMCase):
     def set_enviroment_setter(self, enviroment_setter):
         self.enviroment_setter = enviroment_setter
         self.enviroment_setter.path = self.path
+
+    @property
+    def prefix(self):
+        return self.domain.prefix
 
     def set_up(self):
         """ delegate the set_up call to enviroment setters """

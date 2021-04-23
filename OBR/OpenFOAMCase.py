@@ -11,6 +11,7 @@ class OpenFOAMCase:
 
     @property
     def path(self):
+        print("path ", self.path_)
         return self.path_
 
     @property

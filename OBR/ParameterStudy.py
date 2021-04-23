@@ -30,7 +30,7 @@ class CellSetter(Setter):
 class OF:
 
     name = "OF"
-    executor_support = False
+    executor_support = ["MPI", "Ref"]
     executor = None
 
     def __init__(self, prefix="P"):
@@ -61,7 +61,7 @@ class GKO:
 
     name = "GKO"
     prefix = "GKO"
-    executor_support = True
+    executor_support = ["OMP", "CUDA", "Ref"]
     executor = None
 
     def __init__(self):
@@ -109,6 +109,7 @@ def construct(
             # of domains which implement the given solver
             cg.set_domain(domain)
             cg.set_executor(executor_inst)
+            # cg.set_up()
             return True, cg
         except Exception as e:
             print(e)
@@ -131,11 +132,9 @@ class OpenFOAMTutorialCase:
 
 def combine(setters):
     """ combines a tuple of setters """
+    print("combine")
     primary = deepcopy(setters[0])
-    primary.others.append(setters[1])
-    if hasattr(primary, "root"):
-        primary.others[0].root = primary.root
-    primary.others[0].primary = primary
+    primary.combine(setters[1])
     return primary
 
 
@@ -152,13 +151,15 @@ class ParameterStudy:
         self.setters = setters
         self.runner = runner
 
-    def build_parameter_study(
-        self,
-    ):  # test_path, results, executor, setter, arguments):
+    def build_parameter_study(self):
+        # test_path, results, executor, setter, arguments):
+        print("build_param_study")
+        print("self setters", self.setters)
         cases = product(*self.setters)
         cases_combined = map(combine, cases)
         for case in cases_combined:
-            case.set_up(self.test_path)
+            print("setting up", case)
+            case.set_up()
             # check if solver supported by executor
             # path = test_path / e.local_path / str(n.value)
             # exist = os.path.isdir(path)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from OBR.Setter import Setter
+from pathlib import Path
 
 
 class SolverSetter(Setter):
@@ -38,12 +39,9 @@ class SolverSetter(Setter):
         self.domain.executor = executor
         self.add_property(executor.name)
 
-    def set_up(self, test_path):
-        print("setting solver")
+    def set_up(self):
+        print("setting solver", self.prefix, self.solver, self.domain.executor.name)
         matrix_solver = self.prefix + self.solver
-        executor = "none"
-        if hasattr(self.child, "executor"):
-            executor = self.child.executor
         # fmt: off
         solver_str = (
             '"p.*"{\\n'
@@ -63,11 +61,9 @@ class SolverSetter(Setter):
                 self.min_iters,
                 self.max_iters,
                 self.update_sys_matrix,
-                executor
+                self.domain.executor.name
             )
         )
         # fmt: on
-        self.path_ = Path(test_path / self.local_path) / self.root.case
-        print(solver_str, self.controlDict)
         print(solver_str, self.controlDict)
         sf.sed(self.fvSolution, "p{}", solver_str)

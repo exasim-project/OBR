@@ -68,6 +68,7 @@ def resolution_study(test_path, solver, arguments, runner):
     parameter_study = ps.ParameterStudy(
         test_path, results, [cell_setters, solver], runner
     )
+
     parameter_study.build_parameter_study()
 
 
@@ -112,11 +113,10 @@ if __name__ == "__main__":
     test_path = Path(arguments.get("--folder", "Test"))
     construct = partial(ps.construct, test_path, "boxTurb16", "p")
     solvers = starmap(construct, product(solver, domains, executor))
-    print(list(solvers))
 
     results = ra.Results(arguments.get("--report", "report.csv"))
     runner = cr.CaseRunner(
         solver="dnsFoam", results_aggregator=results, arguments=arguments
     )
 
-    resolution_study(test_path, [], arguments, runner)
+    resolution_study(test_path, solvers, arguments, runner)

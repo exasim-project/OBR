@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
+import OBR.setFunctions as sf
+import os
+from subprocess import check_output
+
 
 class DefaultPrepareEnviroment:
     def __init__(self):
@@ -18,7 +23,7 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
     def __init__(self):
         self.processes = 1
 
-    def set_up(self, _):
+    def set_up(self):
         print(" use ", self.processes, " threads")
         os.environ["OMP_NUM_THREADS"] = str(self.processes)
 
@@ -33,12 +38,14 @@ class CachePrepare(DefaultPrepareEnviroment):
         """ prepare a cache folder for the target folder in path """
         self.path = path
 
+    @property
     def cache_path(self):
         """ append cache to the current path name """
 
-        base_path = self.path.parent
-        name = self.path.name
-        return base_path / (name + "-cache")
+        base_path = Path(self.path.parent).parent
+        variant_name = self.path.parent.name
+        case_name = self.path.name
+        return base_path / (variant_name + "-cache") / case_name
 
 
 class CellsPrepare(CachePrepare):
@@ -48,10 +55,10 @@ class CellsPrepare(CachePrepare):
         super().__init__(path=path)
         self.cells = path.name
 
-    def set_up_cache(self, path):
-        print("setup cache", path)
+    def set_up_cache(self):
+        print("setup cache", self.path)
         cache_case = OpenFOAMCase()
-        cache_case.set_parent_path(Path(path))
+        cache_case.set_parent_path(self.path)
         cache_case.path_ = path
         deltaT = 0.1 * 16 / self.cells
         new_cells = "{} {} {}".format(self.cells, self.cells, self.cells)
@@ -68,17 +75,15 @@ class CellsPrepare(CachePrepare):
         check_output(["blockMesh"], cwd=cache_case.path)
 
     def set_up(self):
-        test_path = self.path
-        cache_path = test_path / self.cache_path(str(self.cells), self.case_name)
-        target_path = test_path / self.local_path
-        sf.ensure_path(cache_path.parent)
-        if not os.path.exists(cache_path):
+        target_path = self.path.parent
+        sf.ensure_path(self.cache_path.parent)
+        if not os.path.exists(self.cache_path):
             print("cache does not exist")
-            check_output(["cp", "-r", self.root, cache_path])
-            self.set_up_cache(cache_path)
+            check_output(["cp", "-r", self.root, self.cache_path])
+            self.set_up_cache()
 
         # check if cache_path exists otherwise copy
-        print("copying from", cache_path, " to ", target_path)
+        print("copying from", self.cache_path, " to ", target_path)
         sf.ensure_path(target_path.parent)
         check_output(["cp", "-r", cache_path, target_path.parent])
 
