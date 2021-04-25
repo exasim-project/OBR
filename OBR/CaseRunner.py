@@ -35,7 +35,6 @@ class CaseRunner:
                 start = datetime.datetime.now()
                 success = 0
                 try:
-                    print(case.path)
                     ret = check_output([self.solver], cwd=case.path, timeout=15 * 60)
                     success = 1
                 except Exception as e:

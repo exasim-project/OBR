@@ -4,26 +4,6 @@
 class Case:
     def __init__(self, variation, parent_path="."):
         self.variation = variation
-        self.parent_path = parent_path
-
-        # self.variable = None
-        # self.preconditioner = preconditioner
-        # self.is_base_case = is_base_case
-        # self.test_base = test_base
-        # self.of_base_case = "boxTurb16"
-        # self.fields = "p"
-        # self.tolerance = "1e-06"
-        # self.resolution = resolution
-        # self.executor = executor
-        # self.solver = solver
-        # self.iterations = iterations
-        # self.base_case_path_ = base_case
-        # self.results_accumulator = results
-        # self.init_time = 0
-        # self.of_solver = of_solver
-        # self.of_tutorial_case = of_tutorial_case
-        # self.of_tutorial_domain = of_tutorial_domain
-        # self.number_of_processes = number_of_processes
 
     def copy_base(self, src, dst):
         print("copying base case", src, dst)
@@ -100,21 +80,3 @@ class Case:
                 pass
 
         self.executor.current_num_processes = 1
-
-        # if self.is_base_case:
-        #     deltaT = 0.1 * 16 / self.resolution
-        #     new_cells = "{} {} {}".format(
-        #         self.resolution, self.resolution, self.resolution
-        #     )
-        #     set_cells(self.blockMeshDict, "16 16 16", new_cells)
-        #     set_mesh_boundary_type_to_wall(self.blockMeshDict)
-        #     set_p_init_value(self.init_p)
-        #     set_U_init_value(self.init_U)
-        #     add_libOGL_so(self.controlDict)
-        #     set_end_time(self.controlDict, 10 * deltaT)
-        #     set_deltaT(self.controlDict, deltaT)
-        #     set_writeInterval(self.controlDict)
-        #     clear_solver_settings(self.fvSolution)
-        #     print("Meshing", self.path)
-        #     check_output(["blockMesh"], cwd=self.path)
-        #     return
