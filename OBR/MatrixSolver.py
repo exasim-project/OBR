@@ -32,8 +32,17 @@ class SolverSetter(Setter):
         self.max_iters = max_iters
 
     def set_domain(self, domain):
-        self.domain = self.avail_domain_handler[domain]
+        self.domain = self.avail_domain_handler[domain]["domain"]
         self.add_property(self.domain.name)
+        return self
+
+    def set_preconditioner(self, domain, preconditioner):
+        print("set precond")
+        avail_precond = self.avail_domain_handler[domain]["preconditioner"]
+        print(avail_precond)
+        self.preconditioner = avail_precond[preconditioner]
+
+        self.add_property(self.preconditioner.name)
         return self
 
     def set_executor(self, executor):
@@ -58,7 +67,7 @@ class SolverSetter(Setter):
 \\nexecutor {};".format(
                 matrix_solver,
                 self.tolerance,
-                self.preconditioner,
+                self.preconditioner.name,
                 self.min_iters,
                 self.max_iters,
                 self.update_sys_matrix,
@@ -91,6 +100,33 @@ class OMPExecutor(GKOExecutor):
 class CUDAExecutor(GKOExecutor):
     def __init__(self):
         super().__init__(name="cuda")
+
+
+# Preconditioner
+
+
+class BJ:
+    name = "BJ"
+
+
+class DIC:
+    name = "DIC"
+
+
+class FDIC:
+    name = "FDIC"
+
+
+class GAMG:
+    name = "GAMG"
+
+
+class Diag:
+    name = "diagonal"
+
+
+class NoPrecond:
+    name = "none"
 
 
 # Domain handler
@@ -134,7 +170,19 @@ class CG(SolverSetter):
             field=field,
             case_name=case_name,
         )
-        self.avail_domain_handler = {"OF": OF(), "GKO": GKO()}
+        self.avail_domain_handler = {
+            "OF": {
+                "domain": OF(),
+                "preconditioner": {
+                    "DIC": DIC(),
+                    "FDIC": FDIC(),
+                    "GAMG": GAMG(),
+                    "Diag": Diag(),
+                    "NoPrecond": NoPrecond(),
+                },
+            },
+            "GKO": {"domain": GKO(), "preconditioner": {"BJ": BJ()}},
+        }
 
 
 class BiCGStab(SolverSetter):
@@ -151,7 +199,19 @@ class BiCGStab(SolverSetter):
             field=field,
             case_name=case_name,
         )
-        self.avail_domain_handler = {"OF": OF(), "GKO": GKO()}
+        self.avail_domain_handler = {
+            "OF": {
+                "domain": OF(),
+                "preconditioner": {
+                    "DIC": DIC(),
+                    "FDIC": FDIC(),
+                    "GAMG": GAMG(),
+                    "Diag": Diag(),
+                    "NoPrecond": NoPrecond(),
+                },
+            },
+            "GKO": {"domain": GKO(), "preconditioner": {"BJ": BJ()}},
+        }
 
 
 class smooth(SolverSetter):
@@ -168,7 +228,9 @@ class smooth(SolverSetter):
             field=field,
             case_name=case_name,
         )
-        self.avail_domain_handler = {"OF": OF(prefix="")}
+        self.avail_domain_handler = {
+            "OF": {"domain": OF(prefix=""), "preconditioner": []},
+        }
 
 
 class IR(SolverSetter):
@@ -185,4 +247,4 @@ class IR(SolverSetter):
             field=field,
             case_name=case_name,
         )
-        self.avail_domain_handler = {"GKO": GKO()}
+        self.avail_domain_handler = {"GKO": {"domain": GKO(), "preconditioner": []}}

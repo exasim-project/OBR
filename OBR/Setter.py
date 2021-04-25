@@ -24,7 +24,6 @@ class Setter(OpenFOAMCase):
     def get_full_path(self, base_path, variation_name, case_name):
         """ compute full path from different components """
         fp = base_path / variation_name / case_name
-        print("fp", fp)
         return fp
 
     def add_property(self, prop_name):

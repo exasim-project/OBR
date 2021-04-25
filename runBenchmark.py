@@ -19,6 +19,9 @@
         --clean             Remove existing cases [default: False].
         --cg                Use CG matrix solver [default: False].
         --ir                Use Ginkgos IR matrix solver [default: False].
+        --bj                Use Ginkgos BJ matrix preconditioner [default: False].
+        --dic               Use OpenFOAMs DIC matrix preconditioner [default: False].
+        --noprecond         Use no preconditioner [default: False].
         --bicgstab          Use BiCGStab matrix solver [default: False].
         --smooth            Use OpenFOAMs smooth solver [default: False].
         --mpi_max_procs=<n>  Set the number of mpi processes [default: 1].
@@ -79,7 +82,6 @@ if __name__ == "__main__":
     print(arguments)
 
     solver = []
-
     if arguments["--ir"]:
         solver.append("IR")
 
@@ -92,8 +94,13 @@ if __name__ == "__main__":
     if arguments["--smooth"]:
         solver.append("smooth")
 
-    executor = []
+    preconditioner = ["NoPrecond"]
+    if arguments["--bj"]:
+        preconditioner.append("BJ")
+    if arguments["--dic"]:
+        preconditioner.append("DIC")
 
+    executor = []
     if arguments["--cuda"]:
         executor.append("CUDA")
 
@@ -116,7 +123,8 @@ if __name__ == "__main__":
     # construct returns a tuple where  the first element is bool
     # indicating a valid combination of Domain and Solver and Executor
     valid_solvers_tuples = filter(
-        lambda x: x[0], starmap(construct, product(solver, domains, executor))
+        lambda x: x[0],
+        starmap(construct, product(solver, domains, executor, preconditioner)),
     )
     # just unpack the solver setters to a list
     solvers = map(lambda x: x[1], valid_solvers_tuples)

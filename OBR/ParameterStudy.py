@@ -29,9 +29,7 @@ class CellSetter(Setter):
         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
 
 
-def construct(
-    base_path, case_name, field, solver, domain, executor=None, preconditioner=None
-):
+def construct(base_path, case_name, field, solver, domain, executor, preconditioner):
     """
     construct case variant from string arguments
 
@@ -51,15 +49,19 @@ def construct(
 
     solver_setter = getattr(ms, solver)(base_path, field, case_name)
     try:
+        print(domain, preconditioner)
         # try to set domain this fails if the domain is not in the map
         # of domains which implement the given solver
         solver_setter.set_domain(domain)
+        # try to set preconditioner this fails if the preconditioner is not in the map
+        # of preconditioners domains which implement the given solver
+        solver_setter.set_preconditioner(domain, preconditioner)
         if not executor in solver_setter.domain.executor_support:
             0 / 0
         solver_setter.set_executor(executor_inst)
         return True, solver_setter
     except Exception as e:
-        print(e)
+        print("exception", e)
         return False, None
 
 
@@ -101,7 +103,6 @@ class ParameterStudy:
     def build_parameter_study(self):
         # test_path, results, executor, setter, arguments):
         print("build_param_study")
-        print("self setters", self.setters)
         cases = product(*self.setters)
         cases_combined = map(combine, cases)
         for case in cases_combined:
