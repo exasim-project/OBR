@@ -10,20 +10,12 @@
         -v --version        Print version and exit
         --folder=<folder>   Target folder  [default: Test].
         --report=<filename> Target file to store stats [default: report.csv].
-        --of                Generate OF cases [default: False].
-        --gko               Generate GKO cases [default: False].
-        --ref               Generate ref cases [default: False].
-        --cuda              Generate cuda cases [default: False].
-        --omp               Generate omp cases [default: False].
         --omp_max_threads=<n>  Set the number of omp threads [default: 1].
         --clean             Remove existing cases [default: False].
-        --cg                Use CG matrix solver [default: False].
-        --ir                Use Ginkgos IR matrix solver [default: False].
-        --bj                Use Ginkgos BJ matrix preconditioner [default: False].
-        --dic               Use OpenFOAMs DIC matrix preconditioner [default: False].
-        --noprecond         Use no preconditioner [default: False].
-        --bicgstab          Use BiCGStab matrix solver [default: False].
-        --smooth            Use OpenFOAMs smooth solver [default: False].
+        --backend=BACKENDS  Select desired backends (e.g. OF,GKO)
+        --solver=SOLVER     Select desired solvers (e.g. CG,BiCGStab,IR,smooth)
+        --executor=EXECUTOR Select desired executor (e.g. CUDA,Ref,OMP)
+        --preconditioner=PRECONDS  Select desired preconditioner (e.g. BJ,DIC)
         --mpi_max_procs=<n>  Set the number of mpi processes [default: 1].
         --small-cases       Include small cases [default: False].
         --large-cases       Include large cases [default: False].
@@ -81,42 +73,12 @@ if __name__ == "__main__":
     arguments = docopt(__doc__, version="runBench 0.1")
     print(arguments)
 
-    solver = []
-    if arguments["--ir"]:
-        solver.append("IR")
+    solver = arguments["--solver"].split(",")
+    domains = arguments["--backend"].split(",")
+    preconditioner = arguments["--preconditioner"].split(",")
+    # ["NoPrecond"]
 
-    if arguments["--cg"]:
-        solver.append("CG")
-
-    if arguments["--bicgstab"]:
-        solver.append("BiCGStab")
-
-    if arguments["--smooth"]:
-        solver.append("smooth")
-
-    preconditioner = ["NoPrecond"]
-    if arguments["--bj"]:
-        preconditioner.append("BJ")
-
-    if arguments["--dic"]:
-        preconditioner.append("DIC")
-
-    executor = []
-    if arguments["--cuda"]:
-        executor.append("CUDA")
-
-    if arguments["--ref"]:
-        executor.append("Ref")
-
-    if arguments["--omp"]:
-        executor.append("OMP")
-
-    domains = []
-    if arguments["--of"]:
-        domains.append("OF")
-
-    if arguments["--gko"]:
-        domains.append("GKO")
+    executor = arguments["--executor"].split(",")
 
     extra_args = {"OMP": {"max_processes": int(arguments["--omp_max_threads"])}}
 
