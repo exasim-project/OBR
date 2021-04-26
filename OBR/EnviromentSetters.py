@@ -67,9 +67,12 @@ class CachePrepare(DefaultPrepareEnviroment):
 class CellsPrepare(CachePrepare):
     """ sets the number of cells or copies from a base to avoid remeshing """
 
-    def __init__(self, path):
+    # TODO factor clearing solvers to separate classes
+
+    def __init__(self, path, fields):
         super().__init__(path=path)
         self.cells = Path(path.parent).name
+        self.fields = fields
 
     def set_up_cache(self):
         print("setup cache", self.path)
@@ -84,7 +87,8 @@ class CellsPrepare(CachePrepare):
         sf.set_end_time(cache_case.controlDict, 10 * deltaT)
         sf.set_deltaT(cache_case.controlDict, deltaT)
         sf.set_writeInterval(cache_case.controlDict)
-        sf.clear_solver_settings(cache_case.fvSolution)
+        for field in self.fields:
+            sf.clear_solver_settings(cache_case.fvSolution, field)
         print("Meshing", cache_case.path)
         check_output(["blockMesh"], cwd=cache_case.path)
 

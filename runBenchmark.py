@@ -41,7 +41,7 @@ from OBR import CaseRunner as cr
 from OBR import ResultsAggregator as ra
 
 
-def resolution_study(test_path, solver, arguments, runner):
+def resolution_study(test_path, solver, arguments, runner, fields):
 
     number_of_cells = []
 
@@ -58,7 +58,7 @@ def resolution_study(test_path, solver, arguments, runner):
     root = ps.OpenFOAMTutorialCase("DNS", "dnsFoam", case_name)
 
     cell_setters = [
-        ps.CellSetter(test_path, num_cells, case_name, root)
+        ps.CellSetter(test_path, num_cells, case_name, root, fields)
         for num_cells in number_of_cells
     ]
 
@@ -77,15 +77,15 @@ if __name__ == "__main__":
     solver = arguments["--solver"].split(",")
     domains = arguments["--backend"].split(",")
     preconditioner = arguments["--preconditioner"].split(",")
-    # ["NoPrecond"]
-
     executor = arguments["--executor"].split(",")
+    fields = arguments["--field"].split(",")
 
     extra_args = {"OMP": {"max_processes": int(arguments["--omp_max_threads"])}}
 
     # for do a partial apply field="p"
     test_path = Path(arguments.get("--folder", "Test"))
-    construct = partial(ps.construct, test_path, "boxTurb16", "p", extra_args)
+    construct = partial(ps.construct, test_path, "boxTurb16", fields, extra_args)
+
     # construct returns a tuple where  the first element is bool
     # indicating a valid combination of Domain and Solver and Executor
     valid_solvers_tuples = filter(
@@ -103,4 +103,4 @@ if __name__ == "__main__":
         solver="dnsFoam", results_aggregator=results, arguments=arguments
     )
 
-    resolution_study(test_path, solvers, arguments, runner)
+    resolution_study(test_path, solvers, arguments, runner, fields)

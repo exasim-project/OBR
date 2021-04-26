@@ -13,14 +13,14 @@ from . import setFunctions as sf
 
 
 class CellSetter(Setter):
-    def __init__(self, base_path, cells, case_name, root):
+    def __init__(self, base_path, cells, case_name, root, fields):
         self.cells = cells
         super().__init__(
             base_path=base_path,
             variation_name="{}".format(cells),
             case_name=case_name,
         )
-        prepare_mesh = CellsPrepare(self.path)
+        prepare_mesh = CellsPrepare(self.path, fields)
         prepare_mesh.root = root.path
         super().set_enviroment_setter(prepare_mesh)
 
