@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+
 class Results:
     """ A class to collect results and writ to a csv file """
 
@@ -11,6 +12,7 @@ class Results:
             "domain",
             "executor",
             "solver",
+            "preconditioner",
             "number_of_iterations",
             "resolution",
             "processes",
@@ -22,12 +24,20 @@ class Results:
         self.report_handle.write(",".join(self.columns) + "\n")
 
     def set_case(
-        self, domain, executor, solver, number_of_iterations, resolution, processes
+        self,
+        domain,
+        executor,
+        solver,
+        preconditioner,
+        number_of_iterations,
+        resolution,
+        processes,
     ):
         self.current_col_vals = [
             domain,
             executor,
             solver,
+            preconditioner,
             number_of_iterations,
             resolution,
             processes,
