@@ -46,8 +46,9 @@ class CaseRunner:
                 accumulated_time += run_time
             # self.executor.clean_enviroment()
             try:
+                log_path = case.path / "log"
                 with open(
-                    self.log_path.with_suffix("." + str(processes)), "a+"
+                    log_path.with_suffix("." + str(processes)), "a+"
                 ) as log_handle:
                     log_handle.write(ret.decode("utf-8"))
             except Exception as e:
