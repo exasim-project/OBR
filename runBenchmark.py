@@ -97,6 +97,7 @@ if __name__ == "__main__":
     preconditioner = ["NoPrecond"]
     if arguments["--bj"]:
         preconditioner.append("BJ")
+
     if arguments["--dic"]:
         preconditioner.append("DIC")
 

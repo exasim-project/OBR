@@ -47,6 +47,16 @@ class Setter(OpenFOAMCase):
         for other in self.others:
             other.set_up()
 
+    def get_processes(self):
+        if hasattr(self, "processes_"):
+            return self.processes
+        else:
+            try:
+                return self.others[0].domain.executor.enviroment_setter.processes
+            except Exception as e:
+                print(e)
+                return [1]
+
     def clean_up(self):
         self.enviroment_setter.clean_up()
         for other in self.others:

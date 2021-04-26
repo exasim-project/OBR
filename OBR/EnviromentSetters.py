@@ -21,8 +21,12 @@ class DefaultPrepareEnviroment:
 class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
     """ Sets the enviroment variable for OMP """
 
-    def __init__(self):
-        self.processes = 1
+    def __init__(self, max_processes=1, multi=2):
+        self.processes = []
+        proc = 1
+        while proc < max_processes:
+            self.processes.append(proc)
+            proc *= multi
 
     def set_up(self):
         print(" use ", self.processes, " threads")

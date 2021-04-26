@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from OBR.Setter import Setter
+from OBR.EnviromentSetters import PrepareOMPMaxThreads
 from pathlib import Path
 import OBR.setFunctions as sf
 
@@ -48,6 +49,8 @@ class SolverSetter(Setter):
     def set_executor(self, executor):
         self.domain.executor = executor
         self.add_property(executor.name)
+        if hasattr(executor, "enviroment_setter"):
+            self.set_enviroment_setter(executor.enviroment_setter)
 
     def set_up(self):
         print("setting solver", self.prefix, self.solver, self.domain.executor.name)
@@ -93,8 +96,9 @@ class RefExecutor(GKOExecutor):
 
 
 class OMPExecutor(GKOExecutor):
-    def __init__(self):
+    def __init__(self, max_processes=4):
         super().__init__(name="omp")
+        self.enviroment_setter = PrepareOMPMaxThreads(max_processes)
 
 
 class CUDAExecutor(GKOExecutor):

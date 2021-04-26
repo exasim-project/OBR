@@ -14,8 +14,8 @@ class CaseRunner:
 
     def run(self, case):
 
-        for processes in [1]:
-            print("start runs", processes)
+        for process in case.get_processes():
+            print("start runs processes", process)
 
             # self.executor.prepare_enviroment(processes)
 
@@ -25,7 +25,7 @@ class CaseRunner:
                 solver=case.query_attr("solver", ""),
                 number_of_iterations=0,  # self.iterations,
                 resolution=case.query_attr("cells", ""),
-                processes=processes,
+                processes=process,
             )
             accumulated_time = 0
             iters = 0
@@ -47,9 +47,7 @@ class CaseRunner:
             # self.executor.clean_enviroment()
             try:
                 log_path = case.path / "log"
-                with open(
-                    log_path.with_suffix("." + str(processes)), "a+"
-                ) as log_handle:
+                with open(log_path.with_suffix("." + str(process)), "a+") as log_handle:
                     log_handle.write(ret.decode("utf-8"))
             except Exception as e:
                 print(e)
