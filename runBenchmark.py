@@ -118,14 +118,19 @@ if __name__ == "__main__":
     if arguments["--gko"]:
         domains.append("GKO")
 
+    extra_args = {"OMP": {"max_processes": int(arguments["--omp_max_threads"])}}
+
     # for do a partial apply field="p"
     test_path = Path(arguments.get("--folder", "Test"))
-    construct = partial(ps.construct, test_path, "boxTurb16", "p")
+    construct = partial(ps.construct, test_path, "boxTurb16", "p", extra_args)
     # construct returns a tuple where  the first element is bool
     # indicating a valid combination of Domain and Solver and Executor
     valid_solvers_tuples = filter(
         lambda x: x[0],
-        starmap(construct, product(solver, domains, executor, preconditioner)),
+        starmap(
+            construct,
+            product(solver, domains, executor, preconditioner),
+        ),
     )
     # just unpack the solver setters to a list
     solvers = map(lambda x: x[1], valid_solvers_tuples)

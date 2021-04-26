@@ -29,7 +29,16 @@ class CellSetter(Setter):
         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
 
 
-def construct(base_path, case_name, field, solver, domain, executor, preconditioner):
+def construct(
+    base_path,
+    case_name,
+    field,
+    extra_args,
+    solver,
+    domain,
+    executor,
+    preconditioner,
+):
     """
     construct case variant from string arguments
 
@@ -43,7 +52,7 @@ def construct(base_path, case_name, field, solver, domain, executor, preconditio
     if executor == "Ref":
         executor_inst = RefExecutor()
     if executor == "OMP":
-        executor_inst = OMPExecutor()
+        executor_inst = OMPExecutor(**extra_args[executor])
     if executor == "CUDA":
         executor_inst = CUDAExecutor()
 

@@ -25,9 +25,10 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
         self.processes = []
         self.current_state = 0
         proc = 1
-        while proc < max_processes:
+        while proc <= max_processes:
             self.processes.append(proc)
             proc *= multi
+        print("PrepareOMPMaxThreads", self.processes)
 
     def set_up(self):
         processes = self.processes[self.current_state]
