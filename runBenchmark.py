@@ -17,6 +17,7 @@
         --executor=EXECUTOR Select desired executor (e.g. CUDA,Ref,OMP)
         --preconditioner=PRECONDS  Select desired preconditioner (e.g. BJ,DIC)
         --mpi_max_procs=<n>  Set the number of mpi processes [default: 1].
+        --field=FIELD       Set the field name to apply setup
         --small-cases       Include small cases [default: False].
         --large-cases       Include large cases [default: False].
         --very-large-cases  Include large cases [default: False].

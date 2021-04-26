@@ -51,6 +51,21 @@ class SolverSetter(Setter):
         if hasattr(executor, "enviroment_setter"):
             self.set_enviroment_setter(executor.enviroment_setter)
 
+    @property
+    def solver_templates(self):
+        return {
+            "p": "solver {};\
+\\ntolerance {};\
+\\nrelTol 0.0;\
+\\nsmoother none;\
+\\npreconditioner {};\
+\\nminIter {};\
+\\nmaxIter {};\
+\\nupdateSysMatrix no;\
+\\nsort yes;\
+\\nexecutor {};"
+        }
+
     def set_up(self):
         if hasattr(self, "enviroment_setter"):
             print("has an enviroment setter")
@@ -59,23 +74,13 @@ class SolverSetter(Setter):
         matrix_solver = self.prefix + self.solver
         # fmt: off
         solver_str = (
-            '"p.*"{\\n'
-            + "solver {};\
-\\ntolerance {};\
-\\nrelTol 0.0;\
-\\nsmoother none;\
-\\npreconditioner {};\
-\\nminIter {};\
-\\nmaxIter {};\
-\\nupdateSysMatrix {};\
-\\nsort yes;\
-\\nexecutor {};".format(
+            '"' + 'p' + '.*"{\\n'
+            + self.solver_templates["p"].format(
                 matrix_solver,
                 self.tolerance,
                 self.preconditioner.name,
                 self.min_iters,
                 self.max_iters,
-                self.update_sys_matrix,
                 self.domain.executor.name
             )
         )

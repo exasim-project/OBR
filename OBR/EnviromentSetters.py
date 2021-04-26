@@ -31,6 +31,9 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
         print("PrepareOMPMaxThreads", self.processes)
 
     def set_up(self):
+        # dont do anything for final setup
+        if self.current_state == len(self.processes):
+            return
         processes = self.processes[self.current_state]
         print("PrepareOMPMaxThreads use ", self.current_state, processes, " threads")
         os.environ["OMP_NUM_THREADS"] = str(processes)
