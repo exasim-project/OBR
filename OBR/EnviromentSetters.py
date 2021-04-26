@@ -23,14 +23,17 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
 
     def __init__(self, max_processes=1, multi=2):
         self.processes = []
+        self.current_state = 0
         proc = 1
         while proc < max_processes:
             self.processes.append(proc)
             proc *= multi
 
     def set_up(self):
-        print(" use ", self.processes, " threads")
-        os.environ["OMP_NUM_THREADS"] = str(self.processes)
+        processes = self.processes[self.current_state]
+        print("PrepareOMPMaxThreads use ", self.current_state, processes, " threads")
+        os.environ["OMP_NUM_THREADS"] = str(processes)
+        self.current_state += 1
 
     def clean_up(self):
         pass
@@ -54,7 +57,6 @@ class CachePrepare(DefaultPrepareEnviroment):
         base_path = Path(path.parent).parent
         variant_name = path.parent.name
         case_name = self.path.name
-        print("EnviromentSetters:53", case_name, variant_name, base_path)
         return base_path / (variant_name + "-cache") / case_name
 
 

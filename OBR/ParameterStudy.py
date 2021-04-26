@@ -49,7 +49,6 @@ def construct(base_path, case_name, field, solver, domain, executor, preconditio
 
     solver_setter = getattr(ms, solver)(base_path, field, case_name)
     try:
-        print(domain, preconditioner)
         # try to set domain this fails if the domain is not in the map
         # of domains which implement the given solver
         solver_setter.set_domain(domain)
@@ -61,7 +60,6 @@ def construct(base_path, case_name, field, solver, domain, executor, preconditio
         solver_setter.set_executor(executor_inst)
         return True, solver_setter
     except Exception as e:
-        print("exception", e)
         return False, None
 
 
@@ -81,7 +79,6 @@ class OpenFOAMTutorialCase:
 
 def combine(setters):
     """ combines a tuple of setters """
-    print("combine")
     primary = deepcopy(setters[0])
     primary.combine(setters[1])
     return primary
@@ -102,7 +99,6 @@ class ParameterStudy:
 
     def build_parameter_study(self):
         # test_path, results, executor, setter, arguments):
-        print("build_param_study")
         cases = product(*self.setters)
         cases_combined = map(combine, cases)
         for case in cases_combined:

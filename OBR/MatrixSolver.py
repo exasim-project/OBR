@@ -38,7 +38,6 @@ class SolverSetter(Setter):
         return self
 
     def set_preconditioner(self, domain, preconditioner):
-        print("set precond")
         avail_precond = self.avail_domain_handler[domain]["preconditioner"]
         print(avail_precond)
         self.preconditioner = avail_precond[preconditioner]
@@ -53,7 +52,10 @@ class SolverSetter(Setter):
             self.set_enviroment_setter(executor.enviroment_setter)
 
     def set_up(self):
-        print("setting solver", self.prefix, self.solver, self.domain.executor.name)
+        if hasattr(self, "enviroment_setter"):
+            print("has an enviroment setter")
+            self.enviroment_setter.set_up()
+
         matrix_solver = self.prefix + self.solver
         # fmt: off
         solver_str = (
@@ -78,7 +80,7 @@ class SolverSetter(Setter):
             )
         )
         # fmt: on
-        print(solver_str, self.controlDict)
+        print(solver_str, "to", self.controlDict)
         sf.sed(self.fvSolution, "p{}", solver_str)
 
 

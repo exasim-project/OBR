@@ -14,8 +14,9 @@ class CaseRunner:
 
     def run(self, case):
 
-        for process in case.get_processes():
-            print("start runs processes", process)
+        processes = case.get_processes()
+        print("start runs processes", processes)
+        for process in processes:
 
             # self.executor.prepare_enviroment(processes)
 
@@ -46,6 +47,13 @@ class CaseRunner:
                 self.results.add(run_time, success)
                 accumulated_time += run_time
             # self.executor.clean_enviroment()
+            # TODO FIXME
+            # Sets enviroment for next run
+            try:
+                print("set processes", process)
+                case.others[0].domain.executor.enviroment_setter.set_up()
+            except:
+                pass
             try:
                 log_path = case.path / "log"
                 with open(log_path.with_suffix("." + str(process)), "a+") as log_handle:
