@@ -77,6 +77,20 @@ class SolverSetter(Setter):
 \\nexecutor {};",
         }
 
+    @property
+    def get_solver(self):
+        print("get_solver")
+        ret = []
+        for field in self.fields:
+            solver = self.solver
+            print(solver, field)
+            if field == "U" and solver == "CG":
+                solver = "BiCGStab"
+            ret.append(solver)
+            print(ret)
+
+        return ret
+
     def set_up(self):
         for field in self.fields:
             if hasattr(self, "enviroment_setter"):

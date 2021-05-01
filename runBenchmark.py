@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # just unpack the solver setters to a list
     solvers = map(lambda x: x[1], valid_solvers_tuples)
 
-    results = ra.Results(arguments.get("--report", "report.csv"))
+    results = ra.Results(arguments.get("--report", "report.csv"), fields)
     runner = cr.CaseRunner(
         solver="dnsFoam", results_aggregator=results, arguments=arguments
     )

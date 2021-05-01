@@ -23,7 +23,7 @@ class CaseRunner:
             self.results.set_case(
                 domain=case.query_attr("domain", "").name,
                 executor=case.query_attr("domain", "").executor.name,
-                solver=case.query_attr("solver", ""),
+                solver=case.query_attr("get_solver", []),
                 preconditioner=case.query_attr("preconditioner", "").name,
                 number_of_iterations=0,  # self.iterations,
                 resolution=case.query_attr("cells", ""),
