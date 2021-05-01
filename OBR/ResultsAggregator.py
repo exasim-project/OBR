@@ -29,6 +29,10 @@ class Results:
         self.report_handle = open(self.fn, "a+", 1)
         self.report_handle.write(",".join(self.columns) + "\n")
 
+    def write_comment(self, comment, prefix=""):
+        for line in comment:
+            self.report_handle.write("#" + line + "\n")
+
     def set_case(
         self,
         domain,

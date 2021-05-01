@@ -56,8 +56,11 @@ class CaseRunner:
                 pass
             try:
                 log_path = case.path / "log"
-                with open(log_path.with_suffix("." + str(process)), "a+") as log_handle:
-                    log_handle.write(ret.decode("utf-8"))
+                log_path = log_path.with_suffix("." + str(process))
+                self.results.write_comment(["Log " + str(log_path)], prefix="LOG: ")
+                self.results.write_comment(
+                    ret.decode("utf-8").split("\n"), prefix="LOG: "
+                )
             except Exception as e:
                 print(e)
                 pass
