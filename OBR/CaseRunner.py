@@ -59,4 +59,8 @@ class CaseRunner:
             except Exception as e:
                 print(e)
                 pass
-        case.others[0].domain.executor.enviroment_setter.clean_up()
+        try:
+            case.others[0].domain.executor.enviroment_setter.clean_up()
+        except Exception as e:
+            print(e)
+            pass
