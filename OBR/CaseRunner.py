@@ -17,6 +17,12 @@ class CaseRunner:
         processes = case.get_processes()
         print("start runs processes", processes)
         for process in processes:
+            threads = 1
+            try:
+                threads = case.others[0].domain.executor.enviroment_setter.set_up()
+            except Exception as e:
+                print(e)
+                pass
             self.results.set_case(
                 domain=case.query_attr("domain", "").name,
                 executor=case.query_attr("domain", "").executor.name,
@@ -24,17 +30,12 @@ class CaseRunner:
                 preconditioner=case.query_attr("preconditioner", "").name,
                 number_of_iterations=0,  # self.iterations,
                 resolution=case.query_attr("cells", ""),
-                processes=process,
+                processes=threads,
             )
             accumulated_time = 0
             iters = 0
             ret = ""
             print("set processes", process)
-            try:
-                case.others[0].domain.executor.enviroment_setter.set_up()
-            except Exception as e:
-                print(e)
-                pass
             while accumulated_time < self.time_runs or iters < self.min_runs:
                 iters += 1
                 start = datetime.datetime.now()
