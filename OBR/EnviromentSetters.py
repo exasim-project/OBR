@@ -40,7 +40,7 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
         self.current_state += 1
 
     def clean_up(self):
-        pass
+        self.current_state = 0
 
 
 class CachePrepare(DefaultPrepareEnviroment):

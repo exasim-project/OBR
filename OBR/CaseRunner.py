@@ -17,9 +17,6 @@ class CaseRunner:
         processes = case.get_processes()
         print("start runs processes", processes)
         for process in processes:
-
-            # self.executor.prepare_enviroment(processes)
-
             self.results.set_case(
                 domain=case.query_attr("domain", "").name,
                 executor=case.query_attr("domain", "").executor.name,
@@ -32,6 +29,12 @@ class CaseRunner:
             accumulated_time = 0
             iters = 0
             ret = ""
+            print("set processes", process)
+            try:
+                case.others[0].domain.executor.enviroment_setter.set_up()
+            except Exception as e:
+                print(e)
+                pass
             while accumulated_time < self.time_runs or iters < self.min_runs:
                 iters += 1
                 start = datetime.datetime.now()
@@ -46,14 +49,6 @@ class CaseRunner:
                 run_time = (end - start).total_seconds()  # - self.init_time
                 self.results.add(run_time, success)
                 accumulated_time += run_time
-            # self.executor.clean_enviroment()
-            # TODO FIXME
-            # Sets enviroment for next run
-            try:
-                print("set processes", process)
-                case.others[0].domain.executor.enviroment_setter.set_up()
-            except:
-                pass
             try:
                 log_path = case.path / "log"
                 log_path = log_path.with_suffix("." + str(process))
@@ -64,3 +59,4 @@ class CaseRunner:
             except Exception as e:
                 print(e)
                 pass
+        case.others[0].domain.executor.enviroment_setter.clean_up()
