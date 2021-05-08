@@ -22,7 +22,8 @@
         --large-cases       Include large cases [default: False].
         --very-large-cases  Include large cases [default: False].
         --min_runs=<n>      Number of applications runs [default: 5]
-        --time_runs=<s>      Time to applications runs [default: 60]
+        --time_runs=<s>     Time to applications runs [default: 60]
+        --project_path=<folder> Path to library which is benchmarked
 """
 
 from docopt import docopt
@@ -39,6 +40,14 @@ from OBR import Case as cs
 from OBR import ParameterStudy as ps
 from OBR import CaseRunner as cr
 from OBR import ResultsAggregator as ra
+
+
+def get_commit_id(path):
+    return (
+        check_output(["git", "rev-parse", "--short", "HEAD"], cwd=path)
+        .decode("utf-8")
+        .replace("\n", "")
+    )
 
 
 def resolution_study(test_path, solver, arguments, runner, fields):
@@ -98,7 +107,11 @@ if __name__ == "__main__":
     # just unpack the solver setters to a list
     solvers = map(lambda x: x[1], valid_solvers_tuples)
 
-    results = ra.Results(arguments.get("--report", "report.csv"), fields)
+    results = ra.Results(
+        arguments.get("--report", "report.csv"),
+        fields,
+        commit=get_commit_id(Path(arguments["--project_path"])),
+    )
     runner = cr.CaseRunner(
         solver="dnsFoam", results_aggregator=results, arguments=arguments
     )

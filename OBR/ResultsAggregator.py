@@ -6,7 +6,7 @@ from pathlib import Path
 class Results:
     """ A class to collect results and writ to a csv file """
 
-    def __init__(self, fn, fields):
+    def __init__(self, fn, fields, commit):
         self.fn = Path(fn)
         fields = ["solver-" + f for f in fields]
 
@@ -23,11 +23,13 @@ class Results:
                 "processes",
                 "run_time",
                 "success",
+                "commit",
             ]
         )
         self.current_col_vals = []
         self.report_handle = open(self.fn, "a+", 1)
         self.report_handle.write(",".join(self.columns) + "\n")
+        self.commit = commit
 
     def write_comment(self, comment, prefix=""):
         for line in comment:
@@ -59,7 +61,7 @@ class Results:
 
     def add(self, run, success):
         """ Add results and success status of a run and write to file """
-        outp = self.current_col_vals + [run, success]
+        outp = self.current_col_vals + [run, success, self.commit]
         outps = ",".join(map(str, outp))
         print(outps)
         self.report_handle.write(outps + "\n")
