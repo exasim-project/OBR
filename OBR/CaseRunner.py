@@ -2,6 +2,7 @@
 """ This module implements Runner needed to run cases and collect statistics """
 from subprocess import check_output
 import datetime
+import sys
 
 
 class CaseRunner:
@@ -11,6 +12,14 @@ class CaseRunner:
         self.solver = solver
         self.time_runs = int(arguments["--time_runs"])
         self.min_runs = int(arguments["--min_runs"])
+        self.test_run = arguments["--test-run"]
+        self.fail = arguments["--fail_on_error"]
+
+    def continue_running(self, accumulated_time, iters):
+        if self.test_run and iters == 1:
+            return False
+        else:
+            return accumulated_time < self.time_runs or iters < self.min_runs
 
     def run(self, case):
 
@@ -32,7 +41,7 @@ class CaseRunner:
             accumulated_time = 0
             iters = 0
             ret = ""
-            while accumulated_time < self.time_runs or iters < self.min_runs:
+            while self.continue_running(accumulated_time, iters):
                 iters += 1
                 start = datetime.datetime.now()
                 success = 0
@@ -41,6 +50,8 @@ class CaseRunner:
                     success = 1
                 except Exception as e:
                     print(e)
+                    if self.fail:
+                        sys.exit(1)
                     break
                 end = datetime.datetime.now()
                 run_time = (end - start).total_seconds()  # - self.init_time

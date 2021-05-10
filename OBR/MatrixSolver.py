@@ -63,7 +63,17 @@ class SolverSetter(Setter):
 \\nmaxIter {};\
 \\nupdateSysMatrix no;\
 \\nsort yes;\
-\\nexecutor {};"
+\\nexecutor {};",
+            "U": "solver {};\
+\\ntolerance {};\
+\\nrelTol 0.0;\
+\\nsmoother none;\
+\\npreconditioner {};\
+\\nminIter {};\
+\\nmaxIter {};\
+\\nupdateSysMatrix yes;\
+\\nsort yes;\
+\\nexecutor {};",
         }
 
     def set_up(self):

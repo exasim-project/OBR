@@ -18,11 +18,13 @@
         --preconditioner=PRECONDS  Select desired preconditioner (e.g. BJ,DIC)
         --mpi_max_procs=<n>  Set the number of mpi processes [default: 1].
         --field=FIELD       Set the field name to apply setup
+        --test-run          Run every case only once [default: False]
         --small-cases       Include small cases [default: False].
         --large-cases       Include large cases [default: False].
         --very-large-cases  Include large cases [default: False].
         --min_runs=<n>      Number of applications runs [default: 5]
-        --time_runs=<s>      Time to applications runs [default: 60]
+        --time_runs=<s>     Time to applications runs [default: 60]
+        --fail_on_error     exit benchmark when a run fails [default: False]
 """
 
 from docopt import docopt
