@@ -22,7 +22,7 @@ class SolverSetter(Setter):
 
         super().__init__(
             base_path=base_path,
-            variation_name="{}-{}".format(field, solver),
+            variation_name="{}-{}".format("-".join(field), solver),
             case_name=case_name,
         )
         self.solver = solver
@@ -31,6 +31,7 @@ class SolverSetter(Setter):
         self.tolerance = tolerance
         self.min_iters = min_iters
         self.max_iters = max_iters
+        self.fields = field
 
     def set_domain(self, domain):
         self.domain = self.avail_domain_handler[domain]["domain"]
@@ -76,27 +77,45 @@ class SolverSetter(Setter):
 \\nexecutor {};",
         }
 
-    def set_up(self):
-        if hasattr(self, "enviroment_setter"):
-            print("has an enviroment setter")
-            self.enviroment_setter.set_up()
+    @property
+    def get_solver(self):
+        print("get_solver")
+        ret = []
+        for field in self.fields:
+            solver = self.solver
+            print(solver, field)
+            if field == "U" and solver == "CG":
+                solver = "BiCGStab"
+            ret.append(solver)
+            print(ret)
 
-        matrix_solver = self.prefix + self.solver
-        # fmt: off
-        solver_str = (
-            '"' + 'p' + '.*"{\\n'
-            + self.solver_templates["p"].format(
-                matrix_solver,
-                self.tolerance,
-                self.preconditioner.name,
-                self.min_iters,
-                self.max_iters,
-                self.domain.executor.name
+        return ret
+
+    def set_up(self):
+        for field in self.fields:
+            if hasattr(self, "enviroment_setter"):
+                print("has an enviroment setter")
+                self.enviroment_setter.set_up()
+            solver = self.solver
+            if field == "U" and solver == "CG":
+                solver = "BiCGStab"
+
+            matrix_solver = self.prefix + solver
+            # fmt: off
+            solver_str = (
+                '"' + field + '.*"{\\n'
+                + self.solver_templates[field].format(
+                    matrix_solver,
+                    self.tolerance,
+                    self.preconditioner.name,
+                    self.min_iters,
+                    self.max_iters,
+                    self.domain.executor.name
+                )
             )
-        )
-        # fmt: on
-        print(solver_str, "to", self.controlDict)
-        sf.sed(self.fvSolution, "p{}", solver_str)
+            # fmt: on
+            print(solver_str, "to", self.controlDict)
+            sf.sed(self.fvSolution, field + "{}", solver_str)
 
 
 # Executor
@@ -202,7 +221,13 @@ class CG(SolverSetter):
                     "NoPrecond": NoPrecond(),
                 },
             },
-            "GKO": {"domain": GKO(), "preconditioner": {"BJ": BJ()}},
+            "GKO": {
+                "domain": GKO(),
+                "preconditioner": {
+                    "BJ": BJ(),
+                    "NoPrecond": NoPrecond(),
+                },
+            },
         }
 
 
@@ -231,7 +256,13 @@ class BiCGStab(SolverSetter):
                     "NoPrecond": NoPrecond(),
                 },
             },
-            "GKO": {"domain": GKO(), "preconditioner": {"BJ": BJ()}},
+            "GKO": {
+                "domain": GKO(),
+                "preconditioner": {
+                    "BJ": BJ(),
+                    "NoPrecond": NoPrecond(),
+                },
+            },
         }
 
 

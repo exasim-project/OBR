@@ -61,9 +61,13 @@ def set_writeInterval(controlDict):
     sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval 10.0")
 
 
-def clear_solver_settings(fvSolution):
-    # sed(fvSolution, "p\\n[ ]*[{][^}]*[}]", "p{}")
-    clean_block_from_file(fvSolution, ["   p\n", '"p.*"'], "  }\n", "p{}\n")
+def clear_solver_settings(fvSolution, field):
+    clean_block_from_file(
+        fvSolution,
+        ["   {}\n".format(field), '"' + field + '.*"'],
+        "  }\n",
+        field + "{}\n",
+    )
 
 
 def ensure_path(path):

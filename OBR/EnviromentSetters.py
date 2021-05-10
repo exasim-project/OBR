@@ -22,7 +22,7 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
     """ Sets the enviroment variable for OMP """
 
     def __init__(self, max_processes=1, multi=2):
-        self.processes = []
+        self.processes = [1]
         self.current_state = 0
         proc = 1
         while proc <= max_processes:
@@ -38,9 +38,10 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
         print("PrepareOMPMaxThreads use ", self.current_state, processes, " threads")
         os.environ["OMP_NUM_THREADS"] = str(processes)
         self.current_state += 1
+        return processes
 
     def clean_up(self):
-        pass
+        self.current_state = 0
 
 
 class CachePrepare(DefaultPrepareEnviroment):
@@ -67,9 +68,12 @@ class CachePrepare(DefaultPrepareEnviroment):
 class CellsPrepare(CachePrepare):
     """ sets the number of cells or copies from a base to avoid remeshing """
 
-    def __init__(self, path):
+    # TODO factor clearing solvers to separate classes
+
+    def __init__(self, path, fields):
         super().__init__(path=path)
         self.cells = Path(path.parent).name
+        self.fields = fields
 
     def set_up_cache(self):
         print("setup cache", self.path)
@@ -84,7 +88,8 @@ class CellsPrepare(CachePrepare):
         sf.set_end_time(cache_case.controlDict, 10 * deltaT)
         sf.set_deltaT(cache_case.controlDict, deltaT)
         sf.set_writeInterval(cache_case.controlDict)
-        sf.clear_solver_settings(cache_case.fvSolution)
+        for field in self.fields:
+            sf.clear_solver_settings(cache_case.fvSolution, field)
         print("Meshing", cache_case.path)
         check_output(["blockMesh"], cwd=cache_case.path)
 

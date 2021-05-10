@@ -26,17 +26,20 @@ class CaseRunner:
         processes = case.get_processes()
         print("start runs processes", processes)
         for process in processes:
-
-            # self.executor.prepare_enviroment(processes)
-
+            threads = 1
+            try:
+                threads = case.others[0].domain.executor.enviroment_setter.set_up()
+            except Exception as e:
+                print(e)
+                pass
             self.results.set_case(
                 domain=case.query_attr("domain", "").name,
                 executor=case.query_attr("domain", "").executor.name,
-                solver=case.query_attr("solver", ""),
+                solver=case.query_attr("get_solver", []),
                 preconditioner=case.query_attr("preconditioner", "").name,
                 number_of_iterations=0,  # self.iterations,
                 resolution=case.query_attr("cells", ""),
-                processes=process,
+                processes=threads,
             )
             accumulated_time = 0
             iters = 0
@@ -57,18 +60,18 @@ class CaseRunner:
                 run_time = (end - start).total_seconds()  # - self.init_time
                 self.results.add(run_time, success)
                 accumulated_time += run_time
-            # self.executor.clean_enviroment()
-            # TODO FIXME
-            # Sets enviroment for next run
-            try:
-                print("set processes", process)
-                case.others[0].domain.executor.enviroment_setter.set_up()
-            except:
-                pass
             try:
                 log_path = case.path / "log"
-                with open(log_path.with_suffix("." + str(process)), "a+") as log_handle:
-                    log_handle.write(ret.decode("utf-8"))
+                log_path = log_path.with_suffix("." + str(process))
+                self.results.write_comment(["Log " + str(log_path)], prefix="LOG: ")
+                self.results.write_comment(
+                    ret.decode("utf-8").split("\n"), prefix="LOG: "
+                )
             except Exception as e:
                 print(e)
                 pass
+        try:
+            case.others[0].domain.executor.enviroment_setter.clean_up()
+        except Exception as e:
+            print(e)
+            pass
