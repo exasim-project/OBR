@@ -3,6 +3,7 @@
 from subprocess import check_output
 import datetime
 import sys
+import Owls as ow
 
 
 class CaseRunner:
@@ -61,12 +62,21 @@ class CaseRunner:
                 self.results.add(run_time, success)
                 accumulated_time += run_time
             try:
+
                 log_path = case.path / "log"
                 log_path = log_path.with_suffix("." + str(process))
+                log_str = ret.decode("utf-8")
                 self.results.write_comment(["Log " + str(log_path)], prefix="LOG: ")
-                self.results.write_comment(
-                    ret.decode("utf-8").split("\n"), prefix="LOG: "
+                self.results.write_comment(log_str.split("\n"), prefix="LOG: ")
+                ff = ow.read_log_str(
+                    log_str,
+                    {
+                        s: ["init_residual", "final_residual", "iterations"]
+                        for s in case.query_attr("get_solver", [])
+                    },
                 )
+                print("CaseRunner", ff)
+                print(ff["iterations"].sum())
             except Exception as e:
                 print(e)
                 pass
