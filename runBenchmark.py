@@ -26,6 +26,7 @@
         --time_runs=<s>     Time to applications runs [default: 60]
         --fail_on_error     exit benchmark when a run fails [default: False]
         --project_path=<folder> Path to library which is benchmarked
+        --include_log       Include log in report files [default: True]
 """
 
 from docopt import docopt

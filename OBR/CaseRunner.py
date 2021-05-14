@@ -15,6 +15,7 @@ class CaseRunner:
         self.min_runs = int(arguments["--min_runs"])
         self.test_run = arguments["--test-run"]
         self.fail = arguments["--fail_on_error"]
+        self.include_log = arguments["--include_log"]
 
     def continue_running(self, accumulated_time, iters):
         if self.test_run and iters == 1:
@@ -62,12 +63,12 @@ class CaseRunner:
                 self.results.add(run_time, success)
                 accumulated_time += run_time
             try:
-
                 log_path = case.path / "log"
                 log_path = log_path.with_suffix("." + str(process))
                 log_str = ret.decode("utf-8")
                 self.results.write_comment(["Log " + str(log_path)], prefix="LOG: ")
-                self.results.write_comment(log_str.split("\n"), prefix="LOG: ")
+                if self.include_log:
+                    self.results.write_comment(log_str.split("\n"), prefix="LOG: ")
                 ff = ow.read_log_str(
                     log_str,
                     {
