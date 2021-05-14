@@ -48,15 +48,13 @@ class Setter(OpenFOAMCase):
             other.set_up()
 
     def get_processes(self):
-        print("get_processes")
         if hasattr(self, "processes_"):
-            print("has processes")
             return self.processes
         else:
             try:
                 return self.others[0].domain.executor.enviroment_setter.processes
             except Exception as e:
-                print("exception", e)
+                print("Exception in get_processes", e)
                 return [1]
 
     def clean_up(self):
@@ -81,11 +79,9 @@ class Setter(OpenFOAMCase):
         )
 
     def combine(self, other):
-        print("combine", other, self.name)
         self.others.append(other)
         other.add_to_base(self.name)
         self.add_to_path(other.name)
-        print("path", self.path, "other", other.path)
         self.enviroment_setter.alternative_cache_path_ = Path(self.path.parent)
         self.enviroment_setter.path = self.path
         return self
