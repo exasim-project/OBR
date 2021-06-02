@@ -46,14 +46,6 @@ from OBR import CaseRunner as cr
 from OBR import ResultsAggregator as ra
 
 
-def get_commit_id(path):
-    return (
-        check_output(["git", "rev-parse", "--short", "HEAD"], cwd=path)
-        .decode("utf-8")
-        .replace("\n", "")
-    )
-
-
 def resolution_study(test_path, solver, arguments, runner, fields):
 
     number_of_cells = []
@@ -114,7 +106,6 @@ if __name__ == "__main__":
     results = ra.Results(
         arguments.get("--report", "report.csv"),
         fields,
-        commit=get_commit_id(Path(arguments["--project_path"])),
     )
     runner = cr.CaseRunner(
         solver="dnsFoam", results_aggregator=results, arguments=arguments
