@@ -2,6 +2,8 @@
 """ This module implements Runner needed to run cases and collect statistics """
 from subprocess import check_output
 import datetime
+import sys
+import Owls as ow
 
 
 class CaseRunner:
@@ -12,6 +14,15 @@ class CaseRunner:
         self.time_runs = int(arguments["--time_runs"])
         self.min_runs = int(arguments["--min_runs"])
         self.continue_on_failure = arguments["--continue_on_failure"]
+        self.test_run = arguments["--test-run"]
+        self.fail = arguments["--fail_on_error"]
+        self.include_log = arguments["--include_log"]
+
+    def continue_running(self, accumulated_time, number_of_runs):
+        if self.test_run and number_of_runs == 1:
+            return False
+        else:
+            return accumulated_time < self.time_runs or number_of_runs < self.min_runs
 
     def run(self, case):
 
@@ -22,23 +33,20 @@ class CaseRunner:
             try:
                 threads = case.others[0].domain.executor.enviroment_setter.set_up()
             except Exception as e:
-                print(e)
                 pass
             self.results.set_case(
                 domain=case.query_attr("domain", "").name,
                 executor=case.query_attr("domain", "").executor.name,
                 solver=case.query_attr("get_solver", []),
                 preconditioner=case.query_attr("preconditioner", "").name,
-                number_of_iterations=0,  # self.iterations,
                 resolution=case.query_attr("cells", ""),
                 processes=threads,
             )
             accumulated_time = 0
-            iters = 0
+            number_of_runs = 0
             ret = ""
-            print("set processes", process)
-            while accumulated_time < self.time_runs or iters < self.min_runs:
-                iters += 1
+            while self.continue_running(accumulated_time, number_of_runs):
+                number_of_runs += 1
                 start = datetime.datetime.now()
                 success = 0
                 try:
@@ -48,22 +56,45 @@ class CaseRunner:
                     print(e)
                     if not self.continue_on_failure:
                         break
+                    print("Exception running while running the case", e)
+                    if self.fail:
+                        sys.exit(1)
+                    break
+
                 end = datetime.datetime.now()
+                # on first run get number of iterations and write log if demanded
+                iterations = 0
+                if number_of_runs == 1:
+                    try:
+                        log_path = case.path / "log"
+                        log_path = log_path.with_suffix("." + str(process))
+                        log_str = ret.decode("utf-8")
+                        if self.include_log:
+                            self.results.write_comment(
+                                ["Log " + str(log_path)], prefix="LOG: "
+                            )
+                            self.results.write_comment(
+                                log_str.split("\n"), prefix="LOG: "
+                            )
+                        keys = {
+                            "{}:  Solving for {}".format(s, f): [
+                                "init_residual",
+                                "final_residual",
+                                "iterations",
+                            ]
+                            for f, s in zip(
+                                self.results.fields, case.query_attr("get_solver", [])
+                            )
+                        }
+                        ff = ow.read_log_str(log_str, keys)
+                        iterations = int(ff["iterations"].sum())
+                    except Exception as e:
+                        print("Exception processing logs", e)
+                        pass
                 run_time = (end - start).total_seconds()  # - self.init_time
-                self.results.add(run_time, success)
                 accumulated_time += run_time
-            try:
-                log_path = case.path / "log"
-                log_path = log_path.with_suffix("." + str(process))
-                self.results.write_comment(["Log " + str(log_path)], prefix="LOG: ")
-                self.results.write_comment(
-                    ret.decode("utf-8").split("\n"), prefix="LOG: "
-                )
-            except Exception as e:
-                print(e)
-                pass
+                self.results.add(run_time, success, iterations)
         try:
             case.others[0].domain.executor.enviroment_setter.clean_up()
         except Exception as e:
-            print(e)
             pass
