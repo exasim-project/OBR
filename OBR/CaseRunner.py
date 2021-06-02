@@ -11,6 +11,7 @@ class CaseRunner:
         self.solver = solver
         self.time_runs = int(arguments["--time_runs"])
         self.min_runs = int(arguments["--min_runs"])
+        self.continue_on_failure = arguments["--continue_on_failure"]
 
     def run(self, case):
 
@@ -45,7 +46,8 @@ class CaseRunner:
                     success = 1
                 except Exception as e:
                     print(e)
-                    break
+                    if not self.continue_on_failure:
+                        break
                 end = datetime.datetime.now()
                 run_time = (end - start).total_seconds()  # - self.init_time
                 self.results.add(run_time, success)
