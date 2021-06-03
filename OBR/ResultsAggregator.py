@@ -58,7 +58,7 @@ class Results:
 
     def add(self, run, success, iterations):
         """ Add results and success status of a run and write to file """
-        outp = self.current_col_vals + [run, success, terations]
+        outp = self.current_col_vals + [run, success, iterations]
         outps = ",".join(map(str, outp))
         print("writing to report", outps)
         self.report_handle.write(outps + "\n")
