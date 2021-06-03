@@ -45,6 +45,8 @@ class CaseRunner:
             accumulated_time = 0
             number_of_runs = 0
             ret = ""
+            # on first run get number of iterations and write log if demanded
+            iterations = 0
             while self.continue_running(accumulated_time, number_of_runs):
                 number_of_runs += 1
                 start = datetime.datetime.now()
@@ -62,8 +64,6 @@ class CaseRunner:
                     break
 
                 end = datetime.datetime.now()
-                # on first run get number of iterations and write log if demanded
-                iterations = 0
                 if number_of_runs == 1:
                     try:
                         log_path = case.path / "log"
