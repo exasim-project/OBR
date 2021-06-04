@@ -9,7 +9,7 @@ class Results:
     def __init__(self, fn, fields):
         self.fn = Path(fn)
         self.fields = fields
-        fields = ["solver-" + f for f in fields]
+        fields = ["solver_" + f for f in fields]
 
         self.columns = (
             [
