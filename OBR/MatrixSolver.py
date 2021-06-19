@@ -13,6 +13,7 @@ class SolverSetter(Setter):
         solver,
         field,
         case_name,
+        solver_stub,
         preconditioner="none",
         tolerance="1e-06",
         min_iters="0",
@@ -25,6 +26,7 @@ class SolverSetter(Setter):
             variation_name="{}-{}".format("-".join(field), solver),
             case_name=case_name,
         )
+        self.solver_stub = solver_stub
         self.solver = solver
         self.preconditioner = preconditioner
         self.update_sys_matrix = update_sys_matrix
@@ -53,31 +55,6 @@ class SolverSetter(Setter):
             self.set_enviroment_setter(executor.enviroment_setter)
 
     @property
-    def solver_templates(self):
-        return {
-            "p": "solver {};\
-\\ntolerance {};\
-\\nrelTol 0.0;\
-\\nsmoother none;\
-\\npreconditioner {};\
-\\nminIter {};\
-\\nmaxIter {};\
-\\nupdateSysMatrix no;\
-\\nsort yes;\
-\\nexecutor {};",
-            "U": "solver {};\
-\\ntolerance {};\
-\\nrelTol 0.0;\
-\\nsmoother none;\
-\\npreconditioner {};\
-\\nminIter {};\
-\\nmaxIter {};\
-\\nupdateSysMatrix yes;\
-\\nsort yes;\
-\\nexecutor {};",
-        }
-
-    @property
     def get_solver(self):
         ret = []
         for field in self.fields:
@@ -98,20 +75,18 @@ class SolverSetter(Setter):
                 solver = "BiCGStab"
 
             matrix_solver = self.prefix + solver
-            # fmt: off
-            solver_str = (
-                '"' + field + '.*"{\\n'
-                + self.solver_templates[field].format(
-                    matrix_solver,
-                    self.tolerance,
-                    self.preconditioner.name,
-                    self.min_iters,
-                    self.max_iters,
-                    self.domain.executor.name
-                )
+            raw_solver_str = "".join(self.solver_stub[field])
+            solver_str = raw_solver_str.format(
+                solver=matrix_solver,
+                tolerance=self.tolerance,
+                preconditioner=self.preconditioner.name,
+                minIter=self.min_iters,
+                maxIter=self.max_iters,
+                executor=self.domain.executor.name,
             )
-            # fmt: on
-            print(solver_str, "to", self.controlDict)
+            solver_str = '"' + field + '.*"{ ' + solver_str
+
+            print("writing", solver_str, "to", self.controlDict)
             sf.sed(self.fvSolution, field + "{}", solver_str)
 
 
@@ -199,6 +174,7 @@ class CG(SolverSetter):
         base_path,
         field,
         case_name,
+        solver_stub,
     ):
         name = "CG"
         super().__init__(
@@ -206,6 +182,7 @@ class CG(SolverSetter):
             solver=name,
             field=field,
             case_name=case_name,
+            solver_stub=solver_stub,
         )
         self.avail_domain_handler = {
             "OF": {
@@ -234,6 +211,7 @@ class BiCGStab(SolverSetter):
         base_path,
         field,
         case_name,
+        solver_stub,
     ):
         name = "BiCGStab"
         super().__init__(
@@ -241,6 +219,7 @@ class BiCGStab(SolverSetter):
             solver=name,
             field=field,
             case_name=case_name,
+            solver_stub=solver_stub,
         )
         self.avail_domain_handler = {
             "OF": {
@@ -269,6 +248,7 @@ class smooth(SolverSetter):
         base_path,
         field,
         case_name,
+        solver_stub,
     ):
         name = "smooth"
         super().__init__(
@@ -276,6 +256,7 @@ class smooth(SolverSetter):
             solver=name,
             field=field,
             case_name=case_name,
+            solver_stub=solver_stub,
         )
         self.avail_domain_handler = {
             "OF": {"domain": OF(prefix=""), "preconditioner": []},
@@ -288,6 +269,7 @@ class IR(SolverSetter):
         base_path,
         field,
         case_name,
+        solver_stub,
     ):
         name = "IR"
         super().__init__(
@@ -295,5 +277,6 @@ class IR(SolverSetter):
             solver=name,
             field=field,
             case_name=case_name,
+            solver_stub=solver_stub,
         )
         self.avail_domain_handler = {"GKO": {"domain": GKO(), "preconditioner": []}}

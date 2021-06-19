@@ -49,6 +49,7 @@ def construct(
     base_path,
     case_name,
     field,
+    solver_stubs,
     extra_args,
     solver,
     domain,
@@ -72,7 +73,7 @@ def construct(
     if executor == "CUDA":
         executor_inst = CUDAExecutor()
 
-    solver_setter = getattr(ms, solver)(base_path, field, case_name)
+    solver_setter = getattr(ms, solver)(base_path, field, case_name, solver_stubs)
     try:
         # try to set domain this fails if the domain is not in the map
         # of domains which implement the given solver
@@ -126,12 +127,11 @@ class ParameterStudy:
     a set of cases is defined via
     """
 
-    def __init__(self, test_path, results_aggregator, setters, runner, solver_stubs):
+    def __init__(self, test_path, results_aggregator, setters, runner):
         self.test_path = test_path
         self.results_aggregator = results_aggregator
         self.setters = setters
         self.runner = runner
-        self.stubs = solver_stubs
 
     def build_parameter_study(self):
         # test_path, results, executor, setter, arguments):

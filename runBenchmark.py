@@ -51,7 +51,9 @@ from OBR import ResultsAggregator as ra
 #      type: OpenFOAMTutorialCase
 #      origin: DNS
 #      solver_stubs: {
-#      p : {},
+#      p : {
+#
+# },
 #      U : {}
 #      }
 #   },
@@ -66,6 +68,8 @@ from OBR import ResultsAggregator as ra
 def parameter_study(test_path, matrix_solver, runner, fields, params):
 
     parameter_range = params["variation"]["range"]
+
+    # TODO get case_name from Setter
     case_name = params["openfoam"]["case"]
 
     root_case = ps.OpenFOAMTutorialCase(
@@ -78,11 +82,7 @@ def parameter_study(test_path, matrix_solver, runner, fields, params):
     ]
 
     parameter_study = ps.ParameterStudy(
-        test_path,
-        results,
-        [cell_setters, matrix_solver],
-        runner,
-        params["openfoam"]["solver_stubs"],
+        test_path, results, [cell_setters, matrix_solver], runner
     )
 
     parameter_study.build_parameter_study()
@@ -103,7 +103,32 @@ if __name__ == "__main__":
 
     # for do a partial apply field="p"
     test_path = Path(arguments.get("--folder", "Test"))
-    construct = partial(ps.construct, test_path, "boxTurb16", fields, extra_args)
+
+    # read file
+    with open(
+        arguments.get("--parameters", "benchmark.json"), "r"
+    ) as parameters_handle:
+        parameters_str = parameters_handle.read()
+
+    # parse file
+    parameter_study_arguments = json.loads(parameters_str)
+
+    results = ra.Results(
+        arguments.get("--report", "report.csv"),
+        fields,
+    )
+
+    runner = cr.CaseRunner(
+        solver=parameter_study_arguments["openfoam"]["solver"],
+        results_aggregator=results,
+        arguments=arguments,
+    )
+
+    case_name = parameter_study_arguments["openfoam"]["case"]
+    solver_stubs = parameter_study_arguments["openfoam"]["solver_stubs"]
+    construct = partial(
+        ps.construct, test_path, case_name, fields, solver_stubs, extra_args
+    )
 
     # construct returns a tuple where  the first element is bool
     # indicating a valid combination of Domain and Solver and Executor
@@ -116,25 +141,5 @@ if __name__ == "__main__":
     )
     # just unpack the solver setters to a list
     matrix_solver = map(lambda x: x[1], valid_solvers_tuples)
-
-    results = ra.Results(
-        arguments.get("--report", "report.csv"),
-        fields,
-    )
-
-    # read file
-    with open(
-        arguments.get("--parameters", "benchmark.json"), "r"
-    ) as parameters_handle:
-        parameters_str = parameters_handle.read()
-
-    # parse file
-    parameter_study_arguments = json.loads(parameters_str)
-
-    runner = cr.CaseRunner(
-        solver=parameter_study_arguments["openfoam"]["solver"],
-        results_aggregator=results,
-        arguments=arguments,
-    )
 
     parameter_study(test_path, matrix_solver, runner, fields, parameter_study_arguments)

@@ -5,8 +5,30 @@
     "type": "OpenFOAMTutorialCase",
     "origin": "DNS",
     "solver_stubs": {
-        "p" : {},
-        "U" : {}
+      "p" : [
+        "solver {solver};",
+        "tolerance {tolerance};",
+        "minIter {minIter};",
+        "maxIter {maxIter};",
+        "executor {executor};",
+        "preconditioner {preconditioner};",
+        "smoother none;",
+        "relTol 0.0;",
+        "updateSysMatrix no;",
+        "sort yes;"
+      ],
+      "U" : [
+        "solver {solver};",
+        "tolerance {tolerance};",
+        "minIter {minIter};",
+        "maxIter {maxIter};",
+        "executor {executor};",
+        "preconditioner {preconditioner};",
+        "smoother none;",
+        "relTol 0.0;",
+        "updateSysMatrix yes;",
+        "sort yes;"
+      ]
      }
   },
   "variation": {
