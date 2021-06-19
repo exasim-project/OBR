@@ -108,3 +108,38 @@ class CellsPrepare(CachePrepare):
 
     def clean_up(self):
         pass
+
+class PathPrepare(CachePrepare):
+    """ sets the number of cells or copies from a base to avoid remeshing """
+
+    # TODO factor clearing solvers to separate classes
+
+    def __init__(self, path, fields):
+        super().__init__(path=path)
+        self.cells = Path(path.parent).name
+        self.fields = fields
+
+    def set_up_cache(self):
+        print("setup cache", self.path)
+        cache_case = OpenFOAMCase(self.cache_path)
+        sf.add_libOGL_so(cache_case.controlDict)
+        for field in self.fields:
+            sf.clear_solver_settings(cache_case.fvSolution, field)
+        print("Meshing", cache_case.path)
+        check_output(["blockMesh"], cwd=cache_case.path)
+
+    def set_up(self):
+        target_path = self.path.parent
+        sf.ensure_path(self.cache_path.parent)
+        if not os.path.exists(self.cache_path):
+            print("cache does not exist")
+            check_output(["cp", "-r", self.root, self.cache_path])
+            self.set_up_cache()
+
+        # check if cache_path exists otherwise copy
+        print("copying from", self.cache_path, " to ", target_path)
+        sf.ensure_path(target_path)
+        check_output(["cp", "-r", self.cache_path, target_path])
+
+    def clean_up(self):
+        pass

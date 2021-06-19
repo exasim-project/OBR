@@ -7,7 +7,7 @@ from subprocess import check_output
 from copy import deepcopy
 from OBR.Setter import Setter
 from OBR.MatrixSolver import SolverSetter
-from OBR.EnviromentSetters import CellsPrepare
+from OBR.EnviromentSetters import CellsPrepare, PathPrepare
 
 from . import setFunctions as sf
 
@@ -27,6 +27,22 @@ class CellSetter(Setter):
     @property
     def cache_path(self):
         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+
+class PathSetter(Setter):
+    def __init__(self, base_path, case_name, root, fields):
+        super().__init__(
+            base_path=base_path,
+            variation_name="{}".format(""),
+            case_name=case_name,
+        )
+        prepare_mesh = PathPrepare(self.path, fields)
+        prepare_mesh.root = root.path
+        super().set_enviroment_setter(prepare_mesh)
+
+    @property
+    def cache_path(self):
+        return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+
 
 
 def construct(
@@ -84,6 +100,15 @@ class OpenFOAMTutorialCase:
 
         foam_tutorials = Path(os.environ["FOAM_TUTORIALS"])
         return Path(foam_tutorials / self.tutorial_domain / self.solver / self.case)
+
+class TestCase:
+    def __init__(self, path, solver):
+        self.path_ = path
+        self.solver = solver
+
+    @property
+    def path(self):
+        return Path(self.path_)
 
 
 def combine(setters):

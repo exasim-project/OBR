@@ -46,7 +46,7 @@ from OBR import CaseRunner as cr
 from OBR import ResultsAggregator as ra
 
 
-def resolution_study(test_path, solver, arguments, runner, fields):
+def box_turb_resolution_study(test_path, solver, arguments, runner, fields):
 
     number_of_cells = []
 
@@ -72,6 +72,38 @@ def resolution_study(test_path, solver, arguments, runner, fields):
     )
 
     parameter_study.build_parameter_study()
+
+def istm_resolution_study(test_path, solver, arguments, runner, fields):
+
+    number_of_cells = []
+
+    if arguments["--small-cases"]:
+        number_of_cells += [8, 16]
+
+    if arguments["--large-cases"]:
+        number_of_cells += [32, 64]
+
+    if arguments["--very-large-cases"]:
+        number_of_cells += [128, 256]
+
+    test_cases_dir = "/home/kit/scc/nq7776/code/sccistm/cases_SCC/"
+    solver_name = "simpleFoam"
+
+    cases = ["K23IS_FbmNaca4412V9S_R1000000_A50_Muncontrolled",
+            "K23IS_FbmNaca4412V9S_R100000_A50_Muncontrolled",
+            "K23IS_FbmNaca4412V9S_R4000000_A50_Muncontrolled"]
+
+    cell_setters = [
+        ps.PathSetter(test_path, case_name, ps.TestCase(test_cases_dir + "/" + case_name, solver_name), fields)
+        for case_name in cases
+    ]
+
+    parameter_study = ps.ParameterStudy(
+        test_path, results, [cell_setters, solver], runner
+    )
+
+    parameter_study.build_parameter_study()
+
 
 
 if __name__ == "__main__":
@@ -111,4 +143,4 @@ if __name__ == "__main__":
         solver="dnsFoam", results_aggregator=results, arguments=arguments
     )
 
-    resolution_study(test_path, solvers, arguments, runner, fields)
+    box_turb_resolution_study(test_path, solvers, arguments, runner, fields)
