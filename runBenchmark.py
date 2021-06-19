@@ -19,15 +19,13 @@
         --mpi_max_procs=<n>  Set the number of mpi processes [default: 1].
         --field=FIELD       Set the field name to apply setup
         --test-run          Run every case only once [default: False]
-        --small-cases       Include small cases [default: False].
-        --large-cases       Include large cases [default: False].
-        --very-large-cases  Include large cases [default: False].
         --min_runs=<n>      Number of applications runs [default: 5].
         --time_runs=<s>     Time to applications runs [default: 60].
         --fail_on_error     exit benchmark script when a run fails [default: False].
         --continue_on_failure continue running benchmark and timing even on failure [default: False].
         --project_path=<folder> Path to library which is benchmarked
         --include_log       Include log in report files [default: True].
+        --parameters=<json> pass the parameters for given parameter study
 """
 
 from docopt import docopt
@@ -36,6 +34,7 @@ from pathlib import Path
 import os
 import shutil
 import datetime
+import json
 from itertools import product, starmap
 from functools import partial
 
@@ -45,65 +44,48 @@ from OBR import ParameterStudy as ps
 from OBR import CaseRunner as cr
 from OBR import ResultsAggregator as ra
 
+# [{
+#   openfoam:{
+#      solver:dnsFoam,
+#      case: boxTurb16
+#      type: OpenFOAMTutorialCase
+#      origin: DNS
+#      solver_stubs: {
+#      p : {},
+#      U : {}
+#      }
+#   },
+#   variation: {
+#       name:CellSetter,
+#       range: [8, 16, 32, 64]
+# }
+#
+# }]
 
-def box_turb_resolution_study(test_path, solver, arguments, runner, fields):
 
-    number_of_cells = []
+def parameter_study(test_path, matrix_solver, runner, fields, params):
 
-    if arguments["--small-cases"]:
-        number_of_cells += [8, 16]
+    parameter_range = params["variation"]["range"]
+    case_name = params["openfoam"]["case"]
 
-    if arguments["--large-cases"]:
-        number_of_cells += [32, 64]
-
-    if arguments["--very-large-cases"]:
-        number_of_cells += [128, 256]
-
-    case_name = "boxTurb16"
-    root = ps.OpenFOAMTutorialCase("DNS", "dnsFoam", case_name)
+    root_case = ps.OpenFOAMTutorialCase(
+        params["openfoam"]["origin"], runner.of_solver, case_name
+    )
 
     cell_setters = [
-        ps.CellSetter(test_path, num_cells, case_name, root, fields)
-        for num_cells in number_of_cells
+        ps.CellSetter(test_path, p, case_name, root_case, fields)
+        for p in parameter_range
     ]
 
     parameter_study = ps.ParameterStudy(
-        test_path, results, [cell_setters, solver], runner
+        test_path,
+        results,
+        [cell_setters, matrix_solver],
+        runner,
+        params["openfoam"]["solver_stubs"],
     )
 
     parameter_study.build_parameter_study()
-
-def istm_resolution_study(test_path, solver, arguments, runner, fields):
-
-    number_of_cells = []
-
-    if arguments["--small-cases"]:
-        number_of_cells += [8, 16]
-
-    if arguments["--large-cases"]:
-        number_of_cells += [32, 64]
-
-    if arguments["--very-large-cases"]:
-        number_of_cells += [128, 256]
-
-    test_cases_dir = "/home/kit/scc/nq7776/code/sccistm/cases_SCC/"
-    solver_name = "simpleFoam"
-
-    cases = ["K23IS_FbmNaca4412V9S_R1000000_A50_Muncontrolled",
-            "K23IS_FbmNaca4412V9S_R100000_A50_Muncontrolled",
-            "K23IS_FbmNaca4412V9S_R4000000_A50_Muncontrolled"]
-
-    cell_setters = [
-        ps.PathSetter(test_path, case_name, ps.TestCase(test_cases_dir + "/" + case_name, solver_name), fields)
-        for case_name in cases
-    ]
-
-    parameter_study = ps.ParameterStudy(
-        test_path, results, [cell_setters, solver], runner
-    )
-
-    parameter_study.build_parameter_study()
-
 
 
 if __name__ == "__main__":
@@ -133,14 +115,26 @@ if __name__ == "__main__":
         ),
     )
     # just unpack the solver setters to a list
-    solvers = map(lambda x: x[1], valid_solvers_tuples)
+    matrix_solver = map(lambda x: x[1], valid_solvers_tuples)
 
     results = ra.Results(
         arguments.get("--report", "report.csv"),
         fields,
     )
+
+    # read file
+    with open(
+        arguments.get("--parameters", "benchmark.json"), "r"
+    ) as parameters_handle:
+        parameters_str = parameters_handle.read()
+
+    # parse file
+    parameter_study_arguments = json.loads(parameters_str)
+
     runner = cr.CaseRunner(
-        solver="dnsFoam", results_aggregator=results, arguments=arguments
+        solver=parameter_study_arguments["openfoam"]["solver"],
+        results_aggregator=results,
+        arguments=arguments,
     )
 
-    box_turb_resolution_study(test_path, solvers, arguments, runner, fields)
+    parameter_study(test_path, matrix_solver, runner, fields, parameter_study_arguments)

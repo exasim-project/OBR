@@ -1,0 +1,16 @@
+{
+  "openfoam":{
+    "solver":"dnsFoam",
+    "case": "boxTurb16",
+    "type": "OpenFOAMTutorialCase",
+    "origin": "DNS",
+    "solver_stubs": {
+        "p" : {},
+        "U" : {}
+     }
+  },
+  "variation": {
+      "name":"CellSetter",
+      "range": [8, 16, 32, 64]
+  }
+}

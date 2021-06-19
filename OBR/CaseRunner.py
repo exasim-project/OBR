@@ -10,7 +10,7 @@ class CaseRunner:
     def __init__(self, solver, results_aggregator, arguments):
         self.results = results_aggregator
         self.arguments = arguments
-        self.solver = solver
+        self.of_solver = solver
         self.time_runs = int(arguments["--time_runs"])
         self.min_runs = int(arguments["--min_runs"])
         self.continue_on_failure = arguments["--continue_on_failure"]
@@ -52,7 +52,7 @@ class CaseRunner:
                 start = datetime.datetime.now()
                 success = 0
                 try:
-                    ret = check_output([self.solver], cwd=case.path, timeout=15 * 60)
+                    ret = check_output([self.of_solver], cwd=case.path, timeout=15 * 60)
                     success = 1
                 except Exception as e:
                     print(e)

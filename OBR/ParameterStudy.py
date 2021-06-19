@@ -28,6 +28,7 @@ class CellSetter(Setter):
     def cache_path(self):
         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
 
+
 class PathSetter(Setter):
     def __init__(self, base_path, case_name, root, fields):
         super().__init__(
@@ -42,7 +43,6 @@ class PathSetter(Setter):
     @property
     def cache_path(self):
         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
-
 
 
 def construct(
@@ -101,6 +101,7 @@ class OpenFOAMTutorialCase:
         foam_tutorials = Path(os.environ["FOAM_TUTORIALS"])
         return Path(foam_tutorials / self.tutorial_domain / self.solver / self.case)
 
+
 class TestCase:
     def __init__(self, path, solver):
         self.path_ = path
@@ -125,11 +126,12 @@ class ParameterStudy:
     a set of cases is defined via
     """
 
-    def __init__(self, test_path, results_aggregator, setters, runner):
+    def __init__(self, test_path, results_aggregator, setters, runner, solver_stubs):
         self.test_path = test_path
         self.results_aggregator = results_aggregator
         self.setters = setters
         self.runner = runner
+        self.stubs = solver_stubs
 
     def build_parameter_study(self):
         # test_path, results, executor, setter, arguments):
