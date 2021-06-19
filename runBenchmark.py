@@ -44,26 +44,6 @@ from OBR import ParameterStudy as ps
 from OBR import CaseRunner as cr
 from OBR import ResultsAggregator as ra
 
-# [{
-#   openfoam:{
-#      solver:dnsFoam,
-#      case: boxTurb16
-#      type: OpenFOAMTutorialCase
-#      origin: DNS
-#      solver_stubs: {
-#      p : {
-#
-# },
-#      U : {}
-#      }
-#   },
-#   variation: {
-#       name:CellSetter,
-#       range: [8, 16, 32, 64]
-# }
-#
-# }]
-
 
 def parameter_study(test_path, matrix_solver, runner, fields, params):
 
@@ -76,13 +56,17 @@ def parameter_study(test_path, matrix_solver, runner, fields, params):
         params["openfoam"]["origin"], runner.of_solver, case_name
     )
 
-    cell_setters = [
-        ps.CellSetter(test_path, p, case_name, root_case, fields)
+    # TODO make changing of boundary conditions non default
+    # in CellSetter non default
+    case_paths = [
+        getattr(ps, params["variation"]["type"])(
+            test_path, p, case_name, root_case, fields
+        )
         for p in parameter_range
     ]
 
     parameter_study = ps.ParameterStudy(
-        test_path, results, [cell_setters, matrix_solver], runner
+        test_path, results, [case_paths, matrix_solver], runner
     )
 
     parameter_study.build_parameter_study()

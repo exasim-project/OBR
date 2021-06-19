@@ -7,11 +7,12 @@ from subprocess import check_output
 from copy import deepcopy
 from OBR.Setter import Setter
 from OBR.MatrixSolver import SolverSetter
-from OBR.EnviromentSetters import CellsPrepare, PathPrepare
+from OBR.EnviromentSetters import CellsPrepare, PathPrepare, RefineMeshPrepare
 
 from . import setFunctions as sf
 
 
+# TODO rename to remesh
 class CellSetter(Setter):
     def __init__(self, base_path, cells, case_name, root, fields):
         self.cells = cells
@@ -21,6 +22,22 @@ class CellSetter(Setter):
             case_name=case_name,
         )
         prepare_mesh = CellsPrepare(self.path, fields)
+        prepare_mesh.root = root.path
+        super().set_enviroment_setter(prepare_mesh)
+
+    @property
+    def cache_path(self):
+        return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+
+
+class refineMesh(Setter):
+    def __init__(self, base_path, refinements, case_name, root, fields):
+        super().__init__(
+            base_path=base_path,
+            variation_name="{}".format(""),
+            case_name=case_name,
+        )
+        prepare_mesh = RefineMeshPrepare(self.path, refinements, fields)
         prepare_mesh.root = root.path
         super().set_enviroment_setter(prepare_mesh)
 

@@ -32,7 +32,7 @@
      }
   },
   "variation": {
-      "name":"CellSetter",
+      "type":"CellSetter",
       "range": [8, 16, 32, 64]
   }
 }
