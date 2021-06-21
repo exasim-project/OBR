@@ -32,9 +32,11 @@ class CellSetter(Setter):
 
 class refineMesh(Setter):
     def __init__(self, base_path, refinements, case_name, root, fields):
+        # TODO FIXME
+        self.cells=refinements
         super().__init__(
             base_path=base_path,
-            variation_name="{}".format(""),
+            variation_name="{}".format(refinements),
             case_name=case_name,
         )
         prepare_mesh = RefineMeshPrepare(self.path, refinements, fields)
