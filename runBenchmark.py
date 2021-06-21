@@ -52,7 +52,7 @@ def parameter_study(test_path, matrix_solver, runner, fields, params):
     # TODO get case_name from Setter
     case_name = params["openfoam"]["case"]
 
-    root_case = ps.OpenFOAMTutorialCase(
+    root_case = getattr(ps, params["openfoam"]["type"])(
         params["openfoam"]["origin"], runner.of_solver, case_name
     )
 

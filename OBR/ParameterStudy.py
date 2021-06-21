@@ -120,6 +120,13 @@ class OpenFOAMTutorialCase:
         return Path(foam_tutorials / self.tutorial_domain / self.solver / self.case)
 
 
+class OpenFOAMExternalCase:
+    def __init__(self, path, solver, case):
+        self.path = path
+        self.solver = solver
+        self.case = case
+
+
 class TestCase:
     def __init__(self, path, solver):
         self.path_ = path
