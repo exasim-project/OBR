@@ -64,11 +64,25 @@ class CachePrepare(DefaultPrepareEnviroment):
         case_name = self.path.name
         return base_path / (variant_name + "-cache") / case_name
 
+    def set_up(self):
+        target_path = self.path.parent
+        sf.ensure_path(self.cache_path.parent)
+        if not os.path.exists(self.cache_path):
+            print("cache does not exist")
+            check_output(["cp", "-r", self.root, self.cache_path])
+            self.set_up_cache()
+
+        # check if cache_path exists otherwise copy
+        print("copying from", self.cache_path, " to ", target_path)
+        sf.ensure_path(target_path)
+        check_output(["cp", "-r", self.cache_path, target_path])
+
 
 class PrepareControlDict:
     """ prepares the control dict of a case """
 
     def __init__(self, case, cell_ratio, controlDictArgs):
+        """ cell_ratio """
         self.case = case
         self.cell_ratio = cell_ratio
         self.controlDictArgs = controlDictArgs
@@ -77,7 +91,7 @@ class PrepareControlDict:
         sf.add_libOGL_so(self.case.controlDict)
 
         # adapt deltaT for instationary cases
-        if not stationary:
+        if not self.controlDictArgs["stationary"]:
             deltaT = sf.read_deltaT(self.case.controlDict)
             new_deltaT = deltaT / self.cell_ratio
             sf.set_deltaT(self.case.controlDict, new_deltaT)
@@ -151,35 +165,33 @@ class RefineMeshPrepare(CachePrepare):
 
     # TODO factor clearing solvers to separate classes
 
-    def __init__(self, path, fields, meshArgs, controlDictArgs):
+    def __init__(self, path, refinements, fields, meshArgs, controlDictArgs):
         super().__init__(path=path)
         self.cells = Path(path.parent).name
         self.fields = fields
         self.refinements = refinements
+        self.meshArgs = meshArgs
+        self.controlDictArgs = controlDictArgs
+
+    def set_up_cacheMesh(self):
+        print("setup cache", self.path)
+        self.cache_case = OpenFOAMCase(self.cache_path)
+
+        print("Refining Mesh", self.cache_case.path)
+        for _ in range(self.refinements):
+            check_output(["refineMesh"], cwd=self.cache_case.path)
 
     def set_up_cache(self):
-        print("setup cache", self.path)
-        cache_case = OpenFOAMCase(self.cache_path)
-        sf.add_libOGL_so(cache_case.controlDict)
+        self.set_up_cacheMesh()
+
+        factor = 2 ** self.meshArgs["dimensions"]
+
+        PrepareControlDict(
+            self.cache_case, max(1, self.refinements * factor), self.controlDictArgs
+        ).set_up()
+
         for field in self.fields:
-            sf.clear_solver_settings(cache_case.fvSolution, field)
-        print("Meshing", cache_case.path)
-        for _ in range(self.refinements):
-            print("refininigMesh")
-            check_output(["refineMesh"], cwd=cache_case.path)
-
-    def set_up(self):
-        target_path = self.path.parent
-        sf.ensure_path(self.cache_path.parent)
-        if not os.path.exists(self.cache_path):
-            print("cache does not exist")
-            check_output(["cp", "-r", self.root, self.cache_path])
-            self.set_up_cache()
-
-        # check if cache_path exists otherwise copy
-        print("copying from", self.cache_path, " to ", target_path)
-        sf.ensure_path(target_path)
-        check_output(["cp", "-r", self.cache_path, target_path])
+            sf.clear_solver_settings(self.cache_case.fvSolution, field)
 
     def clean_up(self):
         pass
@@ -187,8 +199,6 @@ class RefineMeshPrepare(CachePrepare):
 
 class PathPrepare(CachePrepare):
     """ sets the number of cells or copies from a base to avoid remeshing """
-
-    # TODO factor clearing solvers to separate classes
 
     def __init__(self, path, fields):
         super().__init__(path=path)
@@ -203,19 +213,6 @@ class PathPrepare(CachePrepare):
             sf.clear_solver_settings(cache_case.fvSolution, field)
         print("Meshing", cache_case.path)
         check_output(["blockMesh"], cwd=cache_case.path)
-
-    def set_up(self):
-        target_path = self.path.parent
-        sf.ensure_path(self.cache_path.parent)
-        if not os.path.exists(self.cache_path):
-            print("cache does not exist")
-            check_output(["cp", "-r", self.root, self.cache_path])
-            self.set_up_cache()
-
-        # check if cache_path exists otherwise copy
-        print("copying from", self.cache_path, " to ", target_path)
-        sf.ensure_path(target_path)
-        check_output(["cp", "-r", self.cache_path, target_path])
 
     def clean_up(self):
         pass

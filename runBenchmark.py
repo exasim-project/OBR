@@ -60,7 +60,13 @@ def parameter_study(test_path, matrix_solver, runner, fields, params):
     # in CellSetter non default
     case_paths = [
         getattr(ps, params["variation"]["type"])(
-            test_path, p, case_name, root_case, fields, params["variation"]
+            test_path,
+            p,
+            case_name,
+            root_case,
+            fields,
+            params["variation"],
+            params["openfoam"]["controlDict"],
         )
         for p in parameter_range
     ]
@@ -88,7 +94,7 @@ if __name__ == "__main__":
     # for do a partial apply field="p"
     test_path = Path(arguments.get("--folder", "Test"))
 
-    # read file
+    # read benchmark description file
     with open(
         arguments.get("--parameters", "benchmark.json"), "r"
     ) as parameters_handle:
@@ -123,6 +129,7 @@ if __name__ == "__main__":
             product(solver, domains, executor, preconditioner),
         ),
     )
+
     # just unpack the solver setters to a list
     matrix_solver = map(lambda x: x[1], valid_solvers_tuples)
 

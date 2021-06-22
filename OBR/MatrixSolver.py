@@ -42,7 +42,6 @@ class SolverSetter(Setter):
 
     def set_preconditioner(self, domain, preconditioner):
         avail_precond = self.avail_domain_handler[domain]["preconditioner"]
-        print(avail_precond)
         self.preconditioner = avail_precond[preconditioner]
 
         self.add_property(self.preconditioner.name)

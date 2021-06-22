@@ -14,6 +14,7 @@ from . import setFunctions as sf
 class Remesh(Setter):
     def __init__(self, base_path, refinement, case_name, root, fields):
         self.cells = refinement
+        self.root = root
         super().__init__(
             base_path=base_path,
             variation_name="{}".format(refinement),
@@ -23,7 +24,7 @@ class Remesh(Setter):
     def set_mesh_modifier(self, remesh):
 
         prepare_mesh = remesh
-        prepare_mesh.root = root.path
+        prepare_mesh.root = self.root.path
         super().set_enviroment_setter(prepare_mesh)
 
     @property
@@ -77,7 +78,7 @@ class RefineMesh(Remesh):
     ):
         super().__init__(
             base_path,
-            cells,
+            refinements,
             case_name,
             root,
             fields,
