@@ -5,11 +5,7 @@ from pathlib import Path
 
 
 class Setter(OpenFOAMCase):
-    """base class to set case properties
-
-    base_path - 
-    
-    """
+    """base class to set case properties"""
 
     def __init__(
         self,
@@ -38,6 +34,7 @@ class Setter(OpenFOAMCase):
         self.path_ = (self.base_path, self.name, self.case_name)
 
     def set_enviroment_setter(self, enviroment_setter):
+        # TODO support a list of enviroment setters
         self.enviroment_setter = enviroment_setter
         self.enviroment_setter.path = self.path
 

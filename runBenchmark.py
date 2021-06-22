@@ -60,7 +60,7 @@ def parameter_study(test_path, matrix_solver, runner, fields, params):
     # in CellSetter non default
     case_paths = [
         getattr(ps, params["variation"]["type"])(
-            test_path, p, case_name, root_case, fields
+            test_path, p, case_name, root_case, fields, params["variation"]
         )
         for p in parameter_range
     ]

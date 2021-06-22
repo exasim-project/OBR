@@ -53,12 +53,30 @@ def set_end_time(controlDict, endTime):
     sed(controlDict, "endTime[ ]*[0-9.]*", "endTime {}".format(endTime))
 
 
+def read_block(blockMeshDict):
+    import re
+
+    ret = check_output(["grep", "hex", blockMeshDict]).decode("utf-8")
+    num_cells = re.findall("[(][0-9 ]*[)]", ret)[1]
+    return list(map(int, re.findall("[0-9]+", num_cells)))
+
+
+def read_deltaT(controlDict):
+    ret = (
+        check_output(["grep", "deltaT", controlDict])
+        .split()[-1]
+        .decode("utf-8")
+        .replace(";", "")
+    )
+    return float(ret)
+
+
 def set_deltaT(controlDict, deltaT):
     sed(controlDict, "deltaT[ ]*[0-9.]*", "deltaT {}".format(deltaT))
 
 
-def set_writeInterval(controlDict):
-    sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval 10.0")
+def set_writeInterval(controlDict, writeInterval):
+    sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
 
 
 def clear_solver_settings(fvSolution, field):

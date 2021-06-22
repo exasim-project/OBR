@@ -65,33 +65,108 @@ class CachePrepare(DefaultPrepareEnviroment):
         return base_path / (variant_name + "-cache") / case_name
 
 
+class PrepareControlDict:
+    """ prepares the control dict of a case """
+
+    def __init__(self, case, cell_ratio, controlDictArgs):
+        self.case = case
+        self.cell_ratio = cell_ratio
+        self.controlDictArgs = controlDictArgs
+
+    def set_up(self):
+        sf.add_libOGL_so(self.case.controlDict)
+
+        # adapt deltaT for instationary cases
+        if not stationary:
+            deltaT = sf.read_deltaT(self.case.controlDict)
+            new_deltaT = deltaT / self.cell_ratio
+            sf.set_deltaT(self.case.controlDict, new_deltaT)
+        else:
+            new_deltaT = 1
+        endTime = new_deltaT * self.controlDictArgs["timeSteps"]
+
+        sf.set_end_time(self.case.controlDict, endTime)
+        sf.set_writeInterval(self.case.controlDict, 10000)
+
+
 class CellsPrepare(CachePrepare):
     """ sets the number of cells or copies from a base to avoid remeshing """
 
     # TODO factor clearing solvers to separate classes
 
-    def __init__(self, path, fields):
+    def __init__(self, path, fields, meshArgs, controlDictArgs):
         super().__init__(path=path)
         self.cells = Path(path.parent).name
         self.fields = fields
+        self.meshArgs = meshArgs
+        self.controlDictArgs = controlDictArgs
+
+    def set_up_cacheMesh(self):
+        from copy import deepcopy
+
+        print("setup cache", self.path)
+        self.cache_case = OpenFOAMCase(self.cache_path)
+
+        orig_cells = sf.read_block(self.cache_case.blockMeshDict)
+        orig_cells_str = " ".join(map(str, deepcopy(orig_cells)))
+
+        new_cells = "{} {} {}".format(self.cells, self.cells, self.cells)
+        self.cell_ratio = float(self.cells) / orig_cells[0]
+        sf.set_cells(self.cache_case.blockMeshDict, orig_cells_str, new_cells)
+
+        print("Meshing", self.cache_case.path)
+        check_output(["blockMesh"], cwd=self.cache_case.path)
+
+    def set_up_cache(self):
+
+        # Mesh part
+        self.set_up_cacheMesh()
+
+        PrepareControlDict(
+            self.cache_case, self.cell_ratio, self.controlDictArgs
+        ).set_up()
+
+        for field in self.fields:
+            sf.clear_solver_settings(self.cache_case.fvSolution, field)
+
+    def set_up(self):
+        target_path = self.path.parent
+        sf.ensure_path(self.cache_path.parent)
+        if not os.path.exists(self.cache_path):
+            print("cache does not exist")
+            check_output(["cp", "-r", self.root, self.cache_path])
+            self.set_up_cache()
+
+        # check if cache_path exists otherwise copy
+        print("copying from", self.cache_path, " to ", target_path)
+        sf.ensure_path(target_path)
+        check_output(["cp", "-r", self.cache_path, target_path])
+
+    def clean_up(self):
+        pass
+
+
+class RefineMeshPrepare(CachePrepare):
+    """ sets the number of cells or copies from a base to avoid remeshing """
+
+    # TODO factor clearing solvers to separate classes
+
+    def __init__(self, path, fields, meshArgs, controlDictArgs):
+        super().__init__(path=path)
+        self.cells = Path(path.parent).name
+        self.fields = fields
+        self.refinements = refinements
 
     def set_up_cache(self):
         print("setup cache", self.path)
         cache_case = OpenFOAMCase(self.cache_path)
-        deltaT = 0.1 * 16 / float(self.cells)
-        new_cells = "{} {} {}".format(self.cells, self.cells, self.cells)
-        sf.set_cells(cache_case.blockMeshDict, "16 16 16", new_cells)
-        sf.set_mesh_boundary_type_to_wall(cache_case.blockMeshDict)
-        sf.set_p_init_value(cache_case.init_p)
-        sf.set_U_init_value(cache_case.init_U)
         sf.add_libOGL_so(cache_case.controlDict)
-        sf.set_end_time(cache_case.controlDict, 10 * deltaT)
-        sf.set_deltaT(cache_case.controlDict, deltaT)
-        sf.set_writeInterval(cache_case.controlDict)
         for field in self.fields:
             sf.clear_solver_settings(cache_case.fvSolution, field)
         print("Meshing", cache_case.path)
-        check_output(["blockMesh"], cwd=cache_case.path)
+        for _ in range(self.refinements):
+            print("refininigMesh")
+            check_output(["refineMesh"], cwd=cache_case.path)
 
     def set_up(self):
         target_path = self.path.parent
@@ -128,45 +203,6 @@ class PathPrepare(CachePrepare):
             sf.clear_solver_settings(cache_case.fvSolution, field)
         print("Meshing", cache_case.path)
         check_output(["blockMesh"], cwd=cache_case.path)
-
-    def set_up(self):
-        target_path = self.path.parent
-        sf.ensure_path(self.cache_path.parent)
-        if not os.path.exists(self.cache_path):
-            print("cache does not exist")
-            check_output(["cp", "-r", self.root, self.cache_path])
-            self.set_up_cache()
-
-        # check if cache_path exists otherwise copy
-        print("copying from", self.cache_path, " to ", target_path)
-        sf.ensure_path(target_path)
-        check_output(["cp", "-r", self.cache_path, target_path])
-
-    def clean_up(self):
-        pass
-
-
-class RefineMeshPrepare(CachePrepare):
-    """ sets the number of cells or copies from a base to avoid remeshing """
-
-    # TODO factor clearing solvers to separate classes
-
-    def __init__(self, path, refinements, fields):
-        super().__init__(path=path)
-        self.cells = Path(path.parent).name
-        self.fields = fields
-        self.refinements = refinements
-
-    def set_up_cache(self):
-        print("setup cache", self.path)
-        cache_case = OpenFOAMCase(self.cache_path)
-        sf.add_libOGL_so(cache_case.controlDict)
-        for field in self.fields:
-            sf.clear_solver_settings(cache_case.fvSolution, field)
-        print("Meshing", cache_case.path)
-        for _ in range(self.refinements):
-            print("refininigMesh")
-            check_output(["refineMesh"], cwd=cache_case.path)
 
     def set_up(self):
         target_path = self.path.parent
