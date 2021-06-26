@@ -1,0 +1,46 @@
+{
+  "OBR": {
+    "version": "0.0.0"
+  },
+  "openfoam": {
+    "solver": "simpleFoam",
+    "case": "airFoil2D",
+    "type": "OpenFOAMTutorialCase",
+    "origin": "incompressible",
+    "solver_stubs": {
+      "p" : [
+        "solver {solver};",
+        "tolerance {tolerance};",
+        "minIter {minIter};",
+        "maxIter {maxIter};",
+        "executor {executor};",
+        "preconditioner {preconditioner};",
+        "smoother none;",
+        "relTol 0.0;",
+        "updateSysMatrix no;",
+        "sort yes;"
+      ],
+      "U" : [
+        "solver {solver};",
+        "tolerance {tolerance};",
+        "minIter {minIter};",
+        "maxIter {maxIter};",
+        "executor {executor};",
+        "preconditioner {preconditioner};",
+        "smoother none;",
+        "relTol 0.0;",
+        "updateSysMatrix yes;",
+        "sort yes;"
+      ]
+    },
+    "controlDict": {
+      "stationary": true,
+      "timeSteps": 10
+    }
+  },
+  "variation": {
+    "type": "RefineMesh",
+    "dimensions": 2,
+    "range": [0, 1, 2, 3]
+  }
+}
