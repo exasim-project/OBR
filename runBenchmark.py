@@ -26,6 +26,7 @@
         --project_path=<folder> Path to library which is benchmarked
         --include_log       Include log in report files [default: True].
         --parameters=<json> pass the parameters for given parameter study
+        --renumber          Renumber mesh before running [default: False]
 """
 
 from docopt import docopt
