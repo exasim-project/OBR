@@ -148,7 +148,7 @@ class CellsPrepare(CachePrepare):
         sf.ensure_path(self.cache_path.parent)
         if not os.path.exists(self.cache_path):
             print("cache does not exist")
-            check_output(["cp", "-r", self.root, self.cache_path])
+            check_output(["cp", "-r", Path(self.root), self.cache_path])
             self.set_up_cache()
 
         # check if cache_path exists otherwise copy
