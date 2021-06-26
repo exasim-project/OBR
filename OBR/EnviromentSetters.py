@@ -179,7 +179,7 @@ class RefineMeshPrepare(CachePrepare):
 
         print("Refining Mesh", self.cache_case.path)
         for _ in range(self.refinements):
-            check_output(["refineMesh"], cwd=self.cache_case.path)
+            check_output(["refineMesh", "-overwrite"], cwd=self.cache_case.path)
 
     def set_up_cache(self):
         self.set_up_cacheMesh()
