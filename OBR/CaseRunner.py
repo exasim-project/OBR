@@ -69,13 +69,8 @@ class CaseRunner:
                         log_path = case.path / "log"
                         log_path = log_path.with_suffix("." + str(process))
                         log_str = ret.decode("utf-8")
-                        if self.include_log:
-                            self.results.write_comment(
-                                ["Log " + str(log_path)], prefix="LOG: "
-                            )
-                            self.results.write_comment(
-                                log_str.split("\n"), prefix="LOG: "
-                            )
+                        with open(log_path, "w") as log_handle:
+                            log_handle.write(log_str)
                         keys = {
                             "{}:  Solving for {}".format(s, f): [
                                 "init_residual",
