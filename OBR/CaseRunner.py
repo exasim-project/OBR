@@ -29,10 +29,10 @@ class CaseRunner:
         processes = case.get_processes()
         print("start runs processes", processes)
         for process in processes:
-            threads = 1
             try:
                 threads = case.others[0].domain.executor.enviroment_setter.set_up()
             except Exception as e:
+                print(e)
                 pass
             self.results.set_case(
                 domain=case.query_attr("domain", "").name,
@@ -42,6 +42,8 @@ class CaseRunner:
                 resolution=case.query_attr("cells", ""),
                 processes=threads,
             )
+            # warm up run
+
             accumulated_time = 0
             number_of_runs = 0
             ret = ""

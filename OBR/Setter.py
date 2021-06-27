@@ -53,6 +53,9 @@ class Setter(OpenFOAMCase):
             return self.processes
         else:
             try:
+                # FIXME
+                self.others[0].domain.executor.enviroment_setter.current_state = 0
+
                 return self.others[0].domain.executor.enviroment_setter.processes
             except Exception as e:
                 print("Exception in get_processes", e)
