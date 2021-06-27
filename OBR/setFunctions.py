@@ -50,8 +50,7 @@ def add_libOGL_so(controlDict):
 
 
 def set_end_time(controlDict, endTime):
-    sed(controlDict, "endTime[ ]*[0-9.]*", "endTime {}".format(endTime))
-
+    sed(controlDict, "endTime[ ]*[0-9.]+;", "endTime {};".format(endTime))
 
 def read_block(blockMeshDict):
     import re
