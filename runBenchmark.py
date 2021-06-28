@@ -109,6 +109,8 @@ if __name__ == "__main__":
         fields,
     )
 
+    results.write_comment(["{'OBR_VERSION': '0.0.0'}"])
+
     runner = cr.CaseRunner(
         solver=parameter_study_arguments["openfoam"]["solver"],
         results_aggregator=results,
