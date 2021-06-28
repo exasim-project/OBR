@@ -48,9 +48,16 @@ def add_libOGL_so(controlDict):
     with open(controlDict, "a") as ctrlDict_handle:
         ctrlDict_handle.write('libs ("libOGL.so");')
 
+def get_end_time(controlDict):
+    import re
+    ret = check_output(["grep", "endTime", controlDict])
+    ret = ret.decode("utf-8").replace(";","").replace("\n","")
+    ret = re.compile(r"[.0-9]+").findall(ret)
+    return ret[0]
+
 
 def set_end_time(controlDict, endTime):
-    sed(controlDict, "endTime[ ]*[0-9.]+;", "endTime {};".format(endTime))
+    sed(controlDict, "endTime[ ]*[0-9.]*;", "endTime {};".format(endTime))
 
 def read_block(blockMeshDict):
     import re
