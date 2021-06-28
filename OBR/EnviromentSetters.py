@@ -110,6 +110,8 @@ class CellsPrepare(CachePrepare):
         super().__init__(path=path)
         self.cells = Path(path.parent).name
         self.fields = fields
+        print("meshArgs", meshArgs)
+
         self.meshArgs = meshArgs
         self.controlDictArgs = controlDictArgs
 
@@ -128,6 +130,9 @@ class CellsPrepare(CachePrepare):
 
         print("Meshing", self.cache_case.path)
         check_output(["blockMesh"], cwd=self.cache_case.path)
+
+        if self.meshArgs["renumberMesh"]:
+            check_output(["renumberMesh", "-overwrite"], cwd=self.cache_case.path)
 
     def set_up_cache(self):
 

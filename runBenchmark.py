@@ -104,12 +104,21 @@ if __name__ == "__main__":
     # parse file
     parameter_study_arguments = json.loads(parameters_str)
 
+    renumber = arguments.get("--renumber", False)
+
+    parameter_study_arguments["variation"]["renumberMesh"] = renumber
+
     results = ra.Results(
         arguments.get("--report", "report.csv"),
         fields,
     )
 
-    results.write_comment(["{'OBR_VERSION': '0.0.0'}"])
+    metadata = {
+        "OBR_VERSION": "0.0.1",
+        "renumbered": renumber,
+    }
+
+    results.write_comment([str(metadata)])
 
     runner = cr.CaseRunner(
         solver=parameter_study_arguments["openfoam"]["solver"],
