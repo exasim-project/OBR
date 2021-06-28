@@ -21,8 +21,8 @@ class Results:
                 "preconditioner",
                 "resolution",
                 "processes",
+                "setup_time",
                 "run_time",
-                "success",
                 "number_of_iterations",
             ]
         )
@@ -56,9 +56,9 @@ class Results:
             ]
         )
 
-    def add(self, run, success, iterations):
+    def add(self, warm_up, run, iterations):
         """ Add results and success status of a run and write to file """
-        outp = self.current_col_vals + [run, success, iterations]
+        outp = self.current_col_vals + [warm_up, run, iterations]
         outps = ",".join(map(str, outp))
         print("writing to report", outps)
         self.report_handle.write(outps + "\n")

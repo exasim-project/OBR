@@ -4,6 +4,7 @@ from subprocess import check_output
 import datetime
 import sys
 import Owls as ow
+import OBR.setFunctions as sf
 
 
 class CaseRunner:
@@ -32,6 +33,7 @@ class CaseRunner:
             try:
                 threads = case.others[0].domain.executor.enviroment_setter.set_up()
             except Exception as e:
+                threads = 1
                 print(e)
                 pass
             self.results.set_case(
@@ -43,7 +45,21 @@ class CaseRunner:
                 processes=threads,
             )
             # warm up run
+            original_end_time = sf.get_end_time(case.controlDict)
 
+            sf.set_end_time(case.controlDict, 0)
+
+            # first warm up run
+            check_output([self.of_solver], cwd=case.path, timeout=15 * 60)
+
+            # timed warmup run
+            start = datetime.datetime.now()
+            check_output([self.of_solver], cwd=case.path, timeout=15 * 60)
+            end = datetime.datetime.now()
+            warm_up = (end-start).total_seconds()
+            sf.set_end_time(case.controlDict, original_end_time)
+
+            # timed runs
             accumulated_time = 0
             number_of_runs = 0
             ret = ""
@@ -77,20 +93,21 @@ class CaseRunner:
                             "{}:  Solving for {}".format(s, f): [
                                 "init_residual",
                                 "final_residual",
-                                "iterations",
+                                "iterations"
                             ]
                             for f, s in zip(
                                 self.results.fields, case.query_attr("get_solver", [])
                             )
                         }
                         ff = ow.read_log_str(log_str, keys)
+                        print(ff)
                         iterations = int(ff["iterations"].sum())
                     except Exception as e:
                         print("Exception processing logs", e)
                         pass
                 run_time = (end - start).total_seconds()  # - self.init_time
                 accumulated_time += run_time
-                self.results.add(run_time, success, iterations)
+                self.results.add(warm_up, run_time, iterations)
         try:
             case.others[0].domain.executor.enviroment_setter.clean_up()
         except Exception as e:
