@@ -40,7 +40,6 @@ from itertools import product, starmap
 from functools import partial
 
 from pathlib import Path
-from OBR import Case as cs
 from OBR import ParameterStudy as ps
 from OBR import CaseRunner as cr
 from OBR import ResultsAggregator as ra
