@@ -61,9 +61,10 @@ class Case:
                 start = datetime.datetime.now()
                 success = 0
                 try:
-                    ret = check_output([self.of_solver], cwd=self.path, timeout=15 * 60)
+                    ret = check_output(
+                        [self.of_solver], cwd=self.path, timeout=15 * 60)
                     success = 1
-                except:
+                except BaseException:
                     break
                 end = datetime.datetime.now()
                 run_time = (end - start).total_seconds()  # - self.init_time
