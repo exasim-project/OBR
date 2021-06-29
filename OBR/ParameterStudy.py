@@ -29,7 +29,8 @@ class Remesh(Setter):
 
     @property
     def cache_path(self):
-        return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+        return self.enviroment_setter.base_path(
+            str(self.cells)) / self.root.case
 
 
 class ReBlockMesh(Remesh):
@@ -108,7 +109,8 @@ class PathSetter(Setter):
 
     @property
     def cache_path(self):
-        return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+        return self.enviroment_setter.base_path(
+            str(self.cells)) / self.root.case
 
 
 def construct(
@@ -139,7 +141,13 @@ def construct(
     if executor == "CUDA":
         executor_inst = CUDAExecutor()
 
-    solver_setter = getattr(ms, solver)(base_path, field, case_name, solver_stubs)
+    solver_setter = getattr(
+        ms,
+        solver)(
+        base_path,
+        field,
+        case_name,
+        solver_stubs)
     try:
         # try to set domain this fails if the domain is not in the map
         # of domains which implement the given solver
@@ -147,7 +155,7 @@ def construct(
         # try to set preconditioner this fails if the preconditioner is not in the map
         # of preconditioners domains which implement the given solver
         solver_setter.set_preconditioner(domain, preconditioner)
-        if not executor in solver_setter.domain.executor_support:
+        if executor not in solver_setter.domain.executor_support:
             0 / 0
         solver_setter.set_executor(executor_inst)
         return True, solver_setter
@@ -166,7 +174,11 @@ class OpenFOAMTutorialCase:
         import os
 
         foam_tutorials = Path(os.environ["FOAM_TUTORIALS"])
-        return Path(foam_tutorials / self.tutorial_domain / self.solver / self.case)
+        return Path(
+            foam_tutorials /
+            self.tutorial_domain /
+            self.solver /
+            self.case)
 
 
 class OpenFOAMExternalCase:

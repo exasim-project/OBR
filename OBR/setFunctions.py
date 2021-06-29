@@ -4,7 +4,8 @@ from subprocess import check_output
 
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):
     """ wrapper around sed """
-    ret = check_output(["sed", "-i", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn])
+    ret = check_output(["sed", "-i", "s/" + in_reg_exp +
+                        "/" + out_reg_exp + "/g", fn])
 
 
 def clean_block_from_file(fn, block_starts, block_end, replace):
@@ -17,7 +18,7 @@ def clean_block_from_file(fn, block_starts, block_end, replace):
             is_start = [block_start in line for block_start in block_starts]
             if any(is_start):
                 skip = True
-            if skip == True and block_end in line:
+            if skip and block_end in line:
                 skip = False
                 f.write(replace)
             if not skip:
@@ -48,16 +49,18 @@ def add_libOGL_so(controlDict):
     with open(controlDict, "a") as ctrlDict_handle:
         ctrlDict_handle.write('libs ("libOGL.so");')
 
+
 def get_end_time(controlDict):
     import re
     ret = check_output(["grep", "endTime", controlDict])
-    ret = ret.decode("utf-8").replace(";","").replace("\n","")
+    ret = ret.decode("utf-8").replace(";", "").replace("\n", "")
     ret = re.compile(r"[.0-9]+").findall(ret)
     return ret[0]
 
 
 def set_end_time(controlDict, endTime):
     sed(controlDict, "endTime[ ]*[0-9.]*;", "endTime {};".format(endTime))
+
 
 def read_block(blockMeshDict):
     import re
@@ -82,7 +85,8 @@ def set_deltaT(controlDict, deltaT):
 
 
 def set_writeInterval(controlDict, writeInterval):
-    sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
+    sed(controlDict, "writeInterval[ ]*[0-9.]*",
+        "writeInterval " + str(writeInterval))
 
 
 def clear_solver_settings(fvSolution, field):

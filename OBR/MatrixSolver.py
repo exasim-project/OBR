@@ -278,4 +278,7 @@ class IR(SolverSetter):
             case_name=case_name,
             solver_stub=solver_stub,
         )
-        self.avail_domain_handler = {"GKO": {"domain": GKO(), "preconditioner": []}}
+        self.avail_domain_handler = {
+            "GKO": {
+                "domain": GKO(),
+                "preconditioner": []}}
