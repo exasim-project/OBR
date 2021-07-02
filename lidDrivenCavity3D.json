@@ -1,0 +1,47 @@
+{
+  "OBR": {
+    "version": "0.0.0"
+  },
+  "openfoam":{
+    "solver": "icoFoam",
+    "case": "lidDrivenCavity3D",
+    "type": "OpenFOAMExternalCase",
+    "origin": "/home/kit/scc/nq7776/code/hpc/Lid_driven_cavity-3d/S",
+    "git": "https://develop.openfoam.com/committees/hpc.git",
+    "solver_stubs": {
+      "p": [
+        "solver {solver};",
+        "tolerance {tolerance};",
+        "minIter {minIter};",
+        "maxIter {maxIter};",
+        "executor {executor};",
+        "preconditioner {preconditioner};",
+        "smoother none;",
+        "relTol 0.0;",
+        "updateSysMatrix no;",
+        "sort yes;"
+      ],
+      "U": [
+        "solver {solver};",
+        "tolerance {tolerance};",
+        "minIter {minIter};",
+        "maxIter {maxIter};",
+        "executor {executor};",
+        "preconditioner {preconditioner};",
+        "smoother none;",
+        "relTol 0.0;",
+        "updateSysMatrix yes;",
+        "sort yes;"
+      ]
+     },
+    "controlDict": {
+      "stationary": false,
+      "timeSteps": 10
+    }
+  },
+  "variation": {
+      "type": "ReBlockMesh",
+      "dimensions": "3d",
+      "range": [10]
+  }
+}
