@@ -36,12 +36,12 @@
      },
     "controlDict": {
       "stationary": false,
-      "timeSteps": 10
+      "timeSteps": 5
     }
   },
   "variation": {
       "type": "ReBlockMesh",
       "dimensions": "3d",
-      "range": [10]
+      "range": [25, 50, 75, 100]
   }
 }
