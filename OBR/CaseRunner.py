@@ -47,8 +47,9 @@ class CaseRunner:
             )
             # warm up run
             original_end_time = sf.get_end_time(case.controlDict)
+            deltaT = sf.read_deltaT(case.controlDict)
 
-            sf.set_end_time(case.controlDict, 0)
+            sf.set_end_time(case.controlDict, 1*deltaT)
 
             # first warm up run
             check_output([self.of_solver], cwd=case.path, timeout=15 * 60)
