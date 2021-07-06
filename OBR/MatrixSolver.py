@@ -123,6 +123,8 @@ class BJ:
 class DIC:
     name = "DIC"
 
+class DILU:
+    name = "DILU"
 
 class FDIC:
     name = "FDIC"
@@ -281,4 +283,6 @@ class IR(SolverSetter):
         self.avail_domain_handler = {
             "GKO": {
                 "domain": GKO(),
-                "preconditioner": []}}
+                "preconditioner": {
+                    "NoPrecond": NoPrecond(),
+                }}}
