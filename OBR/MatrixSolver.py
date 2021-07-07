@@ -2,7 +2,6 @@
 
 from OBR.Setter import Setter
 from OBR.EnviromentSetters import PrepareOMPMaxThreads
-from pathlib import Path
 import OBR.setFunctions as sf
 
 
@@ -14,11 +13,7 @@ class SolverSetter(Setter):
         field,
         case_name,
         solver_stub,
-        preconditioner="none",
-        tolerance="1e-06",
-        min_iters="0",
-        max_iters="1000",
-        update_sys_matrix="no",
+        preconditioner,
     ):
 
         super().__init__(
@@ -29,14 +24,10 @@ class SolverSetter(Setter):
         self.solver_stub = solver_stub
         self.solver = solver
         self.preconditioner = preconditioner
-        self.update_sys_matrix = update_sys_matrix
-        self.tolerance = tolerance
-        self.min_iters = min_iters
-        self.max_iters = max_iters
         self.fields = field
 
-    def set_domain(self, domain):
-        self.domain = self.avail_domain_handler[domain]["domain"]
+    def set_backend(self, backend):
+        self.backend = self.avail_domain_handler[backend]["backend"]
         self.add_property(self.domain.name)
         return self
 
@@ -48,7 +39,7 @@ class SolverSetter(Setter):
         return self
 
     def set_executor(self, executor):
-        self.domain.executor = executor
+        self.backend.executor = executor
         self.add_property(executor.name)
         if hasattr(executor, "enviroment_setter"):
             self.set_enviroment_setter(executor.enviroment_setter)
@@ -58,6 +49,7 @@ class SolverSetter(Setter):
         ret = []
         for field in self.fields:
             solver = self.solver
+            # TODO disallow CG as solver for momentum equation
             if field == "U" and solver == "CG":
                 solver = "BiCGStab"
             ret.append(solver)
@@ -102,6 +94,11 @@ class RefExecutor(GKOExecutor):
         super().__init__(name="reference")
 
 
+class MPIExecutor(GKOExecutor):
+    def __init__(self):
+        super().__init__(name="mpi")
+
+
 class OMPExecutor(GKOExecutor):
     def __init__(self, max_processes=4):
         super().__init__(name="omp")
@@ -123,8 +120,10 @@ class BJ:
 class DIC:
     name = "DIC"
 
+
 class DILU:
     name = "DILU"
+
 
 class FDIC:
     name = "FDIC"
@@ -285,4 +284,6 @@ class IR(SolverSetter):
                 "domain": GKO(),
                 "preconditioner": {
                     "NoPrecond": NoPrecond(),
-                }}}
+                },
+            }
+        }

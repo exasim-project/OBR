@@ -10,11 +10,12 @@
         -v --version        Print version and exit
         --folder=<folder>   Target folder  [default: Test].
         --report=<filename> Target file to store stats [default: report.csv].
-        --omp_max_threads=<n>  Set the number of omp threads [default: 1].
+        --omp_max_threads=<n>   Set the number of omp threads [default: 1].
+        --mpi_max_processes=<n> Set the number of mpi s [default: 1].
         --clean             Remove existing cases [default: False].
         --backend=BACKENDS  Select desired backends (e.g. OF,GKO)
         --solver=SOLVER     Select desired solvers (e.g. CG,BiCGStab,IR,smooth)
-        --executor=EXECUTOR Select desired executor (e.g. CUDA,Ref,OMP)
+        --executor=EXECUTOR Select desired executor (e.g. CUDA,Ref,OMP,MPI)
         --preconditioner=PRECONDS  Select desired preconditioner (e.g. BJ,DIC)
         --mpi_max_procs=<n>  Set the number of mpi processes [default: 1].
         --field=FIELD       Set the field name to apply setup
@@ -84,15 +85,12 @@ if __name__ == "__main__":
     print(arguments)
 
     solver = arguments["--solver"].split(",")
-    domains = arguments["--backend"].split(",")
+    backends = arguments["--backend"].split(",")
     preconditioner = arguments["--preconditioner"].split(",")
     executor = arguments["--executor"].split(",")
     fields = arguments["--field"].split(",")
 
-    extra_args = {
-        "OMP": {
-            "max_processes": int(
-                arguments["--omp_max_threads"])}}
+    extra_args = {"OMP": {"max_processes": int(arguments["--omp_max_threads"])}}
 
     # for do a partial apply field="p"
     test_path = Path(arguments.get("--folder", "Test"))
@@ -136,20 +134,16 @@ if __name__ == "__main__":
 
     # construct returns a tuple where  the first element is bool
     # indicating a valid combination of Domain and Solver and Executor
+    # invalid combinations are filtered out here
     valid_solvers_tuples = filter(
         lambda x: x[0],
         starmap(
             construct,
-            product(solver, domains, executor, preconditioner),
+            product(solver, backends, executor, preconditioner),
         ),
     )
 
     # just unpack the solver setters to a list
     matrix_solver = map(lambda x: x[1], valid_solvers_tuples)
 
-    parameter_study(
-        test_path,
-        matrix_solver,
-        runner,
-        fields,
-        parameter_study_arguments)
+    parameter_study(test_path, matrix_solver, runner, fields, parameter_study_arguments)

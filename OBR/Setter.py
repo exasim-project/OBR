@@ -83,6 +83,15 @@ class Setter(OpenFOAMCase):
         )
 
     def combine(self, other):
+        # TODO clean up
+        # 1. separate mesh variation from solver variations
+        # 2. solver variation always need a mesh variation to run on
+        # 3. change the order how variations are build from adding others
+        #    to mesh variation to solver variation knowing about its root.
+        #    This way once a solver variation is called it ensures all the
+        #    setup is done by calling base_setup ...
+        # this should make calling things easier and query of attr could probably
+        # be replaced
         self.others.append(other)
         other.add_to_base(self.name)
         self.add_to_path(other.name)

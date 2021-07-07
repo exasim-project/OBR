@@ -11,6 +11,7 @@ class CaseRunner:
     def __init__(self, solver, results_aggregator, arguments):
         self.results = results_aggregator
         self.arguments = arguments
+        self.solver_prefix = None
         self.of_solver = solver
         self.time_runs = int(arguments["--time_runs"])
         self.min_runs = int(arguments["--min_runs"])
@@ -18,6 +19,10 @@ class CaseRunner:
         self.test_run = arguments["--test-run"]
         self.fail = arguments["--fail_on_error"]
         self.include_log = arguments["--include_log"]
+
+    def set_solver_prefix(self, prefix):
+        self.solver_prefix = prefix
+        self.of_solver = self.prefix + " " + self.of_solver
 
     def continue_running(self, accumulated_time, number_of_runs):
         if self.test_run and number_of_runs == 1:
@@ -31,8 +36,7 @@ class CaseRunner:
         print("start runs processes", processes)
         for process in processes:
             try:
-                threads = case.others[0].domain.executor.enviroment_setter.set_up(
-                )
+                threads = case.others[0].domain.executor.enviroment_setter.set_up()
             except Exception as e:
                 threads = 1
                 print(e)
@@ -49,7 +53,7 @@ class CaseRunner:
             original_end_time = sf.get_end_time(case.controlDict)
             deltaT = sf.read_deltaT(case.controlDict)
 
-            sf.set_end_time(case.controlDict, 1*deltaT)
+            sf.set_end_time(case.controlDict, 1 * deltaT)
 
             # first warm up run
             check_output([self.of_solver], cwd=case.path, timeout=15 * 60)
@@ -72,8 +76,7 @@ class CaseRunner:
                 start = datetime.datetime.now()
                 success = 0
                 try:
-                    ret = check_output(
-                        [self.of_solver], cwd=case.path, timeout=15 * 60)
+                    ret = check_output([self.of_solver], cwd=case.path, timeout=15 * 60)
                     success = 1
                 except Exception as e:
                     print(e)
@@ -96,7 +99,7 @@ class CaseRunner:
                             "{}:  Solving for {}".format(s, f): [
                                 "init_residual",
                                 "final_residual",
-                                "iterations"
+                                "iterations",
                             ]
                             for f, s in zip(
                                 self.results.fields, case.query_attr("get_solver", [])
