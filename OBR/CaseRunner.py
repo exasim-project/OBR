@@ -5,6 +5,7 @@ import datetime
 import sys
 import Owls as ow
 import OBR.setFunctions as sf
+import hashlib
 
 
 class CaseRunner:
@@ -87,8 +88,9 @@ class CaseRunner:
                 end = datetime.datetime.now()
                 if number_of_runs == 1:
                     try:
-                        log_path = case.path / "log"
-                        log_path = log_path.with_suffix("." + str(process))
+                        log_hash = hashlib.md5(ret).hexdigest()
+                        log_path = case.path / log_hash
+                        log_path = log_path.with_suffix(".log" )
                         log_str = ret.decode("utf-8")
                         with open(log_path, "w") as log_handle:
                             log_handle.write(log_str)
@@ -110,7 +112,7 @@ class CaseRunner:
                         pass
                 run_time = (end - start).total_seconds()  # - self.init_time
                 accumulated_time += run_time
-                self.results.add(warm_up, run_time, iterations)
+                self.results.add(log_hash, warm_up, run_time, iterations)
         try:
             case.others[0].domain.executor.enviroment_setter.clean_up()
         except Exception as e:

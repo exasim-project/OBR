@@ -49,6 +49,13 @@ def add_libOGL_so(controlDict):
     with open(controlDict, "a") as ctrlDict_handle:
         ctrlDict_handle.write('libs ("libOGL.so");')
 
+def get_process(cmd):
+    try:
+        return check_output(cmd).decode("utf-8")
+    except Exception as e:
+        print(e)
+
+
 
 def get_end_time(controlDict):
     import re

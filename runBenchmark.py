@@ -43,6 +43,7 @@ from pathlib import Path
 from OBR import ParameterStudy as ps
 from OBR import CaseRunner as cr
 from OBR import ResultsAggregator as ra
+from OBR import setFunctions as sf
 
 
 def parameter_study(test_path, matrix_solver, runner, fields, params):
@@ -115,9 +116,14 @@ if __name__ == "__main__":
         fields,
     )
 
+
     metadata = {
-        "OBR_VERSION": "0.0.1",
-        "renumbered": renumber,
+        "OBR_VERSION": "0.0.2",
+        "case": {"renumbered": renumber},
+        "node_data": {
+            "host":  sf.get_process(["hostname"]),
+            #"top":  sf.get_process(["top", "-b"]).split("\n")[:15],
+            "uptime":  sf.get_process(["uptime"])},
     }
 
     results.write_comment([str(metadata)])
