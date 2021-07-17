@@ -14,7 +14,7 @@
         --clean             Remove existing cases [default: False].
         --backend=BACKENDS  Select desired backends (e.g. OF,GKO)
         --solver=SOLVER     Select desired solvers (e.g. CG,BiCGStab,IR,smooth)
-        --executor=EXECUTOR Select desired executor (e.g. CUDA,Ref,OMP,HIP)
+        --executor=EXECUTOR Select desired executor (e.g. CUDA,Ref,OMP,HIP,MPI)
         --preconditioner=PRECONDS  Select desired preconditioner (e.g. BJ,DIC)
         --mpi_max_procs=<n>  Set the number of mpi processes [default: 1].
         --field=FIELD       Set the field name to apply setup
@@ -90,10 +90,7 @@ if __name__ == "__main__":
     executor = arguments["--executor"].split(",")
     fields = arguments["--field"].split(",")
 
-    extra_args = {
-        "OMP": {
-            "max_processes": int(
-                arguments["--omp_max_threads"])}}
+    extra_args = {"OMP": {"max_processes": int(arguments["--omp_max_threads"])}}
 
     # for do a partial apply field="p"
     test_path = Path(arguments.get("--folder", "Test"))
@@ -116,14 +113,14 @@ if __name__ == "__main__":
         fields,
     )
 
-
     metadata = {
         "OBR_VERSION": "0.0.2",
         "case": {"renumbered": renumber},
         "node_data": {
-            "host":  sf.get_process(["hostname"]),
-            #"top":  sf.get_process(["top", "-b"]).split("\n")[:15],
-            "uptime":  sf.get_process(["uptime"])},
+            "host": sf.get_process(["hostname"]),
+            # "top":  sf.get_process(["top", "-b"]).split("\n")[:15],
+            "uptime": sf.get_process(["uptime"]),
+        },
     }
 
     results.write_comment([str(metadata)])
@@ -153,9 +150,4 @@ if __name__ == "__main__":
     # just unpack the solver setters to a list
     matrix_solver = map(lambda x: x[1], valid_solvers_tuples)
 
-    parameter_study(
-        test_path,
-        matrix_solver,
-        runner,
-        fields,
-        parameter_study_arguments)
+    parameter_study(test_path, matrix_solver, runner, fields, parameter_study_arguments)
