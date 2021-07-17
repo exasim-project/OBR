@@ -14,7 +14,7 @@
         --clean             Remove existing cases [default: False].
         --backend=BACKENDS  Select desired backends (e.g. OF,GKO)
         --solver=SOLVER     Select desired solvers (e.g. CG,BiCGStab,IR,smooth)
-        --executor=EXECUTOR Select desired executor (e.g. CUDA,Ref,OMP)
+        --executor=EXECUTOR Select desired executor (e.g. CUDA,Ref,OMP,HIP)
         --preconditioner=PRECONDS  Select desired preconditioner (e.g. BJ,DIC)
         --mpi_max_procs=<n>  Set the number of mpi processes [default: 1].
         --field=FIELD       Set the field name to apply setup

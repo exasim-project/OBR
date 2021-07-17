@@ -112,6 +112,10 @@ class CUDAExecutor(GKOExecutor):
     def __init__(self):
         super().__init__(name="cuda")
 
+class HIPExecutor(GKOExecutor):
+    def __init__(self):
+        super().__init__(name="hip")
+
 
 # Preconditioner
 
@@ -159,7 +163,7 @@ class GKO:
 
     name = "GKO"
     prefix = "GKO"
-    executor_support = ["OMP", "CUDA", "Ref"]
+    executor_support = ["OMP", "CUDA", "Ref", "HIP"]
     executor = None
 
     def __init__(self):

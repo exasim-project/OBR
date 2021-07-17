@@ -130,7 +130,7 @@ def construct(
     usage:
        solver = construct("CG", "GKO", "OMP")
     """
-    from OBR.MatrixSolver import CUDAExecutor, RefExecutor, OMPExecutor
+    from OBR.MatrixSolver import CUDAExecutor, RefExecutor, OMPExecutor, HIPExecutor
     import OBR.MatrixSolver as ms
 
     executor_inst = None
@@ -140,6 +140,8 @@ def construct(
         executor_inst = OMPExecutor(**extra_args[executor])
     if executor == "CUDA":
         executor_inst = CUDAExecutor()
+    if executor == "HIP":
+        executor_inst = HIPExecutor()
 
     solver_setter = getattr(
         ms,
