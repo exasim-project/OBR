@@ -6,7 +6,7 @@
     "solver": "icoFoam",
     "case": "lidDrivenCavity3D",
     "type": "OpenFOAMExternalCase",
-    "origin": "/home/kit/scc/nq7776/code/hpc/Lid_driven_cavity-3d/S",
+    "origin": "/home/go/data/code/hpc/Lid_driven_cavity-3d/S",
     "git": "https://develop.openfoam.com/committees/hpc.git",
     "solver_stubs": {
       "p": [
@@ -41,6 +41,8 @@
   },
   "variation": {
       "type": "ReBlockMesh",
+      "decomposeMesh": true,
+      "number_of_subdomains": 20,
       "dimensions": "3d",
       "range": [25, 50, 75, 100]
   }

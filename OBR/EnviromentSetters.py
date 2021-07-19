@@ -109,13 +109,15 @@ class DecomposePar(CachePrepare):
         self.number_of_subdomains = meshArgs["number_of_subdomains"]
 
     def set_number_of_subdomains(self):
-        sf.set_number_of_subdomains(self.number_of_subdomains)
+        sf.set_number_of_subdomains(
+            self.path / "system" / "decomposeParDict", self.number_of_subdomains
+        )
 
     def call_decomposePar(self):
         check_output(["decomposePar"], cwd=self.path)
 
     def set_up(self):
-        self.set_number_of_subdomains()
+        # self.set_number_of_subdomains()
         self.call_decomposePar()
 
 
@@ -152,8 +154,9 @@ class CellsPrepare(CachePrepare):
         if self.meshArgs["renumberMesh"]:
             check_output(["renumberMesh", "-overwrite"], cwd=self.cache_case.path)
 
+        # FIXME check if mpi executor
         if self.meshArgs["decomposeMesh"]:
-            DecomposePar(self.path, self.meshArgs).set_up()
+            DecomposePar(self.cache_case.path, self.meshArgs).set_up()
 
     def set_up_cache(self):
 

@@ -106,6 +106,9 @@ if __name__ == "__main__":
 
     renumber = arguments.get("--renumber", False)
 
+    # if "MPI" in arguments.get("--executor"):
+    #     parameter_study_arguments["variation"]["decomposeMesh"] = True
+
     parameter_study_arguments["variation"]["renumberMesh"] = renumber
 
     results = ra.Results(

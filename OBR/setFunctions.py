@@ -4,8 +4,7 @@ from subprocess import check_output
 
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):
     """ wrapper around sed """
-    ret = check_output(["sed", "-i", "s/" + in_reg_exp +
-                        "/" + out_reg_exp + "/g", fn])
+    ret = check_output(["sed", "-i", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn])
 
 
 def clean_block_from_file(fn, block_starts, block_end, replace):
@@ -49,6 +48,7 @@ def add_libOGL_so(controlDict):
     with open(controlDict, "a") as ctrlDict_handle:
         ctrlDict_handle.write('libs ("libOGL.so");')
 
+
 def get_process(cmd):
     try:
         return check_output(cmd).decode("utf-8")
@@ -56,13 +56,21 @@ def get_process(cmd):
         print(e)
 
 
-
 def get_end_time(controlDict):
     import re
+
     ret = check_output(["grep", "endTime", controlDict])
     ret = ret.decode("utf-8").replace(";", "").replace("\n", "")
     ret = re.compile(r"[.0-9]+").findall(ret)
     return ret[0]
+
+
+def set_number_of_subdomains(decomposeParDict, subDomains):
+    sed(
+        decomposeParDict,
+        "numberOfSubDomains[ ]*[0-9.]*;",
+        "numberOfSubDomains {};".format(subDomains),
+    )
 
 
 def set_end_time(controlDict, endTime):
@@ -92,8 +100,7 @@ def set_deltaT(controlDict, deltaT):
 
 
 def set_writeInterval(controlDict, writeInterval):
-    sed(controlDict, "writeInterval[ ]*[0-9.]*",
-        "writeInterval " + str(writeInterval))
+    sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
 
 
 def clear_solver_settings(fvSolution, field):
