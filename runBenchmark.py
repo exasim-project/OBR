@@ -117,7 +117,7 @@ if __name__ == "__main__":
     )
 
     metadata = {
-        "OBR_VERSION": "0.0.2",
+        "OBR_VERSION": "0.0.3",
         "case": {"renumbered": renumber},
         "node_data": {
             "host": sf.get_process(["hostname"]),

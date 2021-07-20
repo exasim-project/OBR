@@ -105,15 +105,21 @@ class CaseRunner:
                                 self.results.fields, case.query_attr("get_solver", [])
                             )
                         }
+                        keys_timings = {"linear solve p": ["time"], 
+                                    "linear solve U": ["time"]}
                         ff = ow.read_log_str(log_str, keys)
                         print(ff)
+
+                        ff_timings = ow.read_log_str(log_str, keys_timings)
+                        time_u, time_p = (ff_timings.loc[0]["time"].values[9:11])
+                        print(time_u, time_p)
                         iterations = int(ff["iterations"].sum())
                     except Exception as e:
                         print("Exception processing logs", e)
                         pass
                 run_time = (end - start).total_seconds()  # - self.init_time
                 accumulated_time += run_time
-                self.results.add(log_hash, warm_up, run_time, iterations)
+                self.results.add(log_hash, warm_up, run_time, iterations, time_p, time_u)
         try:
             case.others[0].domain.executor.enviroment_setter.clean_up()
         except Exception as e:

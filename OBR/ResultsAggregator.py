@@ -25,6 +25,8 @@ class Results:
                 "setup_time",
                 "run_time",
                 "number_of_iterations",
+                "linear_solve_p",
+                "linear_solve_u",
             ]
         )
         self.current_col_vals = []
@@ -57,9 +59,9 @@ class Results:
             ]
         )
 
-    def add(self, log, warm_up, run, iterations):
+    def add(self, log, warm_up, run, iterations, linear_p, linear_u):
         """ Add results and success status of a run and write to file """
-        outp = self.current_col_vals + [log, warm_up, run, iterations]
+        outp = self.current_col_vals + [log, warm_up, run, iterations, linear_p, linear_u]
         outps = ",".join(map(str, outp))
         print("writing to report", outps)
         self.report_handle.write(outps + "\n")
