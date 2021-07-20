@@ -30,10 +30,10 @@ class CaseRunner:
 
         processes = case.get_processes()
         print("start runs processes", processes)
+        solver_cmd = [self.of_solver]
         for process in processes:
             try:
-                threads = case.others[0].domain.executor.enviroment_setter.set_up(
-                )
+                threads = case.others[0].domain.executor.enviroment_setter.set_up()
             except Exception as e:
                 threads = 1
                 print(e)
@@ -50,14 +50,14 @@ class CaseRunner:
             original_end_time = sf.get_end_time(case.controlDict)
             deltaT = sf.read_deltaT(case.controlDict)
 
-            sf.set_end_time(case.controlDict, 1*deltaT)
+            sf.set_end_time(case.controlDict, 1 * deltaT)
 
             # first warm up run
-            check_output([self.of_solver], cwd=case.path, timeout=15 * 60)
+            check_output(solver_cmd, cwd=case.path, timeout=15 * 60)
 
             # timed warmup run
             start = datetime.datetime.now()
-            check_output([self.of_solver], cwd=case.path, timeout=15 * 60)
+            check_output(solver_cmd, cwd=case.path, timeout=15 * 60)
             end = datetime.datetime.now()
             warm_up = (end - start).total_seconds()
             sf.set_end_time(case.controlDict, original_end_time)
@@ -73,8 +73,7 @@ class CaseRunner:
                 start = datetime.datetime.now()
                 success = 0
                 try:
-                    ret = check_output(
-                        [self.of_solver], cwd=case.path, timeout=15 * 60)
+                    ret = check_output(solver_cmd, cwd=case.path, timeout=15 * 60)
                     success = 1
                 except Exception as e:
                     print(e)
@@ -90,7 +89,7 @@ class CaseRunner:
                     try:
                         log_hash = hashlib.md5(ret).hexdigest()
                         log_path = case.path / log_hash
-                        log_path = log_path.with_suffix(".log" )
+                        log_path = log_path.with_suffix(".log")
                         log_str = ret.decode("utf-8")
                         with open(log_path, "w") as log_handle:
                             log_handle.write(log_str)
@@ -98,7 +97,7 @@ class CaseRunner:
                             "{}:  Solving for {}".format(s, f): [
                                 "init_residual",
                                 "final_residual",
-                                "iterations"
+                                "iterations",
                             ]
                             for f, s in zip(
                                 self.results.fields, case.query_attr("get_solver", [])

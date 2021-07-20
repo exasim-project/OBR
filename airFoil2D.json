@@ -16,8 +16,8 @@
         "executor {executor};",
         "preconditioner {preconditioner};",
         "smoother none;",
-        "relTol 0.001;",
-        "updateSysMatrix no;",
+        "relTol 0.01;",
+        "updateSysMatrix yes;",
         "sort yes;"
       ],
       "U" : [
@@ -28,7 +28,7 @@
         "executor {executor};",
         "preconditioner {preconditioner};",
         "smoother none;",
-        "relTol 0.001;",
+        "relTol 0.01;",
         "updateSysMatrix yes;",
         "sort yes;"
       ]

@@ -92,6 +92,11 @@ class SolverSetter(Setter):
 # Executor
 
 
+class OFExecutor:
+    def __init__(self, name):
+        self.name = name
+
+
 class GKOExecutor:
     def __init__(self, name):
         self.name = name
@@ -112,9 +117,15 @@ class CUDAExecutor(GKOExecutor):
     def __init__(self):
         super().__init__(name="cuda")
 
+
 class HIPExecutor(GKOExecutor):
     def __init__(self):
         super().__init__(name="hip")
+
+
+class MPIExecutor(OFExecutor):
+    def __init__(self):
+        super().__init__(name="mpi")
 
 
 # Preconditioner
@@ -127,8 +138,10 @@ class BJ:
 class DIC:
     name = "DIC"
 
+
 class DILU:
     name = "DILU"
+
 
 class FDIC:
     name = "FDIC"
@@ -289,4 +302,6 @@ class IR(SolverSetter):
                 "domain": GKO(),
                 "preconditioner": {
                     "NoPrecond": NoPrecond(),
-                }}}
+                },
+            }
+        }
