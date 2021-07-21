@@ -31,8 +31,8 @@ class CaseRunner:
         processes = case.get_processes()
         print("start runs processes", processes)
         solver_cmd = [self.of_solver]
-        if case.query_attr("domain", "").executor.name == "MPI":
-            solver_cmd = ["mpirun", "--oversubscribe", "-np", "80"] + solver_cmd + ["-parallel"]
+        if case.query_attr("domain", "").executor.name == "mpi":
+            solver_cmd = ["mpirun", "--oversubscribe", "-np", "64"] + solver_cmd + ["-parallel"]
         for process in processes:
             try:
                 threads = case.others[0].domain.executor.enviroment_setter.set_up()
@@ -70,6 +70,7 @@ class CaseRunner:
             ret = ""
             # on first run get number of iterations and write log if demanded
             iterations = 0
+            print("running", solver_cmd)
             while self.continue_running(accumulated_time, number_of_runs):
                 number_of_runs += 1
                 start = datetime.datetime.now()

@@ -117,7 +117,7 @@ class DecomposePar(CachePrepare):
         check_output(["decomposePar"], cwd=self.path)
 
     def set_up(self):
-        # self.set_number_of_subdomains()
+        self.set_number_of_subdomains()
         self.call_decomposePar()
 
 

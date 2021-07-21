@@ -66,10 +66,11 @@ def get_end_time(controlDict):
 
 
 def set_number_of_subdomains(decomposeParDict, subDomains):
+    print("setting number of subdomains", subDomains, decomposeParDict)
     sed(
         decomposeParDict,
-        "numberOfSubDomains[ ]*[0-9.]*;",
-        "numberOfSubDomains {};".format(subDomains),
+        "numberOfSubdomains[ ]*[0-9.]*;",
+        "numberOfSubdomains {};".format(subDomains),
     )
 
 
