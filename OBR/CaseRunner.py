@@ -32,7 +32,9 @@ class CaseRunner:
         print("start runs processes", processes)
         solver_cmd = [self.of_solver]
         if case.query_attr("domain", "").executor.name == "mpi":
-            solver_cmd = ["mpirun", "--oversubscribe", "-np", "64"] + solver_cmd + ["-parallel"]
+            solver_cmd = (
+                ["mpirun", "--oversubscribe", "-np", "64"] + solver_cmd + ["-parallel"]
+            )
         for process in processes:
             try:
                 threads = case.others[0].domain.executor.enviroment_setter.set_up()
@@ -87,13 +89,26 @@ class CaseRunner:
                         sys.exit(1)
                     break
 
-                end = datetime.datetime.now()
+                time_u, time_p = (0, 0)
+                try:
+                    end = datetime.datetime.now()
+                    log_str = ret.decode("utf-8")
+                    keys_timings = {
+                        "linear solve p": ["time"],
+                        "linear solve U": ["time"],
+                    }
+                    ff_timings = ow.read_log_str(log_str, keys_timings)
+
+                    # FIXME get an average of the execution times
+                    time_u, time_p = ff_timings.loc[0]["time"].values[9:11]
+                except:
+                    pass
+
                 if number_of_runs == 1:
                     try:
                         log_hash = hashlib.md5(ret).hexdigest()
                         log_path = case.path / log_hash
                         log_path = log_path.with_suffix(".log")
-                        log_str = ret.decode("utf-8")
                         with open(log_path, "w") as log_handle:
                             log_handle.write(log_str)
                         keys = {
@@ -106,13 +121,8 @@ class CaseRunner:
                                 self.results.fields, case.query_attr("get_solver", [])
                             )
                         }
-                        keys_timings = {"linear solve p": ["time"], 
-                                    "linear solve U": ["time"]}
                         ff = ow.read_log_str(log_str, keys)
                         print(ff)
-
-                        ff_timings = ow.read_log_str(log_str, keys_timings)
-                        time_u, time_p = (ff_timings.loc[0]["time"].values[9:11])
                         print(time_u, time_p)
                         iterations = int(ff["iterations"].sum())
                     except Exception as e:
@@ -120,7 +130,10 @@ class CaseRunner:
                         pass
                 run_time = (end - start).total_seconds()  # - self.init_time
                 accumulated_time += run_time
-                self.results.add(log_hash, warm_up, run_time, iterations, time_p, time_u)
+
+                self.results.add(
+                    log_hash, warm_up, run_time, iterations, time_p, time_u
+                )
         try:
             case.others[0].domain.executor.enviroment_setter.clean_up()
         except Exception as e:
