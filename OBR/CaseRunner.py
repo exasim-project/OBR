@@ -29,12 +29,14 @@ class CaseRunner:
     def run(self, case):
 
         processes = case.get_processes()
-        print("start runs processes", processes)
         solver_cmd = [self.of_solver]
         if case.query_attr("domain", "").executor.name == "mpi":
+            mpi_ranks = 64
             solver_cmd = (
-                ["mpirun", "--oversubscribe", "-np", "64"] + solver_cmd + ["-parallel"]
+                ["mpirun", "--oversubscribe", "-np", str(mpi_ranks)] + solver_cmd + ["-parallel"]
             )
+            processes = [mpi_ranks]
+
         for process in processes:
             try:
                 threads = case.others[0].domain.executor.enviroment_setter.set_up()
