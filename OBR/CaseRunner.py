@@ -26,12 +26,14 @@ class CaseRunner:
         else:
             return accumulated_time < self.time_runs or number_of_runs < self.min_runs
 
+
     def run(self, case):
 
         processes = case.get_processes()
         solver_cmd = [self.of_solver]
-        if case.query_attr("domain", "").executor.name == "mpi":
-            mpi_ranks = 64
+        executor = case.query_attr("domain", "").executor
+        if executor.name == "mpi":
+            mpi_ranks = executor.ranks
             solver_cmd = (
                 ["mpirun", "--oversubscribe", "-np", str(mpi_ranks)] + solver_cmd + ["-parallel"]
             )
@@ -39,14 +41,14 @@ class CaseRunner:
 
         for process in processes:
             try:
-                threads = case.others[0].domain.executor.enviroment_setter.set_up()
+                threads = executor.enviroment_setter.set_up()
             except Exception as e:
                 threads = 1
                 print(e)
                 pass
             self.results.set_case(
                 domain=case.query_attr("domain", "").name,
-                executor=case.query_attr("domain", "").executor.name,
+                executor=executor.name,
                 solver=case.query_attr("get_solver", []),
                 preconditioner=case.query_attr("preconditioner", "").name,
                 resolution=case.query_attr("cells", ""),
