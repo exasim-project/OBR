@@ -91,16 +91,26 @@ class SolverSetter(Setter):
 
 # Executor
 
+class Executor:
+    """ An Executor holds its own name and can be queried by the case runner from the case     
+    additionally might prepare the Case/Enviroment before the case is run 
+    """
+    def __init__(self, name):
+        self.name = name
 
 class OFExecutor:
     def __init__(self, name):
-        self.name = name
-
+        super().__init__(name)
 
 class GKOExecutor:
     def __init__(self, name):
-        self.name = name
+        super().__init__(name)
 
+class MPIExecutor(OFExecutor, max_num_ranks):
+    def __init__(self):
+        super().__init__(name="mpi")
+        self.num_ranks = num_ranks
+        self.enviroment_setter = DecomposePar(max_num_ranks)
 
 class RefExecutor(GKOExecutor):
     def __init__(self):
@@ -122,10 +132,6 @@ class HIPExecutor(GKOExecutor):
     def __init__(self):
         super().__init__(name="hip")
 
-
-class MPIExecutor(OFExecutor):
-    def __init__(self):
-        super().__init__(name="mpi")
 
 
 # Preconditioner
