@@ -1,17 +1,21 @@
-#!/usr/bin/env python3
-from OBR.EnviromentSetters import DefaultPrepareEnviroment
-from itertools import product
-from pathlib import Path
-from subprocess import check_output
-from copy import deepcopy
-from OBR.Setter import Setter
-from OBR.MatrixSolver import SolverSetter
-from OBR.EnviromentSetters import CellsPrepare, PathPrepare, RefineMeshPrepare
+# #!/usr/bin/env python3
+# from OBR.EnviromentSetters import DefaultPrepareEnviroment
+# from itertools import product
+# from pathlib import Path
+# from subprocess import check_output
+# from copy import deepcopy
+# from OBR.Setter import Setter
+# from OBR.MatrixSolver import SolverSetter
+# from OBR.EnviromentSetters import CellsPrepare, PathPrepare, RefineMeshPrepare
 
-from . import setFunctions as sf
+# from . import setFunctions as sf
 
 
-class Remesh(Setter):
+class Variant:  # At some point this inherits from Setter
+    pass
+
+
+class Remesh(Variant):
     def __init__(self, base_path, refinement, case_name, root, fields):
         self.cells = refinement
         self.root = root
@@ -32,7 +36,7 @@ class Remesh(Setter):
         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
 
 
-class ReBlockMesh(Remesh):
+class ReBlockMesh(Variant):
     """ class to set cells and  calls blockMesh  """
 
     def __init__(
@@ -63,52 +67,46 @@ class ReBlockMesh(Remesh):
         )
 
 
-class RefineMesh(Remesh):
+class RefineMesh(Variant):
     """ class that calls refineMesh several times """
 
-    def __init__(
-        self,
-        base_path,
-        refinements,
-        case_name,
-        root,
-        fields,
-        meshArgs,
-        controlDictArgs,
-    ):
-        super().__init__(
-            base_path,
-            refinements,
-            case_name,
-            root,
-            fields,
-        )
+    def __init__(self, root_dir, input_dict, value_dict):
+        super().__init__()
+        print(root_dir, input_dict, value_dict)
 
-        self.set_mesh_modifier(
-            RefineMeshPrepare(
-                self.path,
-                refinements,
-                fields,
-                meshArgs,
-                controlDictArgs,
-            )
-        )
+        # self.set_mesh_modifier(
+        #     RefineMeshPrepare(
+        #         self.path,
+        #         refinements,
+        #         fields,
+        #         meshArgs,
+        #         controlDictArgs,
+        #     )
+        # )
 
 
-class PathSetter(Setter):
-    def __init__(self, base_path, path, case_name, root, fields):
-        super().__init__(
-            base_path=base_path,
-            variation_name="{}".format(path),
-            case_name=case_name,
-        )
-        prepare_mesh = PathPrepare(self.path, fields)
-        prepare_mesh.root = root.path
-        super().set_enviroment_setter(prepare_mesh)
+class ChangeMatrixSolver(Variant):
+    """ class that calls refineMesh several times """
 
-    @property
-    def cache_path(self):
-        return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+    def __init__(self, root_dir, input_dict, value_dict):
+        super().__init__()
+        print(root_dir, input_dict, value_dict)
+
+
+# class PathSetter(Variant):
+#     def __init__(self, base_path, path, case_name, root, fields):
+#         super().__init__(
+#             base_path=base_path,
+#             variation_name="{}".format(path),
+#             case_name=case_name,
+#         )
+#         prepare_mesh = PathPrepare(self.path, fields)
+#         prepare_mesh.root = root.path
+#         super().set_enviroment_setter(prepare_mesh)
+
+#     @property
+#     def cache_path(self):
+#         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
 
 
 def construct(

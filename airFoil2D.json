@@ -13,8 +13,8 @@
       "timeSteps": 10
     }
   },
-  "variations": {
-    "name": "mesh"
+  "variation": {
+    "name": "mesh",
     "type": "RefineMesh",
     "dimensions": 2,
     "variants": [0, 1],
@@ -33,10 +33,9 @@
           }
         },
       "variants": [{"solver": ["CG", "BiCGStab"]},
-                   {"preconditioner":["none", "BJ"]}
+                   {"preconditioner":["none", "BJ"]},
                    {"executor":["cuda", "hip", "omp", "reference"]}
-                  ],
-      "variation": false
+                  ]
     }
   }
 }

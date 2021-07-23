@@ -18,14 +18,12 @@ class CaseRunner:
         self.continue_on_failure = arguments["--continue_on_failure"]
         self.test_run = arguments["--test-run"]
         self.fail = arguments["--fail_on_error"]
-        self.include_log = arguments["--include_log"]
 
     def continue_running(self, accumulated_time, number_of_runs):
         if self.test_run and number_of_runs == 1:
             return False
         else:
             return accumulated_time < self.time_runs or number_of_runs < self.min_runs
-
 
     def run(self, case):
 
@@ -35,7 +33,9 @@ class CaseRunner:
         if executor.name == "mpi":
             mpi_ranks = executor.ranks
             solver_cmd = (
-                ["mpirun", "--oversubscribe", "-np", str(mpi_ranks)] + solver_cmd + ["-parallel"]
+                ["mpirun", "--oversubscribe", "-np", str(mpi_ranks)]
+                + solver_cmd
+                + ["-parallel"]
             )
             processes = [mpi_ranks]
 
