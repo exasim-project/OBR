@@ -10,21 +10,17 @@
         -v --version        Print version and exit
         --folder=<folder>   Target folder  [default: Test].
         --report=<filename> Target file to store stats [default: report.csv].
-        --omp_max_threads=<n>  Set the number of omp threads [default: 1].
         --clean             Remove existing cases [default: False].
         --backend=BACKENDS  Select desired backends (e.g. OF,GKO)
         --solver=SOLVER     Select desired solvers (e.g. CG,BiCGStab,IR,smooth)
         --executor=EXECUTOR Select desired executor (e.g. CUDA,Ref,OMP,HIP,MPI)
         --preconditioner=PRECONDS  Select desired preconditioner (e.g. BJ,DIC)
-        --mpi_max_procs=<n>  Set the number of mpi processes [default: 1].
         --field=FIELD       Set the field name to apply setup
         --test-run          Run every case only once [default: False]
         --min_runs=<n>      Number of applications runs [default: 5].
         --time_runs=<s>     Time to applications runs [default: 60].
         --fail_on_error     exit benchmark script when a run fails [default: False].
         --continue_on_failure continue running benchmark and timing even on failure [default: False].
-        --project_path=<folder> Path to library which is benchmarked
-        --include_log       Include log in report files [default: True].
         --parameters=<json> pass the parameters for given parameter study
         --renumber          Renumber mesh before running [default: False]
 """
@@ -79,32 +75,60 @@ def parameter_study(test_path, matrix_solver, runner, fields, params):
     parameter_study.build_parameter_study()
 
 
-if __name__ == "__main__":
-
-    arguments = docopt(__doc__, version="runBench 0.1")
-    print(arguments)
-
-    solver = arguments["--solver"].split(",")
-    domains = arguments["--backend"].split(",")
-    preconditioner = arguments["--preconditioner"].split(",")
-    executor = arguments["--executor"].split(",")
-    fields = arguments["--field"].split(",")
-
-    extra_args = {"OMP": {"max_processes": int(arguments["--omp_max_threads"])}}
-
-    # for do a partial apply field="p"
-    test_path = Path(arguments.get("--folder", "Test"))
+def process_benchmark_description(fn, metadata, supported_file_version="0.1.0"):
+    import sys
+    from packaging import version
 
     # read benchmark description file
-    with open(
-        arguments.get("--parameters", "benchmark.json"), "r"
-    ) as parameters_handle:
+    with open(fn, "r") as parameters_handle:
         parameters_str = parameters_handle.read()
 
     # parse file
     parameter_study_arguments = json.loads(parameters_str)
 
+    if parameter_study_arguments["OBR"]["OBR_MIN_VERSION"] > metadata["OBR_VERSION"]:
+        print("The benchmark file needs a more recent version of OBR")
+        sys.exit(-1)
+    if (
+        parameter_study_arguments["OBR"]["BENCHMARK_FILE_VERSION"]
+        < supported_file_version
+    ):
+        print("The benchmark file version is no longer supported")
+        sys.exit(-1)
+    return parameter_study_arguments
+
+
+if __name__ == "__main__":
+    metadata = {
+        "OBR_REPORT_VERSION": "0.1.0",
+        "OBR_VERSION": "0.2.0",
+        "node_data": {
+            "host": sf.get_process(["hostname"]),
+            "top": sf.get_process(["top", "-bn1"]).split("\n")[:15],
+            "uptime": sf.get_process(["uptime"]),
+        },
+    }
+
+    arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
+    print(arguments)
+
+    solver = arguments["--solver"].split(",")
+    backend = arguments["--backend"].split(",")
+    preconditioner = arguments["--preconditioner"].split(",")
+    executor = arguments["--executor"].split(",")
+    fields = arguments["--field"].split(",")
+
+    parameter_study_arguments = process_benchmark_description(
+        arguments.get("--parameters", "benchmark.json"), metadata
+    )
+
+    extra_args = {"OMP": {"max_processes": int(arguments.get("--omp_max_threads", 1))}}
+
+    # for do a partial apply field="p"
+    test_path = Path(arguments.get("--folder", "Test"))
+
     renumber = arguments.get("--renumber", False)
+    metadata["case"] = {"renumbered": renumber}
 
     # if "MPI" in arguments.get("--executor"):
     #     parameter_study_arguments["variation"]["decomposeMesh"] = True
@@ -115,16 +139,6 @@ if __name__ == "__main__":
         arguments.get("--report", "report.csv"),
         fields,
     )
-
-    metadata = {
-        "OBR_VERSION": "0.0.3",
-        "case": {"renumbered": renumber},
-        "node_data": {
-            "host": sf.get_process(["hostname"]),
-            # "top":  sf.get_process(["top", "-b"]).split("\n")[:15],
-            "uptime": sf.get_process(["uptime"]),
-        },
-    }
 
     results.write_comment([str(metadata)])
 
@@ -146,7 +160,7 @@ if __name__ == "__main__":
         lambda x: x[0],
         starmap(
             construct,
-            product(solver, domains, executor, preconditioner),
+            product(solver, backend, executor, preconditioner),
         ),
     )
 
