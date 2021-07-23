@@ -1,46 +1,42 @@
 {
-  "OBR": {
-    "version": "0.0.0"
+  "obr": {
+    "OBR_MIN_VERSION": "0.2.0",
+    "BENCHMARK_FILE_VERSION": "0.1.0"
   },
-  "openfoam": {
+  "case": {
+    "type": "OpenFOAMTutorialCase",
     "solver": "simpleFoam",
     "case": "airFoil2D",
-    "type": "OpenFOAMTutorialCase",
     "origin": "incompressible",
-    "solver_stubs": {
-      "p" : [
-        "solver {solver};",
-        "tolerance {tolerance};",
-        "minIter {minIter};",
-        "maxIter {maxIter};",
-        "executor {executor};",
-        "preconditioner {preconditioner};",
-        "smoother none;",
-        "relTol 0.01;",
-        "updateSysMatrix yes;",
-        "sort yes;"
-      ],
-      "U" : [
-        "solver {solver};",
-        "tolerance {tolerance};",
-        "minIter {minIter};",
-        "maxIter {maxIter};",
-        "executor {executor};",
-        "preconditioner {preconditioner};",
-        "smoother none;",
-        "relTol 0.01;",
-        "updateSysMatrix yes;",
-        "sort yes;"
-      ]
-    },
     "controlDict": {
       "stationary": true,
       "timeSteps": 10
     }
   },
-  "variation": {
+  "variations": {
+    "name": "mesh"
     "type": "RefineMesh",
     "dimensions": 2,
-    "range": [0, 1]
+    "variants": [0, 1],
+    "variation": {
+      "name": "matrix_solver",
+      "type": "ChangeMatrixSolver",
+      "fields": ["p"],
+      "defaults": {
+        "p" : {
+          "minIter": 0,
+          "maxIter": 3000,
+          "smoother": "none",
+          "relTol":  0.01,
+          "updateSysMatrix": "yes",
+          "sort": "yes"
+          }
+        },
+      "variants": [{"solver": ["CG", "BiCGStab"]},
+                   {"preconditioner":["none", "BJ"]}
+                   {"executor":["cuda", "hip", "omp", "reference"]}
+                  ],
+      "variation": false
+    }
   }
 }
