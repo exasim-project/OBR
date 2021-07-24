@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from . import ParameterStudyVariants as variants
+from . import setFunctions as sf
 
 
 class ParameterStudyTree:
@@ -20,15 +21,22 @@ class ParameterStudyTree:
         ]
 
         # check for further varations
-        self.subvariation = False
+        self.subvariations = []
         if input_dict.get("variation"):
-            self.subvariation = ParameterStudyTree(
-                self.root_dir, input_dict["variation"], parent=self
-            )
+            for case in self.cases:
+                self.subvariations.append(
+                    ParameterStudyTree(
+                        self.root_dir / case.name, input_dict["variation"], parent=self
+                    )
+                )
 
         # deduplicate files later
 
-    def set_up():
+    def set_up(self):
+        sf.ensure_path(self.root_dir)
+        if self.subvariations:
+            for subvariation in self.subvariations:
+                subvariation.set_up()
         # create
         # if it is top level dont copy anything
         pass
