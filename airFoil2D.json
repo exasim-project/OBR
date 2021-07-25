@@ -17,7 +17,7 @@
     "name": "mesh",
     "type": "RefineMesh",
     "dimensions": 2,
-    "variants": [0, 1],
+    "variants": {"refinements":[0, 1]},
     "variation": {
       "name": "matrix_solver",
       "type": "ChangeMatrixSolver",
@@ -32,10 +32,9 @@
           "sort": "yes"
           }
         },
-      "variants": [{"solver": ["CG", "BiCGStab"]},
-                   {"preconditioner":["none", "BJ"]},
-                   {"executor":["cuda", "hip", "omp", "reference"]}
-                  ]
+      "variants": {"solver": ["CG", "BiCGStab"],
+                   "preconditioner":["none", "BJ"],
+                   "executor":["cuda", "hip", "omp", "reference"]}
     }
   }
 }

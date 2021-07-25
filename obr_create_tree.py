@@ -15,46 +15,11 @@
 
 from docopt import docopt
 import json
-from functools import partial
 
 from pathlib import Path
-from OBR import ParameterStudy as ps
-from OBR import CaseRunner as cr
-from OBR import ResultsAggregator as ra
+from OBR import ParameterStudyTree as ps
+from OBR import CaseOrigins as co
 from OBR import setFunctions as sf
-
-
-def parameter_study(test_path, matrix_solver, runner, fields, params):
-
-    parameter_range = params["variation"]["range"]
-
-    # TODO get case_name from Setter
-    case_name = params["openfoam"]["case"]
-
-    root_case = getattr(ps, params["openfoam"]["type"])(
-        params["openfoam"]["origin"], runner.of_solver, case_name
-    )
-
-    # TODO make changing of boundary conditions non default
-    # in CellSetter non default
-    case_paths = [
-        getattr(ps, params["variation"]["type"])(
-            test_path,
-            p,
-            case_name,
-            root_case,
-            fields,
-            params["variation"],
-            params["openfoam"]["controlDict"],
-        )
-        for p in parameter_range
-    ]
-
-    parameter_study = ps.ParameterStudy(
-        test_path, results, [case_paths, matrix_solver], runner
-    )
-
-    parameter_study.build_parameter_study()
 
 
 def process_benchmark_description(fn, metadata, supported_file_version="0.1.0"):
@@ -96,6 +61,16 @@ if __name__ == "__main__":
     parameter_study_arguments = process_benchmark_description(
         arguments.get("--parameters", "benchmark.json"), metadata
     )
+
+    pst = ps.ParameterStudyTree(
+        Path(arguments["--folder"]),
+        parameter_study_arguments["variation"],
+        base=getattr(co, parameter_study_arguments["case"]["type"])(
+            parameter_study_arguments["case"]
+        ),
+    )
+
+    pst.set_up()
 
     # extra_args = {"OMP": {"max_processes": int(arguments.get("--omp_max_threads", 1))}}
 

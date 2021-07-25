@@ -12,7 +12,8 @@
 
 
 class Variant:  # At some point this inherits from Setter
-    pass
+    def __init__(self, root_dir):
+        self.root_dir = root_dir
 
 
 class Remesh(Variant):
@@ -71,8 +72,10 @@ class RefineMesh(Variant):
     """ class that calls refineMesh several times """
 
     def __init__(self, root_dir, input_dict, value_dict):
-        super().__init__()
-        print(root_dir, input_dict, value_dict)
+        super().__init__(root_dir)
+        self.input_dict = input_dict
+        self.value = value_dict
+        self.name = str(self.value[0])
 
         # self.set_mesh_modifier(
         #     RefineMeshPrepare(
@@ -89,8 +92,10 @@ class ChangeMatrixSolver(Variant):
     """ class that calls refineMesh several times """
 
     def __init__(self, root_dir, input_dict, value_dict):
-        super().__init__()
-        print(root_dir, input_dict, value_dict)
+        super().__init__(root_dir)
+        self.input_dict = input_dict
+        self.value = value_dict
+        self.name = str("_".join(self.value))
 
 
 # class PathSetter(Variant):
@@ -161,75 +166,3 @@ def construct(
         return True, solver_setter
     except Exception as e:
         return False, None
-
-
-class OpenFOAMTutorialCase:
-    def __init__(self, tutorial_domain, solver, case):
-        self.tutorial_domain = tutorial_domain
-        self.solver = solver
-        self.case = case
-
-    @property
-    def path(self):
-        import os
-
-        foam_tutorials = Path(os.environ["FOAM_TUTORIALS"])
-        return Path(foam_tutorials / self.tutorial_domain / self.solver / self.case)
-
-
-class OpenFOAMExternalCase:
-    def __init__(self, path, solver, case):
-        self.path = path
-        self.solver = solver
-        self.case = case
-
-
-class TestCase:
-    def __init__(self, path, solver):
-        self.path_ = path
-        self.solver = solver
-
-    @property
-    def path(self):
-        return Path(self.path_)
-
-
-def combine(setters):
-    """ combines a tuple of setters """
-    primary = deepcopy(setters[0])
-    primary.combine(setters[1])
-    return primary
-
-
-class ParameterStudy:
-    """A class to create a range of cases and potentially run them
-
-    Here parameter studies are created the following way. First,
-    a set of cases is defined via
-    """
-
-    def __init__(self, test_path, results_aggregator, setters, runner):
-        self.test_path = test_path
-        self.results_aggregator = results_aggregator
-        self.setters = setters
-        self.runner = runner
-
-    def build_parameter_study(self):
-        # test_path, results, executor, setter, arguments):
-        cases = product(*self.setters)
-        cases_combined = map(combine, cases)
-        for case in cases_combined:
-            print("setting up", case)
-            case.set_up()
-            skip = False
-            # clean = arguments["--clean"]
-            # if exist and clean:
-            #     shutil.rmtree(path)
-            #     skip = False
-            # if exist and not clean:
-            #     skip = True
-            # is_base_case = False
-            # base_case_path = (
-            #     test_path / Path("base") / Path("p-" + s.name) / str(n.value)
-            # )
-            self.runner.run(case)
