@@ -85,22 +85,6 @@ class ReBlockMesh(MeshVariant):
         check_output(["blockMesh"], cwd=self.path)
 
 
-# class PathSetter(MeshVariant):
-#     def __init__(self, base_path, path, case_name, root, fields):
-#         super().__init__(
-#             base_path=base_path,
-#             variation_name="{}".format(path),
-#             case_name=case_name,
-#         )
-#         prepare_mesh = PathPrepare(self.path, fields)
-#         prepare_mesh.root = root.path
-#         super().set_enviroment_setter(prepare_mesh)
-
-#     @property
-#     def cache_path(self):
-#         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
-
-
 class ChangeMatrixSolver(Variant):
     """ class that calls refineMesh several times """
 
