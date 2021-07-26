@@ -176,22 +176,11 @@ class CG(SolverSetter):
         super().__init__(path, "CG", fields, defaults)
         self.avail_backend_handler = {
             "OF": {
-                "backend": OF(),
-                "preconditioner": {
-                    "DIC": DIC(),
-                    "FDIC": FDIC(),
-                    "GAMG": GAMG(),
-                    "Diag": Diag(),
-                    "NoPrecond": NoPrecond(),
-                },
+                "preconditioner": ["DIC", "FDIC", "GAMG", "Diag", "none"],
                 "prefix": "P",
             },
             "GKO": {
-                "backend": GKO(),
-                "preconditioner": {
-                    "BJ": BJ(),
-                    "NoPrecond": NoPrecond(),
-                },
+                "preconditioner": ["BJ", "none"],
                 "prefix": "GKO",
             },
         }
@@ -202,22 +191,11 @@ class BiCGStab(SolverSetter):
         super().__init__(path, "BiCGStab", fields, defaults)
         self.avail_backend_handler = {
             "OF": {
-                "backend": OF(),
-                "preconditioner": {
-                    "DIC": DIC(),
-                    "FDIC": FDIC(),
-                    "GAMG": GAMG(),
-                    "Diag": Diag(),
-                    "NoPrecond": NoPrecond(),
-                },
+                "preconditioner": ["DIC", "FDIC", "GAMG", "Diag", "none"],
                 "prefix": "P",
             },
             "GKO": {
-                "backend": GKO(),
-                "preconditioner": {
-                    "BJ": BJ(),
-                    "NoPrecond": NoPrecond(),
-                },
+                "preconditioner": ["BJ", "none"],
                 "prefix": "GKO",
             },
         }

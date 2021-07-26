@@ -29,6 +29,8 @@ class ParameterStudyTree:
             for variant_dict in product(*input_dict["variants"].values())
         ]
 
+        self.cases = [case for case in self.cases if case.valid]
+
         # check for further varations
         self.subvariations = []
         if input_dict.get("variation"):

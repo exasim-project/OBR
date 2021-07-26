@@ -10,6 +10,7 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
     def __init__(self, root_dir, name):
         self.name = name
         super().__init__(root_dir / self.name / "base")
+        self.valid = True
 
 
 class MeshVariant(Variant):
@@ -124,59 +125,11 @@ class ChangeMatrixSolver(Variant):
         self.solver_setter.preconditioner = getattr(ms, value_dict[1])()
         self.solver_setter.executor = getattr(ms, value_dict[2])()
 
+        # check whether preconditioner and executor combinations are supported/valid
+        backend = self.solver_setter.executor.backend
+        support = self.solver_setter.avail_backend_handler[backend]
+        if not self.solver_setter.preconditioner.name in support["preconditioner"]:
+            self.valid = False
+
     def set_up(self):
         self.solver_setter.set_up()
-
-
-def construct(
-    base_path,
-    case_name,
-    field,
-    solver_stubs,
-    extra_args,
-    solver,
-    domain,
-    executor,
-    preconditioner,
-):
-    """
-    construct case variant from string arguments
-
-    usage:
-       solver = construct("CG", "GKO", "OMP")
-    """
-    from OBR.MatrixSolver import (
-        CUDAExecutor,
-        RefExecutor,
-        OMPExecutor,
-        HIPExecutor,
-        MPIExecutor,
-    )
-    import OBR.MatrixSolver as ms
-
-    executor_inst = None
-    if executor == "Ref":
-        executor_inst = RefExecutor()
-    if executor == "OMP":
-        executor_inst = OMPExecutor(**extra_args[executor])
-    if executor == "CUDA":
-        executor_inst = CUDAExecutor()
-    if executor == "HIP":
-        executor_inst = HIPExecutor()
-    if executor == "MPI":
-        executor_inst = MPIExecutor()
-
-    solver_setter = getattr(ms, solver)(base_path, field, case_name, solver_stubs)
-    try:
-        # try to set domain this fails if the domain is not in the map
-        # of domains which implement the given solver
-        solver_setter.set_domain(domain)
-        # try to set preconditioner this fails if the preconditioner is not in the map
-        # of preconditioners domains which implement the given solver
-        solver_setter.set_preconditioner(domain, preconditioner)
-        if executor not in solver_setter.domain.executor_support:
-            0 / 0
-        solver_setter.set_executor(executor_inst)
-        return True, solver_setter
-    except Exception as e:
-        return False, None
