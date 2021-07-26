@@ -7,131 +7,110 @@ import OBR.setFunctions as sf
 
 
 class SolverSetter(Setter):
-    def __init__(
-        self,
-        base_path,
-        solver,
-        field,
-        case_name,
-        solver_stub,
-        preconditioner="none",
-        tolerance="1e-06",
-        min_iters="0",
-        max_iters="1000",
-        update_sys_matrix="no",
-    ):
+    def __init__(self, path, solver_name, fields, defaults):
 
         super().__init__(
-            base_path=base_path,
-            variation_name="{}-{}".format("-".join(field), solver),
-            case_name=case_name,
+            path=path,
         )
-        self.solver_stub = solver_stub
-        self.solver = solver
-        self.preconditioner = preconditioner
-        self.update_sys_matrix = update_sys_matrix
-        self.tolerance = tolerance
-        self.min_iters = min_iters
-        self.max_iters = max_iters
-        self.fields = field
-
-    def set_domain(self, domain):
-        self.domain = self.avail_domain_handler[domain]["domain"]
-        self.add_property(self.domain.name)
-        return self
-
-    def set_preconditioner(self, domain, preconditioner):
-        avail_precond = self.avail_domain_handler[domain]["preconditioner"]
-        self.preconditioner = avail_precond[preconditioner]
-
-        self.add_property(self.preconditioner.name)
-        return self
-
-    def set_executor(self, executor):
-        self.domain.executor = executor
-        self.add_property(executor.name)
-        if hasattr(executor, "enviroment_setter"):
-            self.set_enviroment_setter(executor.enviroment_setter)
-
-    @property
-    def get_solver(self):
-        ret = []
-        for field in self.fields:
-            solver = self.solver
-            if field == "U" and solver == "CG":
-                solver = "BiCGStab"
-            ret.append(solver)
-
-        return ret
+        self.fields = fields
+        self.solver = solver_name
+        self.defaults = defaults
+        self.supported_keys = [
+            "tolerance",
+            "relTol",
+            "minIter",
+            "maxIter",
+            "smoother",
+            "sort",
+            "updaterSysMatrix",
+            "preconditioner",
+            "executor",
+        ]
 
     def set_up(self):
         for field in self.fields:
-            if hasattr(self, "enviroment_setter"):
-                print("has an enviroment setter")
-                self.enviroment_setter.set_up()
-            solver = self.solver
-            if field == "U" and solver == "CG":
+            if field == "U" and self.solver == "CG":
                 solver = "BiCGStab"
+            else:
+                solver = self.solver
 
-            matrix_solver = self.prefix + solver
-            raw_solver_str = "".join(self.solver_stub[field])
-            solver_str = raw_solver_str.format(
-                solver=matrix_solver,
-                tolerance=self.tolerance,
-                preconditioner=self.preconditioner.name,
-                minIter=self.min_iters,
-                maxIter=self.max_iters,
-                executor=self.domain.executor.name,
+            matrix_solver = (
+                self.avail_backend_handler[self.executor.backend]["prefix"] + solver
             )
-            solver_str = '"' + field + '.*"{ ' + solver_str
 
-            print("writing", solver_str, "to", self.controlDict)
-            sf.sed(self.fvSolution, field + "{}", solver_str)
+            raw_solver_str = "solver " + solver + ";"
+            for key in self.supported_keys:
+                sub_dict = self.defaults[field]
+                if key in sub_dict.keys():
+                    raw_solver_str += "{} {};".format(key, str(sub_dict[key]))
+                else:
+                    try:
+                        attr = getattr(self, key).name
+                        raw_solver_str += "{} {};".format(key, attr)
+                    except:
+                        pass
+
+            raw_solver_str = '"' + field + '.*"{ ' + raw_solver_str
+            print(raw_solver_str)
+
+            sf.clear_solver_settings(self.fvSolution, field)
+            sf.sed(self.fvSolution, field + "{}", raw_solver_str)
 
 
 # Executor
 
+
 class Executor:
-    """ An Executor holds its own name and can be queried by the case runner from the case     
-    additionally might prepare the Case/Enviroment before the case is run 
+    """An Executor holds its own name and can be queried by the case runner from the case
+    additionally might prepare the Case/Enviroment before the case is run
     """
-    def __init__(self, name):
+
+    def __init__(self, name, backend):
         self.name = name
+        self.backend = backend
 
-class OFExecutor:
+
+class OFExecutor(Executor):
     def __init__(self, name):
-        super().__init__(name)
+        super().__init__(name, "OF")
 
-class GKOExecutor:
+
+class GKOExecutor(Executor):
     def __init__(self, name):
-        super().__init__(name)
+        super().__init__(name, "GKO")
 
-class MPIExecutor(OFExecutor, max_num_ranks):
+
+class MPI(OFExecutor):
     def __init__(self):
         super().__init__(name="mpi")
-        self.num_ranks = num_ranks
-        self.enviroment_setter = DecomposePar(max_num_ranks)
+        # self.num_ranks = num_ranks
+        # self.enviroment_setter = DecomposePar(max_num_ranks)
 
-class RefExecutor(GKOExecutor):
+
+class Reference(GKOExecutor):
     def __init__(self):
         super().__init__(name="reference")
 
 
-class OMPExecutor(GKOExecutor):
+class Serial(OFExecutor):
+    def __init__(self):
+        super().__init__(name="reference")
+
+
+class OMP(GKOExecutor):
     def __init__(self, max_processes=4):
         super().__init__(name="omp")
-        self.enviroment_setter = PrepareOMPMaxThreads(max_processes)
+        # self.enviroment_setter = PrepareOMPMaxThreads(max_processes)
 
 
-class CUDAExecutor(GKOExecutor):
+class CUDA(GKOExecutor):
     def __init__(self):
         super().__init__(name="cuda")
 
 
-class HIPExecutor(GKOExecutor):
+class HIP(GKOExecutor):
     def __init__(self):
         super().__init__(name="hip")
-
 
 
 # Preconditioner
@@ -165,7 +144,7 @@ class NoPrecond:
     name = "none"
 
 
-# Domain handler
+# Backend handler
 
 
 class OF:
@@ -193,24 +172,11 @@ class GKO:
 
 
 class CG(SolverSetter):
-    def __init__(
-        self,
-        base_path,
-        field,
-        case_name,
-        solver_stub,
-    ):
-        name = "CG"
-        super().__init__(
-            base_path=base_path,
-            solver=name,
-            field=field,
-            case_name=case_name,
-            solver_stub=solver_stub,
-        )
-        self.avail_domain_handler = {
+    def __init__(self, path, fields, defaults):
+        super().__init__(path, "CG", fields, defaults)
+        self.avail_backend_handler = {
             "OF": {
-                "domain": OF(),
+                "backend": OF(),
                 "preconditioner": {
                     "DIC": DIC(),
                     "FDIC": FDIC(),
@@ -218,36 +184,25 @@ class CG(SolverSetter):
                     "Diag": Diag(),
                     "NoPrecond": NoPrecond(),
                 },
+                "prefix": "P",
             },
             "GKO": {
-                "domain": GKO(),
+                "backend": GKO(),
                 "preconditioner": {
                     "BJ": BJ(),
                     "NoPrecond": NoPrecond(),
                 },
+                "prefix": "GKO",
             },
         }
 
 
 class BiCGStab(SolverSetter):
-    def __init__(
-        self,
-        base_path,
-        field,
-        case_name,
-        solver_stub,
-    ):
-        name = "BiCGStab"
-        super().__init__(
-            base_path=base_path,
-            solver=name,
-            field=field,
-            case_name=case_name,
-            solver_stub=solver_stub,
-        )
-        self.avail_domain_handler = {
+    def __init__(self, path, fields, defaults):
+        super().__init__(path, "BiCGStab", fields, defaults)
+        self.avail_backend_handler = {
             "OF": {
-                "domain": OF(),
+                "backend": OF(),
                 "preconditioner": {
                     "DIC": DIC(),
                     "FDIC": FDIC(),
@@ -255,13 +210,15 @@ class BiCGStab(SolverSetter):
                     "Diag": Diag(),
                     "NoPrecond": NoPrecond(),
                 },
+                "prefix": "P",
             },
             "GKO": {
-                "domain": GKO(),
+                "backend": GKO(),
                 "preconditioner": {
                     "BJ": BJ(),
                     "NoPrecond": NoPrecond(),
                 },
+                "prefix": "GKO",
             },
         }
 
@@ -282,8 +239,8 @@ class smooth(SolverSetter):
             case_name=case_name,
             solver_stub=solver_stub,
         )
-        self.avail_domain_handler = {
-            "OF": {"domain": OF(prefix=""), "preconditioner": []},
+        self.avail_backend_handler = {
+            "OF": {"backend": OF(prefix=""), "preconditioner": []},
         }
 
 
@@ -303,9 +260,9 @@ class IR(SolverSetter):
             case_name=case_name,
             solver_stub=solver_stub,
         )
-        self.avail_domain_handler = {
+        self.avail_backend_handler = {
             "GKO": {
-                "domain": GKO(),
+                "backend": GKO(),
                 "preconditioner": {
                     "NoPrecond": NoPrecond(),
                 },

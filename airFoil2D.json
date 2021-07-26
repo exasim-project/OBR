@@ -7,15 +7,15 @@
     "type": "OpenFOAMTutorialCase",
     "solver": "simpleFoam",
     "case": "airFoil2D",
-    "origin": "incompressible",
-    "controlDict": {
-      "stationary": true,
-      "timeSteps": 10
-    }
+    "origin": "incompressible"
   },
   "variation": {
     "name": "mesh",
     "type": "RefineMesh",
+    "controlDict": {
+      "stationary": true,
+      "timeSteps": 10
+    },
     "dimensions": 2,
     "variants": {"refinements":[0, 1]},
     "variation": {
@@ -28,13 +28,14 @@
           "maxIter": 3000,
           "smoother": "none",
           "relTol":  0.01,
+          "tolerance":  0.01,
           "updateSysMatrix": "yes",
           "sort": "yes"
           }
         },
       "variants": {"solver": ["CG", "BiCGStab"],
-                   "preconditioner":["none", "BJ"],
-                   "executor":["cuda", "hip", "omp", "reference"]}
+                   "preconditioner":["NoPrecond", "BJ"],
+                   "executor":["CUDA", "HIP", "OMP", "Serial"]}
     }
   }
 }

@@ -56,6 +56,7 @@ class ParameterStudyTree:
         # copy the base case into the tree
         if self.base:
             self.base.copy_to(self.root_dir / "base")
+            # apply controlDict settings
         else:
             self.copy_base_to(self.variation_dir / "base")
 

@@ -1,20 +1,44 @@
 # #!/usr/bin/env python3
+from OBR.OpenFOAMCase import OpenFOAMCase
 from subprocess import check_output
+from . import MatrixSolver as ms
+from . import EnviromentSetters as es
+from .OpenFOAMCase import OpenFOAMCase
 
 
-class Variant:  # At some point this inherits from Setter
+class Variant(OpenFOAMCase):  # At some point this inherits from Setter
     def __init__(self, root_dir, name):
-        self.root_dir = root_dir
         self.name = name
-
-    @property
-    def path(self):
-        return self.root_dir / self.name / "base"
+        super().__init__(root_dir / self.name / "base")
 
 
-class MeshVariant(Variant):  # At some point this inherits from Setter
+class MeshVariant(Variant):
+    def __init__(self, root_dir, name, cell_ratio, controlDictArgs):
+        super().__init__(root_dir, name)
+        self.prepare_controlDict = es.PrepareControlDict(
+            self, cell_ratio, controlDictArgs
+        )
+
+
+class LinearSolverVariant(Variant):
     def __init__(self, root_dir, name):
         super().__init__(root_dir, name)
+
+
+class RefineMesh(MeshVariant):
+    """ class that calls refineMesh several times """
+
+    def __init__(self, root_dir, input_dict, value_dict):
+        self.value = value_dict[0]
+        name = str(self.value)
+        cell_ratio = 4 ** self.value
+        print(input_dict)
+        super().__init__(root_dir, name, cell_ratio, input_dict["controlDict"])
+
+    def set_up(self):
+        self.prepare_controlDict.set_up()
+        for _ in range(self.value):
+            check_output(["refineMesh", "-overwrite"], cwd=self.path)
 
 
 class Remesh(MeshVariant):
@@ -69,34 +93,6 @@ class ReBlockMesh(MeshVariant):
         )
 
 
-class RefineMesh(MeshVariant):
-    """ class that calls refineMesh several times """
-
-    def __init__(self, root_dir, input_dict, value_dict):
-        self.value = value_dict[0]
-        name = str(self.value)
-        super().__init__(root_dir, name)
-        self.input_dict = input_dict
-
-    def set_up(self):
-        for _ in range(self.value):
-            check_output(["refineMesh", "-overwrite"], cwd=self.path)
-
-
-class ChangeMatrixSolver(MeshVariant):
-    """ class that calls refineMesh several times """
-
-    def __init__(self, root_dir, input_dict, value_dict):
-        print(input_dict, value_dict)
-        self.value = value_dict
-        name = str("_".join(self.value))
-        super().__init__(root_dir, name)
-        self.input_dict = input_dict
-
-    def set_up(self):
-        pass
-
-
 # class PathSetter(MeshVariant):
 #     def __init__(self, base_path, path, case_name, root, fields):
 #         super().__init__(
@@ -111,6 +107,25 @@ class ChangeMatrixSolver(MeshVariant):
 #     @property
 #     def cache_path(self):
 #         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
+
+
+class ChangeMatrixSolver(Variant):
+    """ class that calls refineMesh several times """
+
+    def __init__(self, root_dir, input_dict, value_dict):
+        print(input_dict, value_dict)
+        self.value = value_dict
+        name = str("_".join(self.value))
+        super().__init__(root_dir, name)
+        self.input_dict = input_dict
+        self.solver_setter = getattr(ms, value_dict[0])(
+            self.path, input_dict["fields"], input_dict["defaults"]
+        )
+        self.solver_setter.preconditioner = getattr(ms, value_dict[1])()
+        self.solver_setter.executor = getattr(ms, value_dict[2])()
+
+    def set_up(self):
+        self.solver_setter.set_up()
 
 
 def construct(
