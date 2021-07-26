@@ -19,7 +19,6 @@ class ParameterStudyTree:
         self.case_dir = root_dir / "base"
         self.variation_dir = root_dir / ("Variation_" + input_dict["name"])
         self.variation_type = input_dict["type"]
-        print("init", root_dir, input_dict)
 
         # go through the top level
         # construct the type of variation
@@ -33,9 +32,7 @@ class ParameterStudyTree:
         # check for further varations
         self.subvariations = []
         if input_dict.get("variation"):
-            print("create variation")
             for case in self.cases:
-                print("create variation", case)
                 self.subvariations.append(
                     ParameterStudyTree(
                         self.variation_dir / case.name,
@@ -60,15 +57,17 @@ class ParameterStudyTree:
         if self.base:
             self.base.copy_to(self.root_dir / "base")
         else:
-            print("copy_base_to")
             self.copy_base_to(self.variation_dir / "base")
-            # self.copy_base_to(self.root_dir / "base")
 
         # if it has a parent case copy the parent case
         # and apply modifiers
         for case in self.cases:
-            sf.ensure_path(self.variation_dir / case.name)
+            case_dir = self.variation_dir / case.name
+            sf.ensure_path(case_dir)
             self.copy_base_to(self.variation_dir / case.name / "base")
+            case.set_up()
+            if not self.subvariations:
+                print("writing exec script", case_dir / "base")
 
         # descend one level to the subvariations
         if self.subvariations:
