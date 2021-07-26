@@ -1,22 +1,23 @@
 # #!/usr/bin/env python3
-# from OBR.EnviromentSetters import DefaultPrepareEnviroment
-# from itertools import product
-# from pathlib import Path
-# from subprocess import check_output
-# from copy import deepcopy
-# from OBR.Setter import Setter
-# from OBR.MatrixSolver import SolverSetter
-# from OBR.EnviromentSetters import CellsPrepare, PathPrepare, RefineMeshPrepare
-
-# from . import setFunctions as sf
+from subprocess import check_output
 
 
 class Variant:  # At some point this inherits from Setter
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, name):
         self.root_dir = root_dir
+        self.name = name
+
+    @property
+    def path(self):
+        return self.root_dir / self.name / "base"
 
 
-class Remesh(Variant):
+class MeshVariant(Variant):  # At some point this inherits from Setter
+    def __init__(self, root_dir, name):
+        super().__init__(root_dir, name)
+
+
+class Remesh(MeshVariant):
     def __init__(self, base_path, refinement, case_name, root, fields):
         self.cells = refinement
         self.root = root
@@ -37,7 +38,7 @@ class Remesh(Variant):
         return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
 
 
-class ReBlockMesh(Variant):
+class ReBlockMesh(MeshVariant):
     """ class to set cells and  calls blockMesh  """
 
     def __init__(
@@ -68,37 +69,35 @@ class ReBlockMesh(Variant):
         )
 
 
-class RefineMesh(Variant):
+class RefineMesh(MeshVariant):
     """ class that calls refineMesh several times """
 
     def __init__(self, root_dir, input_dict, value_dict):
-        super().__init__(root_dir)
+        self.value = value_dict[0]
+        name = str(self.value)
+        super().__init__(root_dir, name)
         self.input_dict = input_dict
-        self.value = value_dict
-        self.name = str(self.value[0])
 
-        # self.set_mesh_modifier(
-        #     RefineMeshPrepare(
-        #         self.path,
-        #         refinements,
-        #         fields,
-        #         meshArgs,
-        #         controlDictArgs,
-        #     )
-        # )
+    def set_up(self):
+        for _ in range(self.value):
+            check_output(["refineMesh", "-overwrite"], cwd=self.path)
 
 
-class ChangeMatrixSolver(Variant):
+class ChangeMatrixSolver(MeshVariant):
     """ class that calls refineMesh several times """
 
     def __init__(self, root_dir, input_dict, value_dict):
-        super().__init__(root_dir)
-        self.input_dict = input_dict
+        print(input_dict, value_dict)
         self.value = value_dict
-        self.name = str("_".join(self.value))
+        name = str("_".join(self.value))
+        super().__init__(root_dir, name)
+        self.input_dict = input_dict
+
+    def set_up(self):
+        pass
 
 
-# class PathSetter(Variant):
+# class PathSetter(MeshVariant):
 #     def __init__(self, base_path, path, case_name, root, fields):
 #         super().__init__(
 #             base_path=base_path,
