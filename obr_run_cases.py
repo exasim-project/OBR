@@ -28,6 +28,9 @@ if __name__ == "__main__":
             "host": sf.get_process(["hostname"]),
             "top": sf.get_process(["top", "-bn1"]).split("\n")[:15],
             "uptime": sf.get_process(["uptime"]),
+            "libOGL.so": sf.get_process(
+                ["md5sum", os.getenv("FOAM_USER_LIBBIN") + "/libOGL.so"]
+            ),
         },
     }
     metadata.update(versions)

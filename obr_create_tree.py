@@ -57,6 +57,7 @@ if __name__ == "__main__":
 
     pst = ps.ParameterStudyTree(
         Path(arguments["--folder"]),
+        parameter_study_arguments,
         parameter_study_arguments["variation"],
         base=getattr(co, parameter_study_arguments["case"]["type"])(
             parameter_study_arguments["case"]

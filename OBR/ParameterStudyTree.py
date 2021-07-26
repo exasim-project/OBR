@@ -9,7 +9,7 @@ import json
 class ParameterStudyTree:
     """ class to construct the file system tree of the cases """
 
-    def __init__(self, root_dir, input_dict, parent=None, base=None):
+    def __init__(self, root_dir, root_dict, input_dict, parent=None, base=None):
         """parent = the part of the tree above
         base = the base case on which the tree is based
         """
@@ -20,6 +20,7 @@ class ParameterStudyTree:
         self.case_dir = root_dir / "base"
         self.variation_dir = root_dir / ("Variation_" + input_dict["name"])
         self.variation_type = input_dict["type"]
+        self.root_dict = root_dict
 
         # go through the top level
         # construct the type of variation
@@ -39,6 +40,7 @@ class ParameterStudyTree:
                 self.subvariations.append(
                     ParameterStudyTree(
                         self.variation_dir / case.name,
+                        self.root_dict,
                         input_dict["variation"],
                         parent=self,
                     )
@@ -71,7 +73,7 @@ class ParameterStudyTree:
             self.copy_base_to(self.variation_dir / case.name / "base")
             case.set_up()
             if not self.subvariations:
-                args = {"exec": ["simpleFoam"]}
+                args = {"exec": [self.root_dict["case"]["solver"]]}
                 jsonString = json.dumps(args)
                 with open(case_dir / "base/obr.json", "w") as jsonFile:
                     jsonFile.write(jsonString)
