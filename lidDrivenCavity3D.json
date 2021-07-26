@@ -1,49 +1,43 @@
 {
-  "OBR": {
-    "version": "0.0.0"
+  "obr": {
+    "OBR_MIN_VERSION": "0.2.0",
+    "BENCHMARK_FILE_VERSION": "0.1.0"
   },
-  "openfoam":{
+  "case": {
+    "type": "OpenFOAMExternalCase",
     "solver": "icoFoam",
     "case": "lidDrivenCavity3D",
-    "type": "OpenFOAMExternalCase",
-    "origin": "/home/go/data/code/hpc/Lid_driven_cavity-3d/S",
-    "git": "https://develop.openfoam.com/committees/hpc.git",
-    "solver_stubs": {
-      "p": [
-        "solver {solver};",
-        "tolerance {tolerance};",
-        "minIter {minIter};",
-        "maxIter {maxIter};",
-        "executor {executor};",
-        "preconditioner {preconditioner};",
-        "smoother none;",
-        "relTol 0.0;",
-        "updateSysMatrix no;",
-        "sort yes;"
-      ],
-      "U": [
-        "solver {solver};",
-        "tolerance {tolerance};",
-        "minIter {minIter};",
-        "maxIter {maxIter};",
-        "executor {executor};",
-        "preconditioner {preconditioner};",
-        "smoother none;",
-        "relTol 0.0;",
-        "updateSysMatrix yes;",
-        "sort yes;"
-      ]
-     },
-    "controlDict": {
-      "stationary": false,
-      "timeSteps": 5
-    }
+    "origin": "~/data/code/hpc/Lid_driven_cavity-3d/S",
+    "git": "https://develop.openfoam.com/committees/hpc.git"
   },
   "variation": {
-      "type": "ReBlockMesh",
-      "decomposeMesh": true,
-      "number_of_subdomains": 20,
-      "dimensions": "3d",
-      "range": [25, 50, 75, 100]
+    "name": "mesh",
+    "type": "ReBlockMesh",
+    "dimensions": 3,
+    "variants":{"cells":[25, 50, 75, 100],
+                "block": "100 100 100"},
+    "controlDict": {
+      "stationary": false,
+      "timeSteps": 10
+    },
+    "variation": {
+      "name": "matrix_solver",
+      "type": "ChangeMatrixSolver",
+      "fields": ["p"],
+      "defaults": {
+        "p" : {
+          "minIter": 0,
+          "maxIter": 3000,
+          "smoother": "none",
+          "relTol":  0.01,
+          "tolerance":  0.01,
+          "updateSysMatrix": "yes",
+          "sort": "yes"
+          }
+        },
+      "variants": {"solver": ["CG", "BiCGStab"],
+                   "preconditioner":["NoPrecond", "BJ"],
+                   "executor":["CUDA", "HIP", "OMP", "Serial"]}
+    }
   }
 }

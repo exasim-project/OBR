@@ -4,6 +4,7 @@ from subprocess import check_output
 from . import MatrixSolver as ms
 from . import EnviromentSetters as es
 from .OpenFOAMCase import OpenFOAMCase
+from . import setFunctions as sf
 
 
 class Variant(OpenFOAMCase):  # At some point this inherits from Setter
@@ -66,32 +67,22 @@ class Remesh(MeshVariant):
 class ReBlockMesh(MeshVariant):
     """ class to set cells and  calls blockMesh  """
 
-    def __init__(
-        self,
-        base_path,
-        cells,
-        case_name,
-        root,
-        fields,
-        meshArgs,
-        controlDictArgs,
-    ):
-        super().__init__(
-            base_path,
-            cells,
-            case_name,
-            root,
-            fields,
-        )
+    def __init__(self, root_dir, input_dict, value_dict):
+        self.value = value_dict[0]
+        name = str(self.value)
+        cell_ratio = 1
+        self.input_dict = input_dict
+        print(input_dict)
+        super().__init__(root_dir, name, cell_ratio, input_dict["controlDict"])
 
-        self.set_mesh_modifier(
-            CellsPrepare(
-                self.path,
-                fields,
-                meshArgs,
-                controlDictArgs,
-            )
+    def set_up(self):
+        self.prepare_controlDict.set_up()
+        sf.set_cells(
+            self.blockMeshDict,
+            self.input_dict["variants"]["block"],
+            "{x} {x} {x}".format(x=str(self.value)),
         )
+        check_output(["blockMesh"], cwd=self.path)
 
 
 # class PathSetter(MeshVariant):

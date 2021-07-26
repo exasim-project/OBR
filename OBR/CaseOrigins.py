@@ -29,9 +29,9 @@ class OpenFOAMTutorialCase(CaseOrigin):
 class OpenFOAMExternalCase(CaseOrigin):
     def __init__(self, args_dict):
         super().__init__(args_dict)
-        self.path = path
-        self.solver = solver
-        self.case = case
+        print(args_dict)
+        self.path = Path(self.args["origin"]).expanduser()
+        self.solver = self.args["solver"]
 
 
 class TestCase(CaseOrigin):

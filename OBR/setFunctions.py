@@ -31,6 +31,7 @@ def set_cells(blockMeshDict, old_cells, new_cells):
 
 def set_mesh_boundary_type_to_wall(blockMeshDict):
     """ """
+    print("DEPRECATED")
     sed(blockMeshDict, "type[  ]*cyclic", "type wall")
 
 

@@ -38,7 +38,7 @@ class SolverSetter(Setter):
                 self.avail_backend_handler[self.executor.backend]["prefix"] + solver
             )
 
-            raw_solver_str = "solver " + solver + ";"
+            raw_solver_str = "solver " + matrix_solver + ";"
             for key in self.supported_keys:
                 sub_dict = self.defaults[field]
                 if key in sub_dict.keys():
