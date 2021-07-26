@@ -3,6 +3,7 @@ from . import ParameterStudyVariants as variants
 from . import setFunctions as sf
 from itertools import product
 from subprocess import check_output
+import json
 
 
 class ParameterStudyTree:
@@ -70,6 +71,11 @@ class ParameterStudyTree:
             self.copy_base_to(self.variation_dir / case.name / "base")
             case.set_up()
             if not self.subvariations:
+                args = {"exec": ["simpleFoam"]}
+                jsonString = json.dumps(args)
+                with open(case_dir / "base/obr.json", "w") as jsonFile:
+                    jsonFile.write(jsonString)
+
                 print("writing exec script", case_dir / "base")
 
         # descend one level to the subvariations

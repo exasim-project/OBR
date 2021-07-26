@@ -20,6 +20,7 @@ from pathlib import Path
 from OBR import ParameterStudyTree as ps
 from OBR import CaseOrigins as co
 from OBR import setFunctions as sf
+from OBR.metadata import versions
 
 
 def process_benchmark_description(fn, metadata, supported_file_version="0.1.0"):
@@ -46,15 +47,7 @@ def process_benchmark_description(fn, metadata, supported_file_version="0.1.0"):
 
 
 if __name__ == "__main__":
-    metadata = {
-        "OBR_REPORT_VERSION": "0.1.0",
-        "OBR_VERSION": "0.2.0",
-        "node_data": {
-            "host": sf.get_process(["hostname"]),
-            "top": sf.get_process(["top", "-bn1"]).split("\n")[:15],
-            "uptime": sf.get_process(["uptime"]),
-        },
-    }
+    metadata = versions
 
     arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
 

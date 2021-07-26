@@ -19,7 +19,8 @@ class DefaultPrepareEnviroment:
 
 
 class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
-    """ Sets the enviroment variable for OMP """
+    """ Sets the enviroment variable for OMP
+    """
 
     def __init__(self, max_processes=1, multi=2):
         self.processes = []
@@ -106,7 +107,12 @@ class DecomposePar(CachePrepare):
 
     def __init__(self, path, meshArgs):
         self.path = path
-        self.number_of_subdomains = meshArgs["number_of_subdomains"]
+        self.current_state = 0
+        if meshArgs.get("number_of_subdomains", false):
+            self.number_of_subdomains = [meshArgs["number_of_subdomains"]]
+        else:
+           self.number_of_subdomains = list(range(meshArgs["max_subdomains"],meshArgs["subdomain_steps"]))
+
 
     def set_number_of_subdomains(self):
         sf.set_number_of_subdomains(
@@ -119,6 +125,7 @@ class DecomposePar(CachePrepare):
     def set_up(self):
         self.set_number_of_subdomains()
         self.call_decomposePar()
+        return self.number_of_subdomains
 
 
 class CellsPrepare(CachePrepare):
