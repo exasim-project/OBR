@@ -8,34 +8,38 @@ from . import setFunctions as sf
 
 
 class Variant(OpenFOAMCase):  # At some point this inherits from Setter
-    def __init__(self, root_dir, name):
+    def __init__(self, root_dir, name, track_args):
         self.name = name
         super().__init__(root_dir / self.name / "base")
         self.valid = True
+        self.track_args = track_args
 
 
 class MeshVariant(Variant):
-    def __init__(self, root_dir, name, cell_ratio, controlDictArgs):
-        super().__init__(root_dir, name)
+    def __init__(self, root_dir, name, cell_ratio, controlDictArgs, track_args):
+        super().__init__(root_dir, name, track_args)
         self.prepare_controlDict = es.PrepareControlDict(
             self, cell_ratio, controlDictArgs
         )
 
 
 class LinearSolverVariant(Variant):
-    def __init__(self, root_dir, name):
-        super().__init__(root_dir, name)
+    def __init__(self, root_dir, name, track_args):
+        super().__init__(root_dir, name, track_args)
 
 
 class RefineMesh(MeshVariant):
     """ class that calls refineMesh several times """
 
-    def __init__(self, root_dir, input_dict, value_dict):
+    def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict[0]
         name = str(self.value)
         cell_ratio = 4 ** self.value
         print(input_dict)
-        super().__init__(root_dir, name, cell_ratio, input_dict["controlDict"])
+        super().__init__(
+            root_dir, name, cell_ratio, input_dict["controlDict"], track_args
+        )
+        self.track_args["resolution"] = self.value
 
     def set_up(self):
         self.prepare_controlDict.set_up()
@@ -43,37 +47,19 @@ class RefineMesh(MeshVariant):
             check_output(["refineMesh", "-overwrite"], cwd=self.path)
 
 
-class Remesh(MeshVariant):
-    def __init__(self, base_path, refinement, case_name, root, fields):
-        self.cells = refinement
-        self.root = root
-        super().__init__(
-            base_path=base_path,
-            variation_name="{}".format(refinement),
-            case_name=case_name,
-        )
-
-    def set_mesh_modifier(self, remesh):
-
-        prepare_mesh = remesh
-        prepare_mesh.root = self.root.path
-        super().set_enviroment_setter(prepare_mesh)
-
-    @property
-    def cache_path(self):
-        return self.enviroment_setter.base_path(str(self.cells)) / self.root.case
-
-
 class ReBlockMesh(MeshVariant):
     """ class to set cells and  calls blockMesh  """
 
-    def __init__(self, root_dir, input_dict, value_dict):
+    def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict[0]
         name = str(self.value)
         cell_ratio = 1
         self.input_dict = input_dict
         print(input_dict)
-        super().__init__(root_dir, name, cell_ratio, input_dict["controlDict"])
+        super().__init__(
+            root_dir, name, cell_ratio, input_dict["controlDict"], track_args
+        )
+        self.track_args["resolution"] = self.value
 
     def set_up(self):
         self.prepare_controlDict.set_up()
@@ -88,11 +74,11 @@ class ReBlockMesh(MeshVariant):
 class ChangeMatrixSolver(Variant):
     """ class that calls refineMesh several times """
 
-    def __init__(self, root_dir, input_dict, value_dict):
+    def __init__(self, root_dir, input_dict, value_dict, track_args):
         print(input_dict, value_dict)
         self.value = value_dict
         name = str("_".join(self.value))
-        super().__init__(root_dir, name)
+        super().__init__(root_dir, name, track_args)
         self.input_dict = input_dict
         self.solver_setter = getattr(ms, value_dict[0])(
             self.path, input_dict["fields"], input_dict["defaults"]

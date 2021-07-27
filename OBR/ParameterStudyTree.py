@@ -3,13 +3,16 @@ from . import ParameterStudyVariants as variants
 from . import setFunctions as sf
 from itertools import product
 from subprocess import check_output
+from copy import deepcopy
 import json
 
 
 class ParameterStudyTree:
     """ class to construct the file system tree of the cases """
 
-    def __init__(self, root_dir, root_dict, input_dict, parent=None, base=None):
+    def __init__(
+        self, root_dir, root_dict, input_dict, track_args, parent=None, base=None
+    ):
         """parent = the part of the tree above
         base = the base case on which the tree is based
         """
@@ -26,7 +29,7 @@ class ParameterStudyTree:
         # construct the type of variation
         self.cases = [
             getattr(variants, self.variation_type)(
-                self.variation_dir, self.input_dict, variant_dict
+                self.variation_dir, self.input_dict, variant_dict, deepcopy(track_args)
             )
             for variant_dict in product(*input_dict["variants"].values())
         ]
@@ -42,6 +45,7 @@ class ParameterStudyTree:
                         self.variation_dir / case.name,
                         self.root_dict,
                         input_dict["variation"],
+                        case.track_args,
                         parent=self,
                     )
                 )
@@ -74,12 +78,9 @@ class ParameterStudyTree:
             case.set_up()
             if not self.subvariations:
                 # TODO
-                args = {
-                    "exec": [self.root_dict["case"]["solver"]],
-                    "processes": 1,
-                    "resolution": 1,
-                }
-                jsonString = json.dumps(args)
+                track_args = case.track_args
+                track_args["exec"] = [self.root_dict["case"]["solver"]]
+                jsonString = json.dumps(track_args)
                 with open(case_dir / "base/obr.json", "w") as jsonFile:
                     jsonFile.write(jsonString)
 

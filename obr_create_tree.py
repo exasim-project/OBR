@@ -55,10 +55,13 @@ if __name__ == "__main__":
         arguments.get("--parameters", "benchmark.json"), metadata
     )
 
+    track_args = {"resolution": 0, "processes": 1}
+
     pst = ps.ParameterStudyTree(
         Path(arguments["--folder"]),
         parameter_study_arguments,
         parameter_study_arguments["variation"],
+        track_args,
         base=getattr(co, parameter_study_arguments["case"]["type"])(
             parameter_study_arguments["case"]
         ),
