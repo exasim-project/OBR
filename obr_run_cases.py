@@ -47,6 +47,7 @@ if __name__ == "__main__":
     arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
 
     results = ra.Results(arguments["--report"])
+    results.write_comment([str(metadata)])
     for root, folder, files in os.walk(Path(arguments["--folder"]).expanduser()):
 
         if arguments.get("--filter"):
