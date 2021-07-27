@@ -73,7 +73,12 @@ class ParameterStudyTree:
             self.copy_base_to(self.variation_dir / case.name / "base")
             case.set_up()
             if not self.subvariations:
-                args = {"exec": [self.root_dict["case"]["solver"]]}
+                # TODO
+                args = {
+                    "exec": [self.root_dict["case"]["solver"]],
+                    "processes": 1,
+                    "resolution": 1,
+                }
                 jsonString = json.dumps(args)
                 with open(case_dir / "base/obr.json", "w") as jsonFile:
                     jsonFile.write(jsonString)

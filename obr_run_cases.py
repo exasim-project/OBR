@@ -11,12 +11,20 @@
         --clean             Remove existing cases [default: False].
         --filter=<json> pass the parameters for given parameter study
         --folder=<folder>   Target folder  [default: Test].
+        --test-run          Run every case only once [default: False]
+        --min_runs=<n>      Number of applications runs [default: 5].
+        --time_runs=<s>     Time to applications runs [default: 60].
+        --fail_on_error     exit benchmark script when a run fails [default: False].
+        --continue_on_failure continue running benchmark and timing even on failure [default: False].
+        --report=<filename> Target file to store stats [default: report.csv].
 """
 
 
 from docopt import docopt
 from OBR.metadata import versions
 from OBR import setFunctions as sf
+from OBR import CaseRunner as cr
+from OBR import ResultsAggregator as ra
 from pathlib import Path
 import os
 import json
@@ -34,18 +42,22 @@ if __name__ == "__main__":
         },
     }
     metadata.update(versions)
+    print(metadata)
 
     arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
 
+    results = ra.Results(arguments["--report"])
     for root, folder, files in os.walk(Path(arguments["--folder"]).expanduser()):
+
+        if arguments.get("--filter"):
+            filt = arguments.get("--filter").split(",")
+            filt = [f in root for f in filt]
+            if any(filt):
+                continue
         if "obr.json" in files:
-            print("read json file", root)
+            case_runner = cr.CaseRunner(results, arguments)
             fn = Path(root) / "obr.json"
             with open(fn, "r") as parameters_handle:
                 parameters_str = parameters_handle.read()
             solver_arguments = json.loads(parameters_str)
-            cmd = solver_arguments["exec"]
-            print(check_output(cmd, cwd=root))
-
-    metadata.update(versions)
-    print(metadata)
+            case_runner.run(root, solver_arguments)

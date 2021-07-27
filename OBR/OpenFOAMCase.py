@@ -7,7 +7,7 @@ class OpenFOAMCase:
     """ A class for simple access to typical OpenFOAM files"""
 
     def __init__(self, path):
-        self.path_ = path
+        self.path_ = Path(path)
 
     @property
     def path(self):

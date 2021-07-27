@@ -24,6 +24,44 @@ def clean_block_from_file(fn, block_starts, block_end, replace):
                 f.write(line)
 
 
+def read_block_from_file(fn, block_starts, block_end):
+    ret = []
+    with open(fn, "r") as f:
+        lines = f.readlines()
+        started = False
+        for line in lines:
+            is_start = [block_start in line for block_start in block_starts]
+            if any(is_start):
+                ret.append(line)
+                started = True
+            if started:
+                ret.append(line)
+            if started and block_end in line:
+                return ret
+    return []
+
+
+def find_in_block(fn, field, keyword, default):
+    block = read_block_from_file(fn, ['"' + field + '.*"', field + "\n"], "}")
+    for line in block:
+        for token in line.split(";"):
+            if keyword in token:
+                return token.split()[-1]
+    return default
+
+
+def get_executor(fn, field):
+    return find_in_block(fn, field, "executor", "Serial")
+
+
+def get_solver(fn, field):
+    return find_in_block(fn, field, "solver", "unknown")
+
+
+def get_preconditioner(fn, field):
+    return find_in_block(fn, field, "preconditioner", "unknown")
+
+
 def set_cells(blockMeshDict, old_cells, new_cells):
     """ """
     sed(blockMeshDict, old_cells, new_cells)
