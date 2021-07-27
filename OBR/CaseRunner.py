@@ -63,6 +63,7 @@ class CaseRunner:
             log_path = log_path.with_suffix(".log")
             with open(log_path, "w") as log_handle:
                 log_handle.write(log_str)
+            check_output(["cp", log_path, self.log_fold])
             keys = {
                 "{}:  Solving for {}".format(s, f): [
                     "init_residual",

@@ -2,13 +2,16 @@
 
 from pathlib import Path
 from OBR import setFunctions as sf
+from subprocess import check_output
 
 
 class Results:
     """ A class to collect results and writ to a csv file """
 
-    def __init__(self, fn):
-        self.fn = Path(fn)
+    def __init__(self, fold, fn):
+        self.fn = Path(fold) / fn
+        self.log_fold = Path(fold) / "Logs"
+        check_output(["mkdir", "-p", self.log_fold])
 
         self.columns = [
             "executor_p",

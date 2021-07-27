@@ -17,6 +17,7 @@
         --fail_on_error     exit benchmark script when a run fails [default: False].
         --continue_on_failure continue running benchmark and timing even on failure [default: False].
         --report=<filename> Target file to store stats [default: report.csv].
+        --results_folder=<foldername> Target folder to store stats and logs [default: .].
 """
 
 
@@ -46,7 +47,7 @@ if __name__ == "__main__":
 
     arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
 
-    results = ra.Results(arguments["--report"])
+    results = ra.Results(arguments["--results_folder"], arguments["--report"])
     results.write_comment([str(metadata)])
     for root, folder, files in os.walk(Path(arguments["--folder"]).expanduser()):
 
