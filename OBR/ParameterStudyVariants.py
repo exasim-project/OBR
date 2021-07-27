@@ -65,9 +65,10 @@ class ReBlockMesh(MeshVariant):
         self.prepare_controlDict.set_up()
         sf.set_cells(
             self.blockMeshDict,
-            self.input_dict["variants"]["block"],
+            self.input_dict["block"],
             "{x} {x} {x}".format(x=str(self.value)),
         )
+        print("run blockMesh", self.path)
         check_output(["blockMesh"], cwd=self.path)
 
 
@@ -88,8 +89,11 @@ class ChangeMatrixSolver(Variant):
 
         # check whether preconditioner and executor combinations are supported/valid
         backend = self.solver_setter.executor.backend
-        support = self.solver_setter.avail_backend_handler[backend]
-        if not self.solver_setter.preconditioner.name in support["preconditioner"]:
+        if backend in self.solver_setter.avail_backend_handler.keys():
+            support = self.solver_setter.avail_backend_handler[backend]
+            if not self.solver_setter.preconditioner.name in support["preconditioner"]:
+                self.valid = False
+        else:
             self.valid = False
 
     def set_up(self):

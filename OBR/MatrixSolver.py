@@ -22,7 +22,7 @@ class SolverSetter(Setter):
             "maxIter",
             "smoother",
             "sort",
-            "updaterSysMatrix",
+            "updateSysMatrix",
             "preconditioner",
             "executor",
         ]
@@ -223,26 +223,11 @@ class smooth(SolverSetter):
 
 
 class IR(SolverSetter):
-    def __init__(
-        self,
-        base_path,
-        field,
-        case_name,
-        solver_stub,
-    ):
-        name = "IR"
-        super().__init__(
-            base_path=base_path,
-            solver=name,
-            field=field,
-            case_name=case_name,
-            solver_stub=solver_stub,
-        )
+    def __init__(self, path, fields, defaults):
+        super().__init__(path, "IR", fields, defaults)
         self.avail_backend_handler = {
             "GKO": {
-                "backend": GKO(),
-                "preconditioner": {
-                    "NoPrecond": NoPrecond(),
-                },
-            }
+                "preconditioner": ["none"],
+                "prefix": "GKO",
+            },
         }
