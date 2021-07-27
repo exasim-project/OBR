@@ -12,8 +12,8 @@
         --filter=<json> pass the parameters for given parameter study
         --folder=<folder>   Target folder  [default: Test].
         --test-run          Run every case only once [default: False]
-        --min_runs=<n>      Number of applications runs [default: 5].
-        --time_runs=<s>     Time to applications runs [default: 60].
+        --min_runs=<n>      Number of applications runs [default: 3].
+        --time_runs=<s>     Time to applications runs [default: 20].
         --fail_on_error     exit benchmark script when a run fails [default: False].
         --continue_on_failure continue running benchmark and timing even on failure [default: False].
         --report=<filename> Target file to store stats [default: report.csv].
