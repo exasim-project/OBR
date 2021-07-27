@@ -27,7 +27,9 @@ class CaseRunner:
 
     def warm_up(self, case, solver_cmd):
         original_end_time = sf.get_end_time(case.controlDict)
+        print("original_end_time",original_end_time)
         deltaT = sf.read_deltaT(case.controlDict)
+        print("delta_t",deltaT)
 
         sf.set_end_time(case.controlDict, 1 * deltaT)
 
@@ -43,40 +45,43 @@ class CaseRunner:
 
     def post_pro_logs_for_timings(self, ret):
         try:
-            end = datetime.datetime.now()
             log_str = ret.decode("utf-8")
             keys_timings = {
                 "linear solve p": ["time"],
                 "linear solve U": ["time"],
             }
             ff_timings = ow.read_log_str(log_str, keys_timings)
+            #print(log_str)
+            #print(ff_timings)
 
             # FIXME get an average of the execution times
             return ff_timings.loc[0]["time"].values[9:11]
-        except:
+        except Exception as e:
+            print("logs_for_timings", e)
             return (0, 0)
 
-    def post_pro_logs_for_iters(self, path, ret, solver):
+    def post_pro_logs_for_iters(self, path, ret, solver, log_fold):
         try:
             log_hash = hashlib.md5(ret).hexdigest()
             log_path = path / log_hash
             log_path = log_path.with_suffix(".log")
+            log_str = ret.decode("utf-8")
             with open(log_path, "w") as log_handle:
                 log_handle.write(log_str)
-            check_output(["cp", log_path, self.log_fold])
+            check_output(["cp", log_path, log_fold])
             keys = {
                 "{}:  Solving for {}".format(s, f): [
                     "init_residual",
                     "final_residual",
                     "iterations",
                 ]
-                for f, s in zip(self.results.fields, solver)
+                for f, s in zip(["p", "U"], solver)
             }
             ff = ow.read_log_str(log_str, keys)
-            print(ff)
+            print("log_iter",keys,log_str)
             return log_hash, int(ff["iterations"].sum())
         except Exception as e:
-            print("Exception processing logs", e)
+            print("Exception processing logs", e, ret)
             return 0, 0
 
     def run(self, path, parameter):
@@ -118,6 +123,6 @@ class CaseRunner:
 
             if number_of_runs == 1:
                 solver = self.results.get_solver(case)
-                log_hash, iterations = self.post_pro_logs_for_iters(path, solver, ret)
+                log_hash, iterations = self.post_pro_logs_for_iters(case.path, ret, solver, self.results.log_fold)
 
             self.results.add(log_hash, warm_up, run_time, iterations, time_p, time_u)

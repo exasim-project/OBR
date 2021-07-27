@@ -3,6 +3,7 @@
 from pathlib import Path
 from OBR import setFunctions as sf
 from subprocess import check_output
+import os
 
 
 class Results:
@@ -56,7 +57,8 @@ class Results:
             sf.get_preconditioner(case.fvSolution, "U"),
             sf.get_solver(case.fvSolution, "U"),
             args["resolution"],
-            args["processes"],
+            os.getenv("OMP_NUM_THREADS"),
+            #args["processes"],
             socket.gethostname(),
         ]
         print(self.current_col_vals)

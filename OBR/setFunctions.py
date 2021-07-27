@@ -114,7 +114,7 @@ def set_number_of_subdomains(decomposeParDict, subDomains):
 
 
 def set_end_time(controlDict, endTime):
-    sed(controlDict, "endTime[ ]*[0-9.]*;", "endTime {};".format(endTime))
+    sed(controlDict, "^endTime[ ]*[0-9.]*;", "endTime {};".format(endTime))
 
 
 def read_block(blockMeshDict):
