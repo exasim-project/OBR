@@ -35,7 +35,7 @@ class Results:
         ]
 
         self.current_col_vals = []
-        self.report_handle = open(self.fn, "a+", 1)
+        self.report_handle = open(self.fn, "w", 1)
         self.report_handle.write(",".join(self.columns) + "\n")
 
     def write_comment(self, comment, prefix=""):
@@ -61,7 +61,7 @@ class Results:
             args["resolution"],
             os.getenv("OMP_NUM_THREADS"),
             sf.get_number_of_subDomains(case.path),
-            #args["processes"],
+            # args["processes"],
             socket.gethostname(),
         ]
         print(self.current_col_vals)
