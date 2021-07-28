@@ -49,6 +49,7 @@ if __name__ == "__main__":
 
     results = ra.Results(arguments["--results_folder"], arguments["--report"])
     results.write_comment([str(metadata)])
+    start = datetime.datetime.now()
     for root, folder, files in os.walk(Path(arguments["--folder"]).expanduser()):
 
         if arguments.get("--filter"):
@@ -63,3 +64,5 @@ if __name__ == "__main__":
                 parameters_str = parameters_handle.read()
             solver_arguments = json.loads(parameters_str)
             case_runner.run(root, solver_arguments)
+    end = datetime.datetime.now()
+    print("run all selected cases in {} minutes".format((end - start).total_minutes()))
