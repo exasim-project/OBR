@@ -27,9 +27,9 @@ class CaseRunner:
 
     def warm_up(self, case, solver_cmd):
         original_end_time = sf.get_end_time(case.controlDict)
-        print("original_end_time",original_end_time)
+        print("original_end_time", original_end_time)
         deltaT = sf.read_deltaT(case.controlDict)
-        print("delta_t",deltaT)
+        print("delta_t", deltaT)
 
         sf.set_end_time(case.controlDict, 1 * deltaT)
 
@@ -51,11 +51,8 @@ class CaseRunner:
                 "linear solve U": ["time"],
             }
             ff_timings = ow.read_log_str(log_str, keys_timings)
-            #print(log_str)
-            #print(ff_timings)
-
-            # FIXME get an average of the execution times
-            return ff_timings.loc[0]["time"].values[9:11]
+            ff_timings = ff_timings.after(0)
+            return [(ff[ff.index.get_level_values("Key") == k]).sum()["iterations"] for k in keys.keys()]
         except Exception as e:
             print("logs_for_timings", e)
             return (0, 0)
@@ -78,11 +75,10 @@ class CaseRunner:
                 for f, s in zip(["p", "U"], solver)
             }
             ff = ow.read_log_str(log_str, keys)
-            print("log_iter",keys,log_str)
-            return log_hash, int(ff["iterations"].sum())
+            return log_hash, [(ff[ff.index.get_level_values("Key") == k]).sum()["iterations"] for k in keys.keys()]
         except Exception as e:
             print("Exception processing logs", e, ret)
-            return 0, 0
+            return 0, [0, 0]
 
     def run(self, path, parameter):
 
@@ -123,6 +119,8 @@ class CaseRunner:
 
             if number_of_runs == 1:
                 solver = self.results.get_solver(case)
-                log_hash, iterations = self.post_pro_logs_for_iters(case.path, ret, solver, self.results.log_fold)
+                log_hash, iterations = self.post_pro_logs_for_iters(
+                    case.path, ret, solver, self.results.log_fold
+                )
 
-            self.results.add(log_hash, warm_up, run_time, iterations, time_p, time_u)
+            self.results.add(log_hash, warm_up, run_time, iterations[0], iterations[1], time_p, time_u)
