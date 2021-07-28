@@ -22,7 +22,8 @@ class Results:
             "solver_U",
             "preconditioner_U",
             "resolution",
-            "processes",
+            "omp_threads",
+            "mpi_ranks",
             "node",
             "log_id",
             "setup_time",
@@ -51,13 +52,14 @@ class Results:
 
         self.current_col_vals = [
             sf.get_executor(case.fvSolution, "p"),
-            sf.get_preconditioner(case.fvSolution, "p"),
             sf.get_solver(case.fvSolution, "p"),
+            sf.get_preconditioner(case.fvSolution, "p"),
             sf.get_executor(case.fvSolution, "U"),
-            sf.get_preconditioner(case.fvSolution, "U"),
             sf.get_solver(case.fvSolution, "U"),
+            sf.get_preconditioner(case.fvSolution, "U"),
             args["resolution"],
-            os.getenv("OMP_NUM_THREADS"),
+            s.getenv("OMP_NUM_THREADS"),
+            sf.get_number_of_subDomains(case.path),
             #args["processes"],
             socket.gethostname(),
         ]
