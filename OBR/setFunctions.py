@@ -118,8 +118,8 @@ def set_end_time(controlDict, endTime):
 
 def get_number_of_subDomains(case, endTime):
     import os
-     _, folder,_ in next(os.walk(case))
-     return len([f for f in folder if "processor" in f])
+    _, folder,_ in next(os.walk(case))
+    return len([f for f in folder if "processor" in f])
 
 def read_block(blockMeshDict):
     import re
