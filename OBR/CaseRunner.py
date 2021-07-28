@@ -7,6 +7,7 @@ import Owls as ow
 import OBR.setFunctions as sf
 from OBR.OpenFOAMCase import OpenFOAMCase
 import hashlib
+from copy import deepcopy
 
 
 class CaseRunner:
@@ -47,12 +48,12 @@ class CaseRunner:
         try:
             log_str = ret.decode("utf-8")
             keys_timings = {
-                "linear solve p": ["time"],
-                "linear solve U": ["time"],
+                "linear solve p": ["linear_solve"],
+                "linear solve U": ["linear_solve"],
             }
-            ff_timings = ow.read_log_str(log_str, keys_timings)
-            ff_timings = ff_timings.after(0)
-            return [(ff[ff.index.get_level_values("Key") == k]).sum()["iterations"] for k in keys.keys()]
+            ff = ow.read_log_str(log_str, deepcopy(keys_timings))
+            ff = ff.after(0)
+            return [(ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"] for k in keys_timings.keys()]
         except Exception as e:
             print("logs_for_timings", e)
             return (0, 0)
@@ -74,7 +75,7 @@ class CaseRunner:
                 ]
                 for f, s in zip(["p", "U"], solver)
             }
-            ff = ow.read_log_str(log_str, keys)
+            ff = ow.read_log_str(log_str, deepcopy(keys))
             return log_hash, [(ff[ff.index.get_level_values("Key") == k]).sum()["iterations"] for k in keys.keys()]
         except Exception as e:
             print("Exception processing logs", e, ret)
