@@ -58,7 +58,7 @@ class Results:
             sf.get_solver(case.fvSolution, "U"),
             sf.get_preconditioner(case.fvSolution, "U"),
             args["resolution"],
-            s.getenv("OMP_NUM_THREADS"),
+            os.getenv("OMP_NUM_THREADS"),
             sf.get_number_of_subDomains(case.path),
             #args["processes"],
             socket.gethostname(),
