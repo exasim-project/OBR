@@ -28,18 +28,20 @@ class CaseRunner:
 
     def warm_up(self, case, solver_cmd):
         original_end_time = sf.get_end_time(case.controlDict)
-        print("original_end_time", original_end_time)
         deltaT = sf.read_deltaT(case.controlDict)
-        print("delta_t", deltaT)
 
         sf.set_end_time(case.controlDict, 1 * deltaT)
 
         # first warm up run
+        print("Start warm up run #1")
         check_output(solver_cmd, cwd=case.path, timeout=15 * 60)
+        print("Done warm up run #1")
 
         # timed warmup run
         start = datetime.datetime.now()
+        print("Start timed warm up run #2")
         check_output(solver_cmd, cwd=case.path, timeout=15 * 60)
+        print("Done timed warm up run #2")
         end = datetime.datetime.now()
         sf.set_end_time(case.controlDict, original_end_time)
         return (end - start).total_seconds()
@@ -53,7 +55,10 @@ class CaseRunner:
             }
             ff = ow.read_log_str(log_str, deepcopy(keys_timings))
             ff = ff.after(0)
-            return [(ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"] for k in keys_timings.keys()]
+            return [
+                (ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"]
+                for k in keys_timings.keys()
+            ]
         except Exception as e:
             print("logs_for_timings", e)
             return (0, 0)
@@ -76,7 +81,10 @@ class CaseRunner:
                 for f, s in zip(["p", "U"], solver)
             }
             ff = ow.read_log_str(log_str, deepcopy(keys))
-            return log_hash, [(ff[ff.index.get_level_values("Key") == k]).sum()["iterations"] for k in keys.keys()]
+            return log_hash, [
+                (ff[ff.index.get_level_values("Key") == k]).sum()["iterations"]
+                for k in keys.keys()
+            ]
         except Exception as e:
             print("Exception processing logs", e, ret)
             return 0, [0, 0]
@@ -124,4 +132,12 @@ class CaseRunner:
                     case.path, ret, solver, self.results.log_fold
                 )
 
-            self.results.add(log_hash, warm_up, run_time, iterations[0], iterations[1], time_p, time_u)
+            self.results.add(
+                log_hash,
+                warm_up,
+                run_time,
+                iterations[0],
+                iterations[1],
+                time_p,
+                time_u,
+            )
