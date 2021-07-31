@@ -53,9 +53,9 @@ class ReBlockMesh(MeshVariant):
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict[0]
         name = str(self.value)
-        cell_ratio = 1
+
+        cell_ratio = self.value / float(input_dict["block"].split()[0])
         self.input_dict = input_dict
-        print(input_dict)
         super().__init__(
             root_dir, name, cell_ratio, input_dict["controlDict"], track_args
         )
