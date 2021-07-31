@@ -30,7 +30,9 @@ class Results:
             "run_time",
             "number_of_iterations_p",
             "number_of_iterations_U",
+            "init_linear_solve_p",
             "linear_solve_p",
+            "init_linear_solve_U",
             "linear_solve_U",
         ]
 
@@ -66,7 +68,18 @@ class Results:
         ]
         print(self.current_col_vals)
 
-    def add(self, log, warm_up, run, iterations_p, iterations_U, linear_p, linear_U):
+    def add(
+        self,
+        log,
+        warm_up,
+        run,
+        iterations_p,
+        iterations_U,
+        init_time_p,
+        init_time_u,
+        linear_p,
+        linear_U,
+    ):
         """ Add results and success status of a run and write to file """
         outp = self.current_col_vals + [
             log,
@@ -74,6 +87,8 @@ class Results:
             run,
             iterations_p,
             iterations_U,
+            init_time_p,
+            init_time_u,
             linear_p,
             linear_U,
         ]

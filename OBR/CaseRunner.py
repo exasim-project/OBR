@@ -54,14 +54,22 @@ class CaseRunner:
                 "linear solve U": ["linear_solve"],
             }
             ff = ow.read_log_str(log_str, deepcopy(keys_timings))
-            ff = ff.after(0)
-            return [
+            total_linear_solve = [
                 (ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"]
                 for k in keys_timings.keys()
             ]
+            first_time = ff.earliest_time()
+            print(first_time)
+            ff = ff.at_time(first_time)
+            print(ff)
+            init_linear_solve = [
+                (ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"]
+                for k in keys_timings.keys()
+            ]
+            return init_linear_solve, total_linear_solve
         except Exception as e:
             print("logs_for_timings", e)
-            return (0, 0)
+            return (0, 0), (0, 0)
 
     def post_pro_logs_for_iters(self, path, ret, solver, log_fold):
         try:
@@ -124,7 +132,9 @@ class CaseRunner:
                     sys.exit(1)
                 break
 
-            time_u, time_p = self.post_pro_logs_for_timings(ret)
+            init_lin_solve, tot_lin_solve = self.post_pro_logs_for_timings(ret)
+            time_u, time_p = tot_lin_solve
+            init_time_u, init_time_p = init_lin_solve
 
             if number_of_runs == 1:
                 solver = self.results.get_solver(case)
@@ -138,6 +148,8 @@ class CaseRunner:
                 run_time,
                 iterations[0],
                 iterations[1],
+                init_time_p,
+                init_time_u,
                 time_p,
                 time_u,
             )
