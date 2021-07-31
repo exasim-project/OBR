@@ -58,10 +58,8 @@ class CaseRunner:
                 (ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"]
                 for k in keys_timings.keys()
             ]
-            first_time = ff.earliest_time()
-            print(first_time)
-            ff = ff.at_time(first_time)
-            print(ff)
+            first_time = min(ff.index.get_level_values("Time"))
+            ff = ff[ ff.index.get_level_values("Time") == first_time]
             init_linear_solve = [
                 (ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"]
                 for k in keys_timings.keys()
