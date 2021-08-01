@@ -96,9 +96,16 @@ class CaseRunner:
             return 0, [0, 0]
 
     def run(self, path, parameter):
+        import time
+        from pathlib import Path
 
-        case = OpenFOAMCase(path)
-        sub_domains = sf.get_number_of_subDomains(case)
+        path_orig = Path(path)
+        run_path = Path(path).parents[0] / str(int(time.time()))
+
+        check_output(["cp", "-r", path_orig, run_path])
+
+        case = OpenFOAMCase(run_path)
+        sub_domains = sf.get_number_of_subDomains(case.path)
         if sub_domains:
             parameter["prefix"] = ["mpirun", "-np", str(sub_domains), "--oversubscribe"]
             parameter["flags"] = ["-parallel"]
@@ -157,3 +164,5 @@ class CaseRunner:
                 time_p,
                 time_u,
             )
+
+            check_output(["rm", "-rf", run_path])
