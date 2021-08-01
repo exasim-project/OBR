@@ -107,7 +107,7 @@ class CaseRunner:
         case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
         if sub_domains:
-            parameter["prefix"] = ["mpirun", "-np", str(sub_domains), "--oversubscribe"]
+            parameter["prefix"] = ["mpirun", "-np", str(sub_domains)]
             parameter["flags"] = ["-parallel"]
         app_cmd_prefix = parameter.get("prefix", [])
         app_cmd_flags = parameter.get("flags", [])
