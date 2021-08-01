@@ -66,4 +66,7 @@ if __name__ == "__main__":
             solver_arguments = json.loads(parameters_str)
             case_runner.run(root, solver_arguments)
     end = datetime.datetime.now()
-    print("run all selected cases in {} minutes".format((end - start).total_minutes()))
+
+    results.write_comment(
+        ["total run time {} minutes".format((end - start).total_minutes())]
+    )
