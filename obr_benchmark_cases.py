@@ -68,5 +68,5 @@ if __name__ == "__main__":
     end = datetime.datetime.now()
 
     results.write_comment(
-        ["total run time {} minutes".format((end - start).total_minutes())]
+        ["total run time {} minutes".format((end - start).total_seconds()/60)]
     )
