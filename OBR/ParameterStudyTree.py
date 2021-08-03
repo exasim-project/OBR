@@ -72,7 +72,7 @@ class ParameterStudyTree:
             check_output(cmd, cwd=case.path)
 
             src = Path("../../../base/0")
-            cmd = ["cp", "-r", src, "."]
+            cmd = ["ln", "-s", src, "0"]
             check_output(cmd, cwd=case.path)
 
     def set_up(self):
