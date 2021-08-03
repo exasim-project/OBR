@@ -73,6 +73,10 @@ class ReBlockMesh(MeshVariant):
         print("run blockMesh", self.path)
         check_output(["blockMesh"], cwd=self.path)
 
+        #
+        cmd = ["mapFields", "../../../base", "-consistent", "-sourceTime", "latestTime"]
+        check_output(cmd, cwd=self.path)
+
 
 class ChangeMatrixSolver(Variant):
     """ class that calls refineMesh several times """

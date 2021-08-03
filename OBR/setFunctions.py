@@ -104,6 +104,18 @@ def get_end_time(controlDict):
     return ret[0]
 
 
+def get_solver(controlDict):
+    return "icoFoam"
+
+
+def set_write_interval(controlDict, interval):
+    sed(
+        controlDict,
+        "^writeInterval[ ]*[0-9.]*;",
+        "writeInterval {};".format(interval),
+    )
+
+
 def set_number_of_subdomains(decomposeParDict, subDomains):
     print("setting number of subdomains", subDomains, decomposeParDict)
     sed(
@@ -116,10 +128,13 @@ def set_number_of_subdomains(decomposeParDict, subDomains):
 def set_end_time(controlDict, endTime):
     sed(controlDict, "^endTime[ ]*[0-9.]*;", "endTime {};".format(endTime))
 
+
 def get_number_of_subDomains(case):
     import os
-    _, folder,_ = next(os.walk(case))
+
+    _, folder, _ = next(os.walk(case))
     return len([f for f in folder if "processor" in f])
+
 
 def read_block(blockMeshDict):
     import re

@@ -11,6 +11,7 @@
         --clean             Remove existing cases [default: False].
         --parameters=<json> pass the parameters for given parameter study
         --folder=<folder>   Target folder  [default: Test].
+        --init=<ts>         Run the base case for ts timesteps [default: 100].
 """
 
 from docopt import docopt
@@ -62,6 +63,7 @@ if __name__ == "__main__":
         parameter_study_arguments,
         parameter_study_arguments["variation"],
         track_args,
+        arguments.get("--init", 100),
         base=getattr(co, parameter_study_arguments["case"]["type"])(
             parameter_study_arguments["case"]
         ),
