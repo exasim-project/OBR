@@ -55,10 +55,10 @@ class Results:
 
         self.current_col_vals = [
             sf.get_executor(case.fvSolution, "p"),
-            sf.get_solver(case.fvSolution, "p"),
+            sf.get_matrix_solver(case.fvSolution, "p"),
             sf.get_preconditioner(case.fvSolution, "p"),
             sf.get_executor(case.fvSolution, "U"),
-            sf.get_solver(case.fvSolution, "U"),
+            sf.get_matrix_solver(case.fvSolution, "U"),
             sf.get_preconditioner(case.fvSolution, "U"),
             args["resolution"],
             os.getenv("OMP_NUM_THREADS"),
