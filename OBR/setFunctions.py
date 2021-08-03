@@ -54,7 +54,7 @@ def get_executor(fn, field):
     return find_in_block(fn, field, "executor", "Serial")
 
 
-def get_solver(fn, field):
+def get_matrix_solver(fn, field):
     return find_in_block(fn, field, "solver", "unknown")
 
 
