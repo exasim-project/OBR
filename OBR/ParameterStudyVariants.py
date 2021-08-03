@@ -13,6 +13,7 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
         super().__init__(root_dir / self.name / "base")
         self.valid = True
         self.track_args = track_args
+        self.link_mesh = True
 
 
 class MeshVariant(Variant):
@@ -21,6 +22,7 @@ class MeshVariant(Variant):
         self.prepare_controlDict = es.PrepareControlDict(
             self, cell_ratio, controlDictArgs
         )
+        self.link_mesh = False
 
 
 class LinearSolverVariant(Variant):

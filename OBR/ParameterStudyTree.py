@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from . import ParameterStudyVariants as variants
 from . import setFunctions as sf
+from pathlib import Path
 from itertools import product
 from subprocess import check_output
 from copy import deepcopy
@@ -52,9 +53,27 @@ class ParameterStudyTree:
 
         # deduplicate files later
 
-    def copy_base_to(self, dst):
-        cmd = ["cp", "-r", self.case_dir, dst]
-        check_output(cmd)
+    def copy_base_to(self, case):
+        if not case.link_mesh:
+            dst = self.variation_dir / case.name / "base"
+            cmd = ["cp", "-r", self.case_dir, dst]
+            check_output(cmd)
+        else:
+            dst = self.variation_dir / case.name / "base"
+            cmd = ["mkdir", "-p", self.case_dir, dst]
+            check_output(cmd)
+
+            src = Path("../../../base/constant")
+            cmd = ["ln", "-s", src, "constant"]
+            check_output(cmd, cwd=case.path)
+
+            src = Path("../../../base/system")
+            cmd = ["cp", "-r", src, "."]
+            check_output(cmd, cwd=case.path)
+
+            src = Path("../../../base/0")
+            cmd = ["cp", "-r", src, "."]
+            check_output(cmd, cwd=case.path)
 
     def set_up(self):
         """ creates the tree of case variations"""
@@ -66,15 +85,15 @@ class ParameterStudyTree:
         if self.base:
             self.base.copy_to(self.root_dir / "base")
             # apply controlDict settings
-        else:
-            self.copy_base_to(self.variation_dir / "base")
+        # else:
+        #     self.copy_base_to(self.variation_dir / "base")
 
         # if it has a parent case copy the parent case
         # and apply modifiers
         for case in self.cases:
             case_dir = self.variation_dir / case.name
             sf.ensure_path(case_dir)
-            self.copy_base_to(self.variation_dir / case.name / "base")
+            self.copy_base_to(case)
             case.set_up()
             if not self.subvariations:
                 # TODO

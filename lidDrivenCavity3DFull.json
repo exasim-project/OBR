@@ -18,7 +18,7 @@
     "block": "100 100 100",
     "controlDict": {
       "stationary": false,
-      "timeSteps": 1000
+      "timeSteps": 500
     },
     "variation": {
       "name": "matrix_solver",
