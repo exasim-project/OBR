@@ -25,4 +25,7 @@ To create a tree of case variation run
 
 ### 2. Running a tree
 
+    python obr_benchmark_cases.py \
+         --results_folder lidDrivenCavity3DFull
+         --filter MPI # dont run cases with mpi in name
 
