@@ -17,7 +17,13 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
 
 
 class MeshVariant(Variant):
-    def __init__(self, root_dir, name, cell_ratio, controlDictArgs, track_args):
+    def __init__(
+            self,
+            root_dir,
+            name,
+            cell_ratio,
+            controlDictArgs,
+            track_args):
         super().__init__(root_dir, name, track_args)
         self.prepare_controlDict = es.PrepareControlDict(
             self, cell_ratio, controlDictArgs
@@ -74,7 +80,12 @@ class ReBlockMesh(MeshVariant):
         check_output(["blockMesh"], cwd=self.path)
 
         #
-        cmd = ["mapFields", "../../../base", "-consistent", "-sourceTime", "latestTime"]
+        cmd = [
+            "mapFields",
+            "../../../base",
+            "-consistent",
+            "-sourceTime",
+            "latestTime"]
         check_output(cmd, cwd=self.path)
 
 
@@ -93,11 +104,12 @@ class ChangeMatrixSolver(Variant):
         self.solver_setter.preconditioner = getattr(ms, value_dict[1])()
         self.solver_setter.executor = getattr(ms, value_dict[2])()
 
-        # check whether preconditioner and executor combinations are supported/valid
+        # check whether preconditioner and executor combinations are
+        # supported/valid
         backend = self.solver_setter.executor.backend
         if backend in self.solver_setter.avail_backend_handler.keys():
             support = self.solver_setter.avail_backend_handler[backend]
-            if not self.solver_setter.preconditioner.name in support["preconditioner"]:
+            if self.solver_setter.preconditioner.name not in support["preconditioner"]:
                 self.valid = False
         else:
             self.valid = False

@@ -13,8 +13,14 @@ class ParameterStudyTree:
     """ class to construct the file system tree of the cases """
 
     def __init__(
-        self, root_dir, root_dict, input_dict, track_args, init, parent=None, base=None
-    ):
+            self,
+            root_dir,
+            root_dict,
+            input_dict,
+            track_args,
+            init,
+            parent=None,
+            base=None):
         """parent = the part of the tree above
         base = the base case on which the tree is based
         """
@@ -31,11 +37,15 @@ class ParameterStudyTree:
         # go through the top level
         # construct the type of variation
         self.cases = [
-            getattr(variants, self.variation_type)(
-                self.variation_dir, self.input_dict, variant_dict, deepcopy(track_args)
-            )
-            for variant_dict in product(*input_dict["variants"].values())
-        ]
+            getattr(
+                variants,
+                self.variation_type)(
+                self.variation_dir,
+                self.input_dict,
+                variant_dict,
+                deepcopy(track_args)) for variant_dict in product(
+                *
+                input_dict["variants"].values())]
 
         self.cases = [case for case in self.cases if case.valid]
 
