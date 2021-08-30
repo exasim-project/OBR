@@ -13,14 +13,8 @@ class ParameterStudyTree:
     """ class to construct the file system tree of the cases """
 
     def __init__(
-            self,
-            root_dir,
-            root_dict,
-            input_dict,
-            track_args,
-            init,
-            parent=None,
-            base=None):
+        self, root_dir, root_dict, input_dict, track_args, parent=None, base=None
+    ):
         """parent = the part of the tree above
         base = the base case on which the tree is based
         """
@@ -32,20 +26,15 @@ class ParameterStudyTree:
         self.variation_dir = root_dir / ("Variation_" + input_dict["name"])
         self.variation_type = input_dict["type"]
         self.root_dict = root_dict
-        self.init = init
 
         # go through the top level
         # construct the type of variation
         self.cases = [
-            getattr(
-                variants,
-                self.variation_type)(
-                self.variation_dir,
-                self.input_dict,
-                variant_dict,
-                deepcopy(track_args)) for variant_dict in product(
-                *
-                input_dict["variants"].values())]
+            getattr(variants, self.variation_type)(
+                self.variation_dir, self.input_dict, variant_dict, deepcopy(track_args)
+            )
+            for variant_dict in product(*input_dict["variants"].values())
+        ]
 
         self.cases = [case for case in self.cases if case.valid]
 
@@ -59,7 +48,6 @@ class ParameterStudyTree:
                         self.root_dict,
                         input_dict["variation"],
                         case.track_args,
-                        init,
                         parent=self,
                     )
                 )
@@ -98,14 +86,6 @@ class ParameterStudyTree:
             cmd = ["ln", "-s", src, "0"]
             check_output(cmd, cwd=case.path)
 
-    def init_base(self, case, init_ts):
-        print("deltaT", case.deltaT)
-        sf.set_end_time(case.controlDict, init_ts * case.deltaT)
-        sf.set_write_interval(case.controlDict, init_ts)
-        print(check_output(["blockMesh"], cwd=case.path))
-        print(check_output(["icoFoam"], cwd=case.path))
-        sf.set_write_interval(case.controlDict, 1000)
-
     def set_up(self):
         """ creates the tree of case variations"""
 
@@ -115,7 +95,6 @@ class ParameterStudyTree:
         # copy the base case into the tree
         if self.base:
             self.base.copy_to(self.root_dir / "base")
-            self.init_base(OpenFOAMCase(self.root_dir / "base"), self.init)
 
         # if it has a parent case copy the parent case
         # and apply modifiers

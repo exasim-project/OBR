@@ -24,8 +24,7 @@ from OBR import setFunctions as sf
 from OBR.metadata import versions
 
 
-def process_benchmark_description(
-        fn, metadata, supported_file_version="0.1.0"):
+def process_benchmark_description(fn, metadata, supported_file_version="0.1.0"):
     import sys
     from packaging import version
 
@@ -64,7 +63,6 @@ if __name__ == "__main__":
         parameter_study_arguments,
         parameter_study_arguments["variation"],
         track_args,
-        arguments.get("--init", 100),
         base=getattr(co, parameter_study_arguments["case"]["type"])(
             parameter_study_arguments["case"]
         ),
