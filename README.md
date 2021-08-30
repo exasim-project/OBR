@@ -10,4 +10,12 @@ The benchmark runnner is split into several layers:
 2. case decomposition
 3. case run
 
+### 1. Creating a tree
+
+To create a tree of case variation run
+
+
+    python obr_create_tree.py --parameters lidDrivenCavity3DFull.json --folder lidDrivenCavity3DFull
+
+
 
