@@ -4,7 +4,8 @@ from subprocess import check_output
 
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):
     """ wrapper around sed """
-    ret = check_output(["sed", "-i", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn])
+    ret = check_output(["sed", "-i", "s/" + in_reg_exp +
+                        "/" + out_reg_exp + "/g", fn])
 
 
 def clean_block_from_file(fn, block_starts, block_end, replace):
@@ -159,7 +160,8 @@ def set_deltaT(controlDict, deltaT):
 
 
 def set_writeInterval(controlDict, writeInterval):
-    sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
+    sed(controlDict, "writeInterval[ ]*[0-9.]*",
+        "writeInterval " + str(writeInterval))
 
 
 def clear_solver_settings(fvSolution, field):
