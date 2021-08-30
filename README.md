@@ -15,7 +15,10 @@ The benchmark runnner is split into several layers:
 To create a tree of case variation run
 
 
-    python obr_create_tree.py --parameters lidDrivenCavity3DFull.json --folder lidDrivenCavity3DFull
+    python obr_create_tree.py \
+         --parameters lidDrivenCavity3DFull.json \
+         --folder lidDrivenCavity3DFull
 
+### 2. Running a tree
 
 
