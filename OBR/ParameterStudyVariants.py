@@ -43,6 +43,7 @@ class InitCase(Variant):
         print(input_dict)
         super().__init__(root_dir, name, track_args)
         self.track_args["resolution"] = self.value
+        self.link_mesh = False
 
     def set_up(self):
         self.prepare_controlDict.set_up()
