@@ -23,6 +23,7 @@ class MeshVariant(Variant):
             self, cell_ratio, controlDictArgs
         )
         self.link_mesh = False
+        self.map_fields = True
 
 
 class LinearSolverVariant(Variant):
@@ -44,6 +45,7 @@ class InitCase(Variant):
         super().__init__(root_dir, name, track_args)
         self.track_args["resolution"] = self.value
         self.link_mesh = False
+        self.map_fields = False
 
     def set_up(self):
         self.prepare_controlDict.set_up()

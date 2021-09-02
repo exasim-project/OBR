@@ -61,6 +61,11 @@ class ParameterStudyTree:
             cmd = ["mkdir", "-p", dst]
             check_output(cmd)
 
+            if not case.mapFields:
+                src = Path("../../../base/0")
+                cmd = ["cp", "-r", src, "."]
+                check_output(cmd, cwd=case.path)
+
             src = Path("../../../base/constant")
             cmd = ["cp", "-r", src, "constant"]
             check_output(cmd, cwd=case.path)
