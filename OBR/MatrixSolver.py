@@ -113,6 +113,10 @@ class HIP(GKOExecutor):
         super().__init__(name="hip")
 
 
+class DPCPP(GKOExecutor):
+    def __init__(self):
+        super().__init__(name="dpcpp")
+
 # Preconditioner
 
 
@@ -161,7 +165,7 @@ class GKO:
 
     name = "GKO"
     prefix = "GKO"
-    executor_support = ["OMP", "CUDA", "Ref", "HIP"]
+    executor_support = ["OMP", "CUDA", "Ref", "HIP", "DPCPP"]
     executor = None
 
     def __init__(self):

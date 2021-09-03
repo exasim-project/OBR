@@ -46,7 +46,7 @@
           },
         "variants": {"solver": ["CG", "BiCGStab", "IR"],
                     "preconditioner":["NoPrecond", "BJ", "DIC"],
-                    "executor":["CUDA", "HIP", "OMP", "Serial"]}
+                     "executor":["CUDA", "HIP", "OMP", "DPCPP", "Serial"]}
       }
     }
   }
