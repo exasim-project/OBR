@@ -20,7 +20,6 @@
         --results_folder=<foldername> Target folder to store stats and logs [default: .].
 """
 
-
 from docopt import docopt
 from OBR.metadata import versions
 from OBR import setFunctions as sf
@@ -35,12 +34,16 @@ from subprocess import check_output
 if __name__ == "__main__":
     metadata = {
         "node_data": {
-            "host": sf.get_process(["hostname"]),
-            "top": sf.get_process(["top", "-bn1"]).split("\n")[:15],
-            "uptime": sf.get_process(["uptime"]),
-            "libOGL.so": sf.get_process(
-                ["md5sum", os.getenv("FOAM_USER_LIBBIN") + "/libOGL.so"]
-            ),
+            "host":
+            sf.get_process(["hostname"]),
+            "top":
+            sf.get_process(["top", "-bn1"]).split("\n")[:15],
+            "uptime":
+            sf.get_process(["uptime"]),
+            "libOGL.so":
+            sf.get_process(
+                ["md5sum",
+                 os.getenv("FOAM_USER_LIBBIN") + "/libOGL.so"]),
         },
     }
     metadata.update(versions)
@@ -68,6 +71,6 @@ if __name__ == "__main__":
             case_runner.run(root, solver_arguments)
     end = datetime.datetime.now()
 
-    results.write_comment(
-        ["total run time {} minutes".format((end - start).total_seconds() / 60)]
-    )
+    results.write_comment([
+        "total run time {} minutes".format((end - start).total_seconds() / 60)
+    ])
