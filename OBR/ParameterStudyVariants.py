@@ -17,7 +17,13 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
 
 
 class MeshVariant(Variant):
-    def __init__(self, root_dir, name, cell_ratio, controlDictArgs, track_args):
+    def __init__(
+            self,
+            root_dir,
+            name,
+            cell_ratio,
+            controlDictArgs,
+            track_args):
         super().__init__(root_dir, name, track_args)
         self.prepare_controlDict = es.PrepareControlDict(
             self, cell_ratio, controlDictArgs

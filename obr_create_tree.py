@@ -24,7 +24,8 @@ from OBR import setFunctions as sf
 from OBR.metadata import versions
 
 
-def process_benchmark_description(fn, metadata, supported_file_version="0.1.0"):
+def process_benchmark_description(
+        fn, metadata, supported_file_version="0.1.0"):
     import sys
     from packaging import version
 
