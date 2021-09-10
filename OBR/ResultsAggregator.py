@@ -46,8 +46,8 @@ class Results:
 
     def get_solver(self, case):
         return [
-            sf.get_solver(case.fvSolution, "p"),
-            sf.get_solver(case.fvSolution, "U"),
+            sf.get_matrix_solver(case.fvSolution, "p"),
+            sf.get_matrix_solver(case.fvSolution, "U"),
         ]
 
     def set_case(self, case, args):
