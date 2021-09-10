@@ -7,7 +7,7 @@
     "type": "OpenFOAMExternalCase",
     "solver": "icoFoam",
     "case": "lidDrivenCavity3D",
-    "origin": "~/data/code/hpc/Lid_driven_cavity-3d/S",
+    "origin": "~/code/hpc/Lid_driven_cavity-3d/S",
     "git": "https://develop.openfoam.com/committees/hpc.git"
   },
   "variation": {
