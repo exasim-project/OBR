@@ -117,11 +117,16 @@ class DPCPP(GKOExecutor):
     def __init__(self):
         super().__init__(name="dpcpp")
 
+
 # Preconditioner
 
 
 class BJ:
     name = "BJ"
+
+
+class IC:
+    name = "IC"
 
 
 class DIC:
@@ -184,7 +189,7 @@ class CG(SolverSetter):
                 "prefix": "P",
             },
             "GKO": {
-                "preconditioner": ["BJ", "none"],
+                "preconditioner": ["BJ", "IC", "none"],
                 "prefix": "GKO",
             },
         }
@@ -199,7 +204,7 @@ class BiCGStab(SolverSetter):
                 "prefix": "P",
             },
             "GKO": {
-                "preconditioner": ["BJ", "none"],
+                "preconditioner": ["BJ", "IC", "none"],
                 "prefix": "GKO",
             },
         }
