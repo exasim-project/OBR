@@ -129,6 +129,10 @@ class IC:
     name = "IC"
 
 
+class ILU:
+    name = "ILU"
+
+
 class DIC:
     name = "DIC"
 
@@ -189,7 +193,7 @@ class CG(SolverSetter):
                 "prefix": "P",
             },
             "GKO": {
-                "preconditioner": ["BJ", "IC", "none"],
+                "preconditioner": ["BJ", "ILU", "none"],
                 "prefix": "GKO",
             },
         }
@@ -204,7 +208,7 @@ class BiCGStab(SolverSetter):
                 "prefix": "P",
             },
             "GKO": {
-                "preconditioner": ["BJ", "IC", "none"],
+                "preconditioner": ["BJ", "ILU", "none"],
                 "prefix": "GKO",
             },
         }
