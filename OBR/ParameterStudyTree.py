@@ -11,15 +11,13 @@ import json
 
 class ParameterStudyTree:
     """ class to construct the file system tree of the cases """
-
-    def __init__(
-            self,
-            root_dir,
-            root_dict,
-            input_dict,
-            track_args,
-            parent=None,
-            base=None):
+    def __init__(self,
+                 root_dir,
+                 root_dict,
+                 input_dict,
+                 track_args,
+                 parent=None,
+                 base=None):
         """parent = the part of the tree above
         base = the base case on which the tree is based
         """
@@ -35,31 +33,28 @@ class ParameterStudyTree:
         # go through the top level
         # construct the type of variation
         self.cases = [
-            getattr(
-                variants,
-                self.variation_type)(
-                self.variation_dir,
-                self.input_dict,
-                variant_dict,
-                deepcopy(track_args)) for variant_dict in product(
-                *
-                input_dict["variants"].values())]
+            getattr(variants,
+                    self.variation_type)(self.variation_dir, self.input_dict,
+                                         variant_dict, deepcopy(track_args))
+            for variant_dict in product(*input_dict["variants"].values())
+        ]
 
         self.cases = [case for case in self.cases if case.valid]
 
         # check for further varations
         self.subvariations = []
         if input_dict.get("variation"):
-            for case in self.cases:
-                self.subvariations.append(
-                    ParameterStudyTree(
-                        self.variation_dir / case.name,
-                        self.root_dict,
-                        input_dict["variation"],
-                        case.track_args,
-                        parent=self,
-                    )
-                )
+            sub_variation_dicts = input_dict.get("variation")
+            for sub_variation in sub_variation_dicts:
+                for case in self.cases:
+                    self.subvariations.append(
+                        ParameterStudyTree(
+                            self.variation_dir / case.name,
+                            self.root_dict,
+                            sub_variation,
+                            case.track_args,
+                            parent=self,
+                        ))
 
         # deduplicate files later
 

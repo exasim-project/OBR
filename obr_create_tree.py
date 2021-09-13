@@ -26,7 +26,7 @@ from OBR.metadata import versions
 
 def process_benchmark_description(fn,
                                   metadata,
-                                  supported_file_version="0.1.0"):
+                                  supported_file_version="0.3.0"):
     import sys
     from packaging import version
 
