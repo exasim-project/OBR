@@ -46,8 +46,17 @@
             }
           },
         "variants": {"solver": ["CG", "BiCGStab", "IR"],
-                    "preconditioner":["NoPrecond", "BJ", "DIC"],
+                     "preconditioner":["NoPrecond", "BJ", "DIC", "IC"],
                      "executor":["CUDA", "HIP", "OMP", "DPCPP", "Serial"]}
+        "variation": {
+          "name": "solver_properties",
+          "type": "ChangeMatrixSolverProperties",
+          "variants": {"maxBlockSize": {
+                          "values": [1,2,4,8,16],
+                          "variant_of": ["BJ", "CG"]
+                          "comment": "creates a subvariation of the CG BJ cases for different max block size values"}
+                      }
+        }
       }
     }
   }
