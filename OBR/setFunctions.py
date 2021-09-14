@@ -104,8 +104,9 @@ def get_end_time(controlDict):
     return ret[0]
 
 
-def get_solver(controlDict):
-    return "icoFoam"
+def get_application_solver(controlDict):
+    ret = check_output(["grep", "application", controlDict])
+    return ret.decode("utf-8").split()[-1].replace(";", "")
 
 
 def set_write_interval(controlDict, interval):

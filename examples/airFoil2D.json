@@ -1,7 +1,7 @@
 {
   "obr": {
-    "OBR_MIN_VERSION": "0.2.0",
-    "BENCHMARK_FILE_VERSION": "0.1.0"
+    "OBR_MIN_VERSION": "0.2.1",
+    "BENCHMARK_FILE_VERSION": "0.3.0"
   },
   "case": {
     "type": "OpenFOAMTutorialCase",
@@ -10,6 +10,15 @@
     "origin": "incompressible"
   },
   "variation": {
+    "name": "init",
+    "type": "InitCase",
+    "blockMesh": false,
+    "variants": {"timeSteps": [100]},
+    "controlDict": {
+      "stationary": false,
+      "timeSteps": 20
+    },
+    "variation": [{
     "name": "mesh",
     "type": "RefineMesh",
     "controlDict": {
@@ -17,8 +26,8 @@
       "timeSteps": 10
     },
     "dimensions": 2,
-    "variants": {"refinements":[0, 1]},
-    "variation": {
+    "variants": {"refinements":[0, 1, 2, 3]},
+    "variation": [{
       "name": "matrix_solver",
       "type": "ChangeMatrixSolver",
       "fields": ["p"],
@@ -33,9 +42,10 @@
           "sort": "yes"
           }
         },
-      "variants": {"solver": ["CG", "BiCGStab"],
-                   "preconditioner":["NoPrecond", "BJ"],
+      "variants": {"solver": ["CG"],
+                   "preconditioner":["NoPrecond", "BJ", "ILU"],
                    "executor":["CUDA", "HIP", "OMP", "Serial"]}
-    }
-  }
+    }]
+    }]
+   }
 }

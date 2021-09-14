@@ -45,6 +45,7 @@ class InitCase(Variant):
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict[0]
         input_dict["controlDict"]["write_last_timeStep"] = True
+        self.blockMesh = input_dict.get("blockMesh")
         self.prepare_controlDict = es.PrepareControlDict(
             self, 1, input_dict["controlDict"]
         )
@@ -63,12 +64,13 @@ class InitCase(Variant):
 
         self.prepare_controlDict.set_up()
         # TODO dont hardcode
-        cmd = ["blockMesh"]
+        if self.blockMesh:
+            cmd = ["blockMesh"]
 
-        print("running blockMesh for initial run")
-        check_output(cmd, cwd=self.path)
+            print("running blockMesh for initial run")
+            check_output(cmd, cwd=self.path)
 
-        cmd = ["icoFoam"]
+        cmd = sf.get_application_solver(self.controlDict)
         print("running initial case")
         check_output(cmd, cwd=self.path)
 
