@@ -11,13 +11,10 @@ import json
 
 class ParameterStudyTree:
     """ class to construct the file system tree of the cases """
-    def __init__(self,
-                 root_dir,
-                 root_dict,
-                 input_dict,
-                 track_args,
-                 parent=None,
-                 base=None):
+
+    def __init__(
+        self, root_dir, root_dict, input_dict, track_args, parent=None, base=None
+    ):
         """parent = the part of the tree above
         base = the base case on which the tree is based
         """
@@ -33,9 +30,9 @@ class ParameterStudyTree:
         # go through the top level
         # construct the type of variation
         self.cases = [
-            getattr(variants,
-                    self.variation_type)(self.variation_dir, self.input_dict,
-                                         variant_dict, deepcopy(track_args))
+            getattr(variants, self.variation_type)(
+                self.variation_dir, self.input_dict, variant_dict, deepcopy(track_args)
+            )
             for variant_dict in product(*input_dict["variants"].values())
         ]
 
@@ -54,11 +51,16 @@ class ParameterStudyTree:
                             sub_variation,
                             case.track_args,
                             parent=self,
-                        ))
+                        )
+                    )
 
         # deduplicate files later
 
     def copy_base_to(self, case):
+        # copy or link only if case.path doesn not exist
+        if case.path.exists():
+            return
+
         if not case.link_mesh:
             # TODO copy zero if not linked
             dst = self.variation_dir / case.name / "base"
@@ -84,7 +86,8 @@ class ParameterStudyTree:
             check_output(cmd)
 
             src = Path("../../../base/constant")
-            cmd = ["ln", "-s", src, "constant"]
+            dst = Path("constant")
+            cmd = ["ln", "-s", src, dst]
             check_output(cmd, cwd=case.path)
 
             src = Path("../../../base/system")
@@ -92,7 +95,8 @@ class ParameterStudyTree:
             check_output(cmd, cwd=case.path)
 
             src = Path("../../../base/0")
-            cmd = ["ln", "-s", src, "0"]
+            dst = "0"
+            cmd = ["ln", "-s", src, dst]
             check_output(cmd, cwd=case.path)
 
     def set_up(self):

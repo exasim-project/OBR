@@ -4,8 +4,7 @@ from subprocess import check_output
 
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):
     """ wrapper around sed """
-    ret = check_output(["sed", "-i", "s/" + in_reg_exp +
-                        "/" + out_reg_exp + "/g", fn])
+    ret = check_output(["sed", "-i", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn])
 
 
 def clean_block_from_file(fn, block_starts, block_end, replace):
@@ -32,11 +31,11 @@ def read_block_from_file(fn, block_starts, block_end):
         started = False
         for line in lines:
             is_start = [block_start in line for block_start in block_starts]
+            if started:
+                ret.append(line)
             if any(is_start):
                 ret.append(line)
                 started = True
-            if started:
-                ret.append(line)
             if started and block_end in line:
                 return ret
     return []
@@ -160,8 +159,15 @@ def set_deltaT(controlDict, deltaT):
 
 
 def set_writeInterval(controlDict, writeInterval):
-    sed(controlDict, "writeInterval[ ]*[0-9.]*",
-        "writeInterval " + str(writeInterval))
+    sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
+
+
+def add_or_set_solver_settings(fvSolution, field, keyword, value):
+    # TODO check if keyword is already present
+    block = read_block_from_file(fvSolution, ['"' + field + '.*"{'], "}")
+    # clear_solver_settings(fvSolution, field)
+    block.insert(1, "{} {};\n".format(keyword["name"], value))
+    clean_block_from_file(fvSolution, [field + '.*"{'], "}\n", " ".join(block))
 
 
 def clear_solver_settings(fvSolution, field):

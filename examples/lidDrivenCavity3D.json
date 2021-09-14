@@ -51,6 +51,7 @@
         "variation": [{
           "name": "maxBlockSize",
           "type": "ChangeMatrixSolverProperties",
+          "field": "p",
           "variants": { "maxBlockSize": [1 ,2 ,4 ,8 ,16] },
           "variant_of": ["BJ", "CG"],
           "comment": "creates a subvariation of the CG BJ cases for different max block size values"
@@ -58,6 +59,7 @@
                       {
           "name": "innerReductionFactor",
           "type": "ChangeMatrixSolverProperties",
+          "field": "p",
           "variants": { "innerReductionFactor": [0.1 ,0.05 , 0.01 ,0.05 , 0.001]},
           "variant_of": ["IR", "CG"],
           "comment": "creates a subvariation of the CG BJ cases for different max block size values"
