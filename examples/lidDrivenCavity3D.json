@@ -1,7 +1,7 @@
 {
   "obr": {
-    "OBR_MIN_VERSION": "0.2.0",
-    "BENCHMARK_FILE_VERSION": "0.1.0"
+    "OBR_MIN_VERSION": "0.2.1",
+    "BENCHMARK_FILE_VERSION": "0.3.0"
   },
   "case": {
     "type": "OpenFOAMExternalCase",
@@ -13,23 +13,23 @@
   "variation": {
     "name": "init",
     "type": "InitCase",
+    "variants": {"timeSteps": [100]},
     "controlDict": {
       "stationary": false,
-      "timeSteps": 100
+      "timeSteps": 1
     },
-    "variants": {"timeSteps": [100]},
-    "variation": {
+    "variation": [{
       "name": "mesh",
       "type": "ReBlockMesh",
       "mapFields": true,
       "dimensions": 3,
-      "variants":{"cells":[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]},
+      "variants":{"cells":[5]},
       "block": "100 100 100",
       "controlDict": {
         "stationary": false,
-        "timeSteps": 10
+        "timeSteps": 2
       },
-      "variation": {
+      "variation": [{
         "name": "matrix_solver",
         "type": "ChangeMatrixSolver",
         "fields": ["p"],
@@ -46,18 +46,24 @@
             }
           },
         "variants": {"solver": ["CG", "BiCGStab", "IR"],
-                     "preconditioner":["NoPrecond", "BJ", "DIC", "IC"],
-                     "executor":["CUDA", "HIP", "OMP", "DPCPP", "Serial"]}
-        "variation": {
-          "name": "solver_properties",
+                     "preconditioner":["NoPrecond", "BJ", "DIC", "IC", "ILU"],
+                     "executor":["CUDA", "HIP", "OMP", "DPCPP", "Serial"]},
+        "variation": [{
+          "name": "maxBlockSize",
           "type": "ChangeMatrixSolverProperties",
-          "variants": {"maxBlockSize": {
-                          "values": [1,2,4,8,16],
-                          "variant_of": ["BJ", "CG"]
-                          "comment": "creates a subvariation of the CG BJ cases for different max block size values"}
-                      }
+          "variants": { "maxBlockSize": [1 ,2 ,4 ,8 ,16] },
+          "variant_of": ["BJ", "CG"],
+          "comment": "creates a subvariation of the CG BJ cases for different max block size values"
+            },
+                      {
+          "name": "innerReductionFactor",
+          "type": "ChangeMatrixSolverProperties",
+          "variants": { "innerReductionFactor": [0.1 ,0.05 , 0.01 ,0.05 , 0.001]},
+          "variant_of": ["IR", "CG"],
+          "comment": "creates a subvariation of the CG BJ cases for different max block size values"
         }
-      }
+                     ]
+        }]
+      }]
     }
   }
-}
