@@ -168,7 +168,7 @@ def add_or_set_solver_settings(fvSolution, field, keyword, value):
     block = read_block_from_file(fvSolution, ['"' + field + '.*"{'], "}")
     # clear_solver_settings(fvSolution, field)
     block.insert(1, "{} {};\n".format(keyword["name"], value))
-    clean_block_from_file(fvSolution, [field + '.*"{'], "}\n", " ".join(block))
+    clean_block_from_file(fvSolution, [field + '.*"{'], "}\n", " ".join(block[:-1]))
 
 
 def clear_solver_settings(fvSolution, field):
