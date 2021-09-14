@@ -103,7 +103,8 @@ class ParameterStudyTree:
         """ creates the tree of case variations"""
 
         sf.ensure_path(self.root_dir)
-        sf.ensure_path(self.variation_dir)
+        if self.cases:
+            sf.ensure_path(self.variation_dir)
 
         # copy the base case into the tree
         if self.base:
@@ -116,8 +117,19 @@ class ParameterStudyTree:
             sf.ensure_path(case_dir)
             self.copy_base_to(case)
             case.set_up()
-            if not self.subvariations:
-                # TODO
+
+        # descend one level to the subvariations
+        if self.subvariations:
+            for subvariation in self.subvariations:
+                subvariation.set_up()
+
+        # write run script if case still has no subvariations
+        for case in self.cases:
+            case_dir = self.variation_dir / case.name
+            import os
+
+            _, folder, _ = next(os.walk(case_dir))
+            if len(folder) == 1:
                 track_args = case.track_args
                 track_args["exec"] = [self.root_dict["case"]["solver"]]
                 jsonString = json.dumps(track_args)
@@ -125,8 +137,3 @@ class ParameterStudyTree:
                     jsonFile.write(jsonString)
 
                 print("writing exec script", case_dir / "base")
-
-        # descend one level to the subvariations
-        if self.subvariations:
-            for subvariation in self.subvariations:
-                subvariation.set_up()
