@@ -8,17 +8,25 @@ from . import setFunctions as sf
 
 
 class Variant(OpenFOAMCase):  # At some point this inherits from Setter
-    def __init__(self, root_dir, name, track_args):
+    def __init__(self, root_dir, name, track_args, variant_of):
         self.name = name
         super().__init__(root_dir / self.name / "base")
-        self.valid = True
+        if variant_of:
+            self.valid = False
+            for variant in variant_of:
+                if variant in str(root_dir):
+                    self.valid = True
+        else:
+            self.valid = True
         self.track_args = track_args
         self.link_mesh = True
 
 
 class MeshVariant(Variant):
-    def __init__(self, root_dir, name, cell_ratio, controlDictArgs, track_args):
-        super().__init__(root_dir, name, track_args)
+    def __init__(
+        self, root_dir, name, cell_ratio, controlDictArgs, track_args, variant_of
+    ):
+        super().__init__(root_dir, name, track_args, variant_of)
         self.prepare_controlDict = es.PrepareControlDict(
             self, cell_ratio, controlDictArgs
         )
@@ -26,9 +34,9 @@ class MeshVariant(Variant):
         self.map_fields = True
 
 
-class LinearSolverVariant(Variant):
-    def __init__(self, root_dir, name, track_args):
-        super().__init__(root_dir, name, track_args)
+# class LinearSolverVariant(Variant):
+#     def __init__(self, root_dir, name, track_args, _of):
+#         super().__init__(root_dir, name, track_args, varaint_of)
 
 
 class InitCase(Variant):
@@ -41,8 +49,12 @@ class InitCase(Variant):
             self, 1, input_dict["controlDict"]
         )
         name = str(self.value)
-        print(input_dict)
-        super().__init__(root_dir, name, track_args)
+        super().__init__(
+            root_dir,
+            name,
+            track_args,
+            variant_of=input_dict.get("variant_of", False),
+        )
         self.track_args["resolution"] = self.value
         self.link_mesh = False
         self.map_fields = False
@@ -68,9 +80,13 @@ class RefineMesh(MeshVariant):
         self.value = value_dict[0]
         name = str(self.value)
         cell_ratio = 4 ** self.value
-        print(input_dict)
         super().__init__(
-            root_dir, name, cell_ratio, input_dict["controlDict"], track_args
+            root_dir,
+            name,
+            cell_ratio,
+            input_dict["controlDict"],
+            track_args,
+            variant_of=input_dict.get("variant_of", False),
         )
         self.track_args["resolution"] = self.value
 
@@ -90,7 +106,12 @@ class ReBlockMesh(MeshVariant):
         cell_ratio = self.value / float(input_dict["block"].split()[0])
         self.input_dict = input_dict
         super().__init__(
-            root_dir, name, cell_ratio, input_dict["controlDict"], track_args
+            root_dir,
+            name,
+            cell_ratio,
+            input_dict["controlDict"],
+            track_args,
+            variant_of=input_dict.get("variant_of", False),
         )
         self.track_args["resolution"] = self.value
 
@@ -121,10 +142,14 @@ class ChangeMatrixSolver(Variant):
     """ class that calls refineMesh several times """
 
     def __init__(self, root_dir, input_dict, value_dict, track_args):
-        print(input_dict, value_dict)
         self.value = value_dict
         name = str("_".join(self.value))
-        super().__init__(root_dir, name, track_args)
+        super().__init__(
+            root_dir,
+            name,
+            track_args,
+            variant_of=input_dict.get("variant_of", False),
+        )
         self.input_dict = input_dict
         self.solver_setter = getattr(ms, value_dict[0])(
             self.path, input_dict["fields"], input_dict["defaults"]
@@ -150,16 +175,17 @@ class ChangeMatrixSolverProperties(Variant):
     """ class that calls refineMesh several times """
 
     def __init__(self, root_dir, input_dict, value_dict, track_args):
-        print(input_dict, value_dict)
         self.value = value_dict
         name = str(self.value[0])
-        super().__init__(root_dir, name, track_args)
+        super().__init__(
+            root_dir,
+            name,
+            track_args,
+            variant_of=input_dict.get("variant_of", False),
+        )
         self.input_dict = input_dict
 
     def set_up(self):
-        print("ChangeMatrixSolverProperties variant setup")
         sf.add_or_set_solver_settings(
             self.fvSolution, "p", self.input_dict, self.value[0]
         )
-        print(self.value)
-        print(self.input_dict)
