@@ -160,7 +160,7 @@ class CaseRunner:
                 number_iterations_p=iterations[0],
                 number_iterations_U=iterations[1],
                 init_linear_solve_p=init_time_p,
-                init_linear_solver_U=init_time_u,
+                init_linear_solve_U=init_time_u,
                 linear_solve_p=time_p,
                 linear_solve_U=time_u,
             )
