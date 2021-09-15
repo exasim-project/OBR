@@ -34,16 +34,12 @@ from subprocess import check_output
 if __name__ == "__main__":
     metadata = {
         "node_data": {
-            "host":
-            sf.get_process(["hostname"]),
-            "top":
-            sf.get_process(["top", "-bn1"]).split("\n")[:15],
-            "uptime":
-            sf.get_process(["uptime"]),
-            "libOGL.so":
-            sf.get_process(
-                ["md5sum",
-                 os.getenv("FOAM_USER_LIBBIN") + "/libOGL.so"]),
+            "host": sf.get_process(["hostname"]),
+            "top": sf.get_process(["top", "-bn1"]).split("\n")[:15],
+            "uptime": sf.get_process(["uptime"]),
+            "libOGL.so": sf.get_process(
+                ["md5sum", os.getenv("FOAM_USER_LIBBIN") + "/libOGL.so"]
+            ),
         },
     }
     metadata.update(versions)
@@ -54,8 +50,7 @@ if __name__ == "__main__":
     results = ra.Results(arguments["--results_folder"], arguments["--report"])
     results.write_comment([str(metadata)])
     start = datetime.datetime.now()
-    for root, folder, files in os.walk(
-            Path(arguments["--folder"]).expanduser()):
+    for root, folder, files in os.walk(Path(arguments["--folder"]).expanduser()):
 
         if arguments.get("--filter"):
             filt = arguments.get("--filter").split(",")
@@ -68,9 +63,10 @@ if __name__ == "__main__":
             with open(fn, "r") as parameters_handle:
                 parameters_str = parameters_handle.read()
             solver_arguments = json.loads(parameters_str)
-            case_runner.run(root, solver_arguments)
+            case_parameter = solver_arguments.get("case_parameter", {})
+            case_runner.run(root, solver_arguments, case_parameter)
     end = datetime.datetime.now()
 
-    results.write_comment([
-        "total run time {} minutes".format((end - start).total_seconds() / 60)
-    ])
+    results.write_comment(
+        ["total run time {} minutes".format((end - start).total_seconds() / 60)]
+    )

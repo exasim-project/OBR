@@ -56,7 +56,6 @@ class InitCase(Variant):
             track_args,
             variant_of=input_dict.get("variant_of", False),
         )
-        self.track_args["resolution"] = self.value
         self.link_mesh = False
         self.map_fields = False
 
@@ -90,7 +89,7 @@ class RefineMesh(MeshVariant):
             track_args,
             variant_of=input_dict.get("variant_of", False),
         )
-        self.track_args["resolution"] = self.value
+        self.track_args["case_parameter"]["resolution"] = self.value
 
     def set_up(self):
         self.prepare_controlDict.set_up()
@@ -115,7 +114,7 @@ class ReBlockMesh(MeshVariant):
             track_args,
             variant_of=input_dict.get("variant_of", False),
         )
-        self.track_args["resolution"] = self.value
+        self.track_args["case_parameter"]["resolution"] = self.value
 
     def set_up(self):
         self.prepare_controlDict.set_up()
@@ -168,6 +167,10 @@ class ChangeMatrixSolver(Variant):
                 self.valid = False
         else:
             self.valid = False
+        field = input_dict["fields"][0]
+        self.track_args["case_parameter"]["solver_" + field] = self.value[0]
+        self.track_args["case_parameter"]["preconditioner_" + field] = self.value[1]
+        self.track_args["case_parameter"]["executor_" + field] = self.value[2]
 
     def set_up(self):
         self.solver_setter.set_up()
@@ -186,6 +189,7 @@ class ChangeMatrixSolverProperties(Variant):
             variant_of=input_dict.get("variant_of", False),
         )
         self.input_dict = input_dict
+        self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
         sf.add_or_set_solver_settings(

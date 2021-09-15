@@ -7,7 +7,7 @@ import os
 
 
 class Results:
-    """ A class to collect results and writ to a csv file """
+    """ A class to collect results and write to a csv file """
 
     def __init__(self, fold, fn):
         self.fn = Path(fold) / fn

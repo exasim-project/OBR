@@ -95,7 +95,7 @@ class CaseRunner:
             print("Exception processing logs", e, ret)
             return 0, [0, 0]
 
-    def run(self, path, parameter):
+    def run(self, path, parameter, case_parameter):
         import time
         from pathlib import Path
 
