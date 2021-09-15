@@ -95,7 +95,7 @@ class CaseRunner:
             print("Exception processing logs", e, ret)
             return 0, [0, 0]
 
-    def run(self, path, parameter, case_parameter):
+    def run(self, path, execution_parameter, case_parameter):
         import time
         from pathlib import Path
 
@@ -107,13 +107,13 @@ class CaseRunner:
         case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
         if sub_domains:
-            parameter["prefix"] = ["mpirun", "-np", str(sub_domains)]
-            parameter["flags"] = ["-parallel"]
-        app_cmd_prefix = parameter.get("prefix", [])
-        app_cmd_flags = parameter.get("flags", [])
-        app_cmd = app_cmd_prefix + parameter["exec"] + app_cmd_flags
+            execution_parameter["prefix"] = ["mpirun", "-np", str(sub_domains)]
+            execution_parameter["flags"] = ["-parallel"]
+        app_cmd_prefix = execution_parameter.get("prefix", [])
+        app_cmd_flags = execution_parameter.get("flags", [])
+        app_cmd = app_cmd_prefix + execution_parameter["exec"] + app_cmd_flags
 
-        self.results.set_case(case, parameter)
+        self.results.set_case(case, execution_parameter, case_parameter)
 
         # warm up run
         warm_up = self.warm_up(case, app_cmd)
@@ -154,15 +154,15 @@ class CaseRunner:
                 )
 
             self.results.add(
-                log_hash,
-                warm_up,
-                run_time,
-                iterations[0],
-                iterations[1],
-                init_time_p,
-                init_time_u,
-                time_p,
-                time_u,
+                log_id=log_hash,
+                setup_time=warm_up,
+                run_time=run_time,
+                number_iterations_p=iterations[0],
+                number_iterations_U=iterations[1],
+                init_linear_solve_p=init_time_p,
+                init_linear_solver_U=init_time_u,
+                linear_solve_p=time_p,
+                linear_solve_U=time_u,
             )
 
             check_output(["rm", "-rf", run_path])

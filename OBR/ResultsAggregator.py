@@ -14,35 +14,12 @@ class Results:
         self.log_fold = Path(fold) / "Logs"
         check_output(["mkdir", "-p", self.log_fold])
 
-        self.columns = [
-            "executor_p",
-            "solver_p",
-            "preconditioner_p",
-            "executor_U",
-            "solver_U",
-            "preconditioner_U",
-            "resolution",
-            "omp_threads",
-            "mpi_ranks",
-            "node",
-            "log_id",
-            "setup_time",
-            "run_time",
-            "number_of_iterations_p",
-            "number_of_iterations_U",
-            "init_linear_solve_p",
-            "linear_solve_p",
-            "init_linear_solve_U",
-            "linear_solve_U",
-        ]
-
         self.current_col_vals = []
-        self.report_handle = open(self.fn, "w", 1)
-        self.report_handle.write(",".join(self.columns) + "\n")
+        self.comments = []
 
-    def write_comment(self, comment, prefix=""):
-        for line in comment:
-            self.report_handle.write("#" + line + "\n")
+    def write_comment(self, comments, prefix="#"):
+        for comment in comments:
+            self.comments.append(prefix + comment + "\n")
 
     def get_solver(self, case):
         return [
@@ -50,51 +27,68 @@ class Results:
             sf.get_matrix_solver(case.fvSolution, "U"),
         ]
 
-    def set_case(self, case, args):
+    def set_case(self, case, execution_parameter, case_parameter):
         import socket
 
-        self.current_col_vals = [
-            sf.get_executor(case.fvSolution, "p"),
-            sf.get_matrix_solver(case.fvSolution, "p"),
-            sf.get_preconditioner(case.fvSolution, "p"),
-            sf.get_executor(case.fvSolution, "U"),
-            sf.get_matrix_solver(case.fvSolution, "U"),
-            sf.get_preconditioner(case.fvSolution, "U"),
-            args["resolution"],
-            os.getenv("OMP_NUM_THREADS"),
-            sf.get_number_of_subDomains(case.path),
-            # args["processes"],
-            socket.gethostname(),
-        ]
-        print(self.current_col_vals)
+        self.current_col_vals.append(case_parameter)
+        current = self.current_col_vals[-1]
+        current["node"] = socket.gethostname()
+        current["omp_threads"] = os.getenv("OMP_NUM_THREADS")
+        current["mpi_ranks"] = sf.get_number_of_subDomains(case.path)
 
-    def add(
-        self,
-        log,
-        warm_up,
-        run,
-        iterations_p,
-        iterations_U,
-        init_time_p,
-        init_time_u,
-        linear_p,
-        linear_U,
-    ):
+    def add(self, **kwargs):
         """ Add results and success status of a run and write to file """
-        outp = self.current_col_vals + [
-            log,
-            warm_up,
-            run,
-            iterations_p,
-            iterations_U,
-            init_time_p,
-            init_time_u,
-            linear_p,
-            linear_U,
-        ]
-        outps = ",".join(map(str, outp))
-        print("writing to report", outps)
-        self.report_handle.write(outps + "\n")
+        self.current_col_vals[-1].update(kwargs)
+        self.write_to_disk()
 
-    def close_file(self):
-        close(self.report_handle)
+    def write_to_disk(self):
+        with open(self.fn, "w") as report_handle:
+
+            default_header = [
+                "executor_p",
+                "solver_p",
+                "preconditioner_p",
+                "resolution",
+                "omp_threads",
+                "mpi_ranks",
+                "node",
+            ]
+
+            default_data_columns = [
+                "log_id",
+                "setup_time",
+                "run_time",
+                "number_of_iterations_p",
+                "number_of_iterations_U",
+                "init_linear_solve_p",
+                "linear_solve_p",
+                "init_linear_solve_U",
+                "linear_solve_U",
+            ]
+
+            header = []
+            for vals in self.current_col_vals:
+                for key in vals.keys():
+                    header.append(key)
+            header_all = set(header)
+            extra_header = (set(header_all) - set(default_header)) - set(
+                default_data_columns
+            )
+
+            for eh in extra_header:
+                default_header.append(eh)
+
+            for data_column in default_data_columns:
+                default_header.append(data_column)
+
+            data = []
+            for vals in self.current_col_vals:
+                data.append([vals.get(key, "None") for key in default_header])
+
+            report_handle.write(",".join(default_header) + "\n")
+            report_handle.write("".join(self.comments))
+
+            for d in data:
+                report_handle.write(",".join(map(str, d)) + "\n")
+
+            print("writing to report", data[-1])
