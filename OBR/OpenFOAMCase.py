@@ -6,7 +6,6 @@ from . import setFunctions as sf
 
 class OpenFOAMCase:
     """ A class for simple access to typical OpenFOAM files"""
-
     def __init__(self, path):
         self.path_ = Path(path)
 
@@ -37,6 +36,10 @@ class OpenFOAMCase:
     @property
     def blockMeshDict(self):
         return self.system_folder / "blockMeshDict"
+
+    @property
+    def decomposeParDict(self):
+        return self.system_folder / "decomposeParDict"
 
     @property
     def fvSolution(self):
