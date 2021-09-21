@@ -9,7 +9,8 @@
         -h --help           Show this screen
         -v --version        Print version and exit
         --clean             Remove existing cases [default: False].
-        --filter=<json> pass the parameters for given parameter study
+        --filter=<json>     pass the parameters for given parameter study
+        --select=<json>     pass the parameters for given parameter study
         --folder=<folder>   Target folder  [default: Test].
         --test-run          Run every case only once [default: False]
         --min_runs=<n>      Number of applications runs [default: 3].
@@ -57,6 +58,13 @@ if __name__ == "__main__":
             filt = [f in root for f in filt]
             if any(filt):
                 continue
+
+        if arguments.get("--select"):
+            filt = arguments.get("--select").split(",")
+            filt = [f in root for f in filt]
+            if not all(filt):
+                continue
+
         if "obr.json" in files:
             case_runner = cr.CaseRunner(results, arguments)
             fn = Path(root) / "obr.json"
