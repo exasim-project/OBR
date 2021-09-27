@@ -76,6 +76,8 @@ class RefineMesh(MeshVariant):
         self.value = value_dict[0]
         name = str(self.value)
         cell_ratio = 4**self.value
+        self.link_mesh = False
+        self.map_fields = True
         super().__init__(
             root_dir,
             name,
@@ -90,6 +92,18 @@ class RefineMesh(MeshVariant):
         self.prepare_controlDict.set_up()
         for _ in range(self.value):
             check_output(["refineMesh", "-overwrite"], cwd=self.path)
+
+        # TODO check if mapFields is requested
+        cmd = [
+            "mapFields",
+            "../../../base",
+            "-consistent",
+            "-sourceTime",
+            "latestTime",
+        ]
+
+        print("mapping field")
+        check_output(cmd, cwd=self.path)
 
 
 class ReBlockMesh(MeshVariant):
@@ -150,7 +164,6 @@ class ChangeMatrixSolver(Variant):
                                                         input_dict["defaults"])
         self.solver_setter.preconditioner = getattr(ms, value_dict[1])()
         self.solver_setter.executor = getattr(ms, value_dict[2])()
-
         # check whether preconditioner and executor combinations are
         # supported/valid
         backend = self.solver_setter.executor.backend
@@ -163,8 +176,8 @@ class ChangeMatrixSolver(Variant):
             self.valid = False
         field = input_dict["fields"][0]
         self.track_args["case_parameter"]["solver_" + field] = self.value[0]
-        self.track_args["case_parameter"]["preconditioner_" +
-                                          field] = self.value[1]
+        self.track_args["case_parameter"][
+                "preconditioner_" + field] = self.value[1]
         self.track_args["case_parameter"]["executor_" + field] = self.value[2]
 
     def set_up(self):
