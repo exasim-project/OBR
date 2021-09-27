@@ -27,24 +27,27 @@ class CaseRunner:
             return accumulated_time < self.time_runs or number_of_runs < self.min_runs
 
     def warm_up(self, case, app_cmd):
-        original_end_time = sf.get_end_time(case.controlDict)
-        deltaT = sf.read_deltaT(case.controlDict)
+        try:
+            original_end_time = sf.get_end_time(case.controlDict)
+            deltaT = sf.read_deltaT(case.controlDict)
 
-        sf.set_end_time(case.controlDict, 1 * deltaT)
+            sf.set_end_time(case.controlDict, 1 * deltaT)
 
-        # first warm up run
-        print("Start warm up run #1")
-        check_output(app_cmd, cwd=case.path, timeout=15 * 60)
-        print("Done warm up run #1")
+            # first warm up run
+            print("Start warm up run #1")
+            check_output(app_cmd, cwd=case.path, timeout=15 * 60)
+            print("Done warm up run #1")
 
-        # timed warmup run
-        start = datetime.datetime.now()
-        print("Start timed warm up run #2")
-        check_output(app_cmd, cwd=case.path, timeout=15 * 60)
-        print("Done timed warm up run #2")
-        end = datetime.datetime.now()
-        sf.set_end_time(case.controlDict, original_end_time)
-        return (end - start).total_seconds()
+            # timed warmup run
+            start = datetime.datetime.now()
+            print("Start timed warm up run #2")
+            check_output(app_cmd, cwd=case.path, timeout=15 * 60)
+            print("Done timed warm up run #2")
+            end = datetime.datetime.now()
+            sf.set_end_time(case.controlDict, original_end_time)
+            return (end - start).total_seconds()
+        except:
+            return 0
 
     def post_pro_logs_for_timings(self, ret):
         try:
