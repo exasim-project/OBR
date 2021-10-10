@@ -43,7 +43,8 @@
             "tolerance":  1e-06,
             "updateSysMatrix": "no",
             "sort": "yes",
-            "verbose": "no"
+            "verbose": "no",
+            "inner": "{solver CG; maxIter 1000;frequency 10;}"
             }
           },
         "variants": {"solver": ["CG", "BiCGStab", "IR"],
