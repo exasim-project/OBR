@@ -57,30 +57,32 @@ class CaseRunner:
                 "linear solve U": ["linear_solve"],
             }
             ff = ow.read_log_str(log_str, deepcopy(keys_timings))
-            total_linear_solve = [
-                (ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"]
-                for k in keys_timings.keys()
-            ]
+            total_linear_solve = [(ff[ff.index.get_level_values("Key") == k]
+                                   ).sum()["linear_solve"]
+                                  for k in keys_timings.keys()]
             first_time = min(ff.index.get_level_values("Time"))
             ff = ff[ff.index.get_level_values("Time") == first_time]
-            init_linear_solve = [
-                (ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"]
-                for k in keys_timings.keys()
-            ]
+            init_linear_solve = [(ff[ff.index.get_level_values("Key") == k]
+                                  ).sum()["linear_solve"]
+                                 for k in keys_timings.keys()]
             return init_linear_solve, total_linear_solve
         except Exception as e:
             print("logs_for_timings", e)
             return (0, 0), (0, 0)
 
     def post_pro_logs_for_iters(self, path, ret, solver, log_fold):
+        # TODO move writing log to separate file
         try:
             log_hash = hashlib.md5(ret).hexdigest()
-            log_path = path / log_hash
+            log_path = path / "logs"
             log_path = log_path.with_suffix(".log")
             log_str = ret.decode("utf-8")
-            with open(log_path, "w") as log_handle:
-                log_handle.write(log_str)
-            check_output(["cp", log_path, log_fold])
+            log_file = log_fold / "logs"
+            with open(log_file, "a") as log_handle:
+                print("writing to log", log_file, type(log_str))
+                log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str,
+                                                     "=" * 80)
+                log_handle.write(log_str_)
             keys = {
                 "{}:  Solving for {}".format(s, f): [
                     "init_residual",
@@ -153,8 +155,7 @@ class CaseRunner:
             if number_of_runs == 1:
                 solver = self.results.get_solver(case)
                 log_hash, iterations = self.post_pro_logs_for_iters(
-                    case.path, ret, solver, self.results.log_fold
-                )
+                    case.path, ret, solver, self.results.log_fold)
 
             self.results.add(
                 log_id=log_hash,
