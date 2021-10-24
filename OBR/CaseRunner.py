@@ -26,79 +26,17 @@ class CaseRunner:
         else:
             return accumulated_time < self.time_runs or number_of_runs < self.min_runs
 
-    def warm_up(self, case, app_cmd):
-        try:
-            original_end_time = sf.get_end_time(case.controlDict)
-            deltaT = sf.read_deltaT(case.controlDict)
-
-            sf.set_end_time(case.controlDict, 1 * deltaT)
-
-            # first warm up run
-            print("Start warm up run #1")
-            check_output(app_cmd, cwd=case.path, timeout=15 * 60)
-            print("Done warm up run #1")
-
-            # timed warmup run
-            start = datetime.datetime.now()
-            print("Start timed warm up run #2")
-            check_output(app_cmd, cwd=case.path, timeout=15 * 60)
-            print("Done timed warm up run #2")
-            end = datetime.datetime.now()
-            sf.set_end_time(case.controlDict, original_end_time)
-            return (end - start).total_seconds()
-        except:
-            return 0
-
-    def post_pro_logs_for_timings(self, ret):
-        try:
-            log_str = ret.decode("utf-8")
-            keys_timings = {
-                "linear solve p": ["linear_solve"],
-                "linear solve U": ["linear_solve"],
-            }
-            ff = ow.read_log_str(log_str, deepcopy(keys_timings))
-            total_linear_solve = [(ff[ff.index.get_level_values("Key") == k]
-                                   ).sum()["linear_solve"]
-                                  for k in keys_timings.keys()]
-            first_time = min(ff.index.get_level_values("Time"))
-            ff = ff[ff.index.get_level_values("Time") == first_time]
-            init_linear_solve = [(ff[ff.index.get_level_values("Key") == k]
-                                  ).sum()["linear_solve"]
-                                 for k in keys_timings.keys()]
-            return init_linear_solve, total_linear_solve
-        except Exception as e:
-            print("logs_for_timings", e)
-            return (0, 0), (0, 0)
-
-    def post_pro_logs_for_iters(self, path, ret, solver, log_fold):
-        # TODO move writing log to separate file
-        try:
-            log_hash = hashlib.md5(ret).hexdigest()
-            log_path = path / "logs"
-            log_path = log_path.with_suffix(".log")
-            log_str = ret.decode("utf-8")
-            log_file = log_fold / "logs"
-            with open(log_file, "a") as log_handle:
-                print("writing to log", log_file, type(log_str))
-                log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str,
-                                                     "=" * 80)
-                log_handle.write(log_str_)
-            keys = {
-                "{}:  Solving for {}".format(s, f): [
-                    "init_residual",
-                    "final_residual",
-                    "iterations",
-                ]
-                for f, s in zip(["p", "U"], solver)
-            }
-            ff = ow.read_log_str(log_str, deepcopy(keys))
-            return log_hash, [
-                (ff[ff.index.get_level_values("Key") == k]).sum()["iterations"]
-                for k in keys.keys()
-            ]
-        except Exception as e:
-            print("Exception processing logs", e, ret)
-            return 0, [0, 0]
+    def hash_and_store_log(self, ret, path, log_fold):
+        log_hash = hashlib.md5(ret).hexdigest()
+        log_path = path / "logs"
+        log_path = log_path.with_suffix(".log")
+        log_str = ret.decode("utf-8")
+        log_file = log_fold / "logs"
+        with open(log_file, "a") as log_handle:
+            print("writing to log", log_file, type(log_str))
+            log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str, "=" * 80)
+            log_handle.write(log_str_)
+        return log_hash
 
     def run(self, path, execution_parameter, case_parameter):
         import time
@@ -135,7 +73,7 @@ class CaseRunner:
             number_of_runs += 1
             try:
                 start = datetime.datetime.now()
-                ret = check_output(app_cmd, cwd=case.path, timeout=15 * 60)
+                ret = check_output(app_cmd, cwd=case.path, timeout=60 * 60)
                 end = datetime.datetime.now()
                 run_time = (end - start).total_seconds()  # - self.init_time
                 accumulated_time += run_time
@@ -148,25 +86,8 @@ class CaseRunner:
                     sys.exit(1)
                 break
 
-            init_lin_solve, tot_lin_solve = self.post_pro_logs_for_timings(ret)
-            time_u, time_p = tot_lin_solve
-            init_time_u, init_time_p = init_lin_solve
+            log_hash = self.hash_and_store_log(ret, case.path, self.results.log_fold)
 
-            if number_of_runs == 1:
-                solver = self.results.get_solver(case)
-                log_hash, iterations = self.post_pro_logs_for_iters(
-                    case.path, ret, solver, self.results.log_fold)
-
-            self.results.add(
-                log_id=log_hash,
-                setup_time=warm_up,
-                run_time=run_time,
-                number_iterations_p=iterations[0],
-                number_iterations_U=iterations[1],
-                init_linear_solve_p=init_time_p,
-                init_linear_solve_U=init_time_u,
-                linear_solve_p=time_p,
-                linear_solve_U=time_u,
-            )
+            self.results.add(log_id=log_hash, run_time=run_time)
 
             check_output(["rm", "-rf", run_path])
