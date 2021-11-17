@@ -16,6 +16,7 @@
         --min_runs=<n>      Number of applications runs [default: 3].
         --time_runs=<s>     Time to applications runs [default: 20].
         --fail_on_error     exit benchmark script when a run fails [default: False].
+        --warmup            Do two warmup runs [default: False].
         --continue_on_failure continue running benchmark and timing even on failure [default: False].
         --report=<filename> Target file to store stats [default: report.csv].
         --results_folder=<foldername> Target folder to store stats and logs [default: .].

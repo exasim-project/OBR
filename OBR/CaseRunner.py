@@ -59,7 +59,7 @@ class CaseRunner:
         self.results.set_case(case, execution_parameter, case_parameter)
 
         # warm up run
-        warm_up = self.warm_up(case, app_cmd)
+        # warm_up = self.warm_up(case, app_cmd)
 
         # timed runs
         accumulated_time = 0
@@ -68,12 +68,12 @@ class CaseRunner:
 
         # on first run get number of iterations and write log if demanded
         iterations = 0
-        print("running", app_cmd)
+        print("running", app_cmd, case.path)
         while self.continue_running(accumulated_time, number_of_runs):
             number_of_runs += 1
             try:
                 start = datetime.datetime.now()
-                ret = check_output(app_cmd, cwd=case.path, timeout=60 * 60)
+                ret = check_output(app_cmd, cwd=case.path, timeout=180 * 60)
                 end = datetime.datetime.now()
                 run_time = (end - start).total_seconds()  # - self.init_time
                 accumulated_time += run_time

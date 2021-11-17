@@ -11,6 +11,7 @@
         --np=<nd>           Number of sub domains.
         --folder=<folder>   Target folder  [default: Test].
         --filter=<json> pass the parameters for given parameter study
+        --select=<json>     pass the parameters for given parameter study
 """
 
 
@@ -51,6 +52,11 @@ if __name__ == "__main__":
             filt = arguments.get("--filter").split(",")
             filt = [f in root for f in filt]
             if any(filt):
+                continue
+        if arguments.get("--select"):
+            filt = arguments.get("--select").split(",")
+            filt = [f in root for f in filt]
+            if not all(filt):
                 continue
         if "obr.json" in files:
             sf.check_output(["decomposePar", "-force"], cwd=root)

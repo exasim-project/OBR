@@ -135,15 +135,22 @@ class ReBlockMesh(MeshVariant):
         check_output(["blockMesh"], cwd=self.path)
 
         # TODO check if mapFields is requested
-        cmd = [
-            "mapFields",
-            "../../../base",
-            "-consistent",
-            "-sourceTime",
-            "latestTime",
-        ]
 
-        print("mapping field")
+        if self.input_dict["mapFields"]:
+            cmd = [
+                "mapFields",
+                "../../../base",
+                "-consistent",
+                "-sourceTime",
+                "latestTime",
+            ]
+            print("mapping field")
+        else:
+            print("copying zero folder")
+            cmd = [
+                "cp", "-r", "../../../base/0", "."
+                ]
+
         check_output(cmd, cwd=self.path)
 
 
