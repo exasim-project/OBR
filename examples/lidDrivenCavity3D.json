@@ -24,7 +24,7 @@
       "type": "ReBlockMesh",
       "mapFields": true,
       "dimensions": 3,
-      "variants":{"cells":[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]},
+      "variants":{"cells": [50, 100, 150, 200, 250, 300, 350, 400, 450, 500]},
       "block": "100 100 100",
       "controlDict": {
         "stationary": false,
@@ -41,7 +41,7 @@
             "smoother": "none",
             "relTol":  0.0,
             "tolerance":  1e-06,
-            "updateSysMatrix": "no",
+            "updateSysMatrix": "yes",
             "sort": "yes",
             "verbose": "no",
             "inner": "{solver CG; maxIter 1000;frequency 10;}"
