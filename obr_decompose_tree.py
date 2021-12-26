@@ -45,8 +45,6 @@ if __name__ == "__main__":
     start = datetime.datetime.now()
     for root, folder, files in os.walk(
             Path(arguments["--folder"]).expanduser()):
-        if "MPI" not in root:
-            continue
         if arguments.get("--filter"):
             filt = arguments.get("--filter").split(",")
             filt = [f in root for f in filt]
