@@ -49,7 +49,7 @@
           },
         "variants": {"solver": ["CG", "BiCGStab", "IR"],
                      "preconditioner":["NoPrecond", "BJ", "DIC", "IC", "ILU"],
-                     "executor":["CUDA", "HIP", "OMP", "DPCPP", "Serial", "MPI"]},
+                     "executor":["CUDA", "HIP", "OMP", "DPCPP", "DefaultOF"]},
         "variation": [
           {
           "name": "maxBlockSize",
