@@ -83,7 +83,7 @@ class Results:
 
             data = []
             for vals in self.current_col_vals:
-                data.append([vals.get(key, "None") for key in default_header])
+                data.append([vals.get(key, 0) for key in default_header])
 
             report_handle.write(",".join(default_header) + "\n")
             report_handle.write("".join(self.comments))
