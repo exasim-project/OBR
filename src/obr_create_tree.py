@@ -29,6 +29,7 @@ def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
     from packaging import version
 
     # read benchmark description file
+    fn = Path(fn).expanduser()
     with open(fn, "r") as parameters_handle:
         parameters_str = parameters_handle.read()
 
