@@ -30,7 +30,7 @@ class OpenFOAMExternalCase(CaseOrigin):
     def __init__(self, args_dict):
         super().__init__(args_dict)
         print(args_dict)
-        self.path = Path(self.args["origin"]).expanduser()
+        self.path = Path(self.args["origin"]).expanduser().resolve()
         self.solver = self.args["solver"]
 
 
