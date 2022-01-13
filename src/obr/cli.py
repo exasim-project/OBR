@@ -17,7 +17,49 @@ Why does this file exist, and why not put this in __main__?
 import click
 
 
-@click.command()
-@click.argument('names', nargs=-1)
-def main(names):
-    click.echo(repr(names))
+@click.group()
+@click.option("--debug/--no-debug", default=False)
+@click.pass_context
+def cli(ctx, debug):
+    # ensure that ctx.obj exists and is a dict (in case `cli()` is called
+    # by means other than the `if` block below)
+    ctx.ensure_object(dict)
+    ctx.obj["DEBUG"] = debug
+
+
+@cli.command()
+@click.option("--folder", default="cases")
+@click.option("--results", default="base")
+@click.option("--report", default="base")
+@click.option("--filter", default="base")
+@click.option("--select", default="base")
+@click.pass_context
+def decompose(ctx, **kwargs):
+    print("benchmark")
+
+
+@cli.command()
+@click.option("--folder", default="cases")
+@click.option("--results", default="base")
+@click.option("--report", default="base")
+@click.option("--filter", default="base")
+@click.option("--select", default="base")
+@click.pass_context
+def benchmark(ctx, **kwargs):
+    print("benchmark")
+
+
+@cli.command()
+@click.option("--folder", default="cases")
+@click.option("--parameters", default="base")
+@click.pass_context
+def create(ctx, **kwargs):
+    print("create")
+
+
+def main():
+    cli(obj={})
+
+
+if __name__ == "__main__":
+    cli(obj={})
