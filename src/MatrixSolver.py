@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from OBR.Setter import Setter
-from OBR.EnviromentSetters import PrepareOMPMaxThreads
+from Setter import Setter
+from EnviromentSetters import PrepareOMPMaxThreads
 from pathlib import Path
-import OBR.setFunctions as sf
+import setFunctions as sf
 
 
 class SolverSetter(Setter):
@@ -79,11 +79,14 @@ class GKOExecutor(Executor):
     def __init__(self, name):
         super().__init__(name, "GKO")
 
+
 class Reference(GKOExecutor):
     def __init__(self):
         super().__init__(name="reference")
 
         # TODO move num_ranks to executor
+
+
 # class MPI(OFExecutor):
 #     def __init__(self):
 #         super().__init__(name="mpi")

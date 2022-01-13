@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-from . import ParameterStudyVariants as variants
-from . import setFunctions as sf
-from .OpenFOAMCase import OpenFOAMCase
+import ParameterStudyVariants as variants
+import setFunctions as sf
+from OpenFOAMCase import OpenFOAMCase
 from pathlib import Path
 from itertools import product
 from subprocess import check_output
@@ -10,7 +10,7 @@ import json
 
 
 class ParameterStudyTree:
-    """ class to construct the file system tree of the cases """
+    """class to construct the file system tree of the cases"""
 
     def __init__(
         self, root_dir, root_dict, input_dict, track_args, parent=None, base=None
@@ -100,7 +100,7 @@ class ParameterStudyTree:
             check_output(cmd, cwd=case.path)
 
     def set_up(self):
-        """ creates the tree of case variations"""
+        """creates the tree of case variations"""
 
         sf.ensure_path(self.root_dir)
         if self.cases:

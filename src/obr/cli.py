@@ -54,7 +54,9 @@ def benchmark(ctx, **kwargs):
 @click.option("--parameters", default="base")
 @click.pass_context
 def create(ctx, **kwargs):
-    print("create")
+    import obr_create_tree
+
+    obr_create_tree.obr_create_tree(kwargs)
 
 
 def main():

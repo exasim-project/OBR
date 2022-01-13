@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-import OBR.setFunctions as sf
-from OBR.OpenFOAMCase import OpenFOAMCase
+import setFunctions as sf
+from OpenFOAMCase import OpenFOAMCase
 import os
 from subprocess import check_output
 
@@ -33,11 +33,7 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
     def set_up(self):
         print("setup", self.current_state, self.processes)
         processes = self.processes[self.current_state]
-        print(
-            "PrepareOMPMaxThreads use ",
-            self.current_state,
-            processes,
-            " threads")
+        print("PrepareOMPMaxThreads use ", self.current_state, processes, " threads")
         os.environ["OMP_NUM_THREADS"] = str(processes)
         self.current_state += 1
         return processes
@@ -47,16 +43,16 @@ class PrepareOMPMaxThreads(DefaultPrepareEnviroment):
 
 
 class CachePrepare(DefaultPrepareEnviroment):
-    """ copies cases from a base """
+    """copies cases from a base"""
 
     def __init__(self, path):
-        """ prepare a cache folder for the target folder in path """
+        """prepare a cache folder for the target folder in path"""
         self.path = path
         self.alternative_cache_path_ = None
 
     @property
     def cache_path(self):
-        """ append cache to the current path name """
+        """append cache to the current path name"""
         path = self.path
         if self.alternative_cache_path_:
             path = self.alternative_cache_path_
@@ -81,10 +77,10 @@ class CachePrepare(DefaultPrepareEnviroment):
 
 
 class PrepareControlDict:
-    """ prepares the control dict of a case """
+    """prepares the control dict of a case"""
 
     def __init__(self, case, cell_ratio, controlDictArgs):
-        """ cell_ratio """
+        """cell_ratio"""
         self.case = case
         self.cell_ratio = cell_ratio
         self.controlDictArgs = controlDictArgs
@@ -104,8 +100,7 @@ class PrepareControlDict:
 
         sf.set_end_time(self.case.controlDict, endTime)
         # TODO dont hard code write interval
-        write_last_timeStep = self.controlDictArgs.get(
-            "write_last_timeStep", False)
+        write_last_timeStep = self.controlDictArgs.get("write_last_timeStep", False)
         lastTimeStep = timeSteps if write_last_timeStep else 10000
         sf.set_writeInterval(self.case.controlDict, lastTimeStep)
 
@@ -125,8 +120,8 @@ class DecomposePar(CachePrepare):
 
     def set_number_of_subdomains(self):
         sf.set_number_of_subdomains(
-            self.path / "system" / "decomposeParDict",
-            self.number_of_subdomains)
+            self.path / "system" / "decomposeParDict", self.number_of_subdomains
+        )
 
     def call_decomposePar(self):
         check_output(["decomposePar"], cwd=self.path)
@@ -138,7 +133,7 @@ class DecomposePar(CachePrepare):
 
 
 class CellsPrepare(CachePrepare):
-    """ sets the number of cells or copies from a base to avoid remeshing """
+    """sets the number of cells or copies from a base to avoid remeshing"""
 
     # TODO factor clearing solvers to separate classes
 
@@ -168,8 +163,7 @@ class CellsPrepare(CachePrepare):
         check_output(["blockMesh"], cwd=self.cache_case.path)
 
         if self.meshArgs["renumberMesh"]:
-            check_output(["renumberMesh", "-overwrite"],
-                         cwd=self.cache_case.path)
+            check_output(["renumberMesh", "-overwrite"], cwd=self.cache_case.path)
 
         # FIXME check if mpi executor
         if self.meshArgs["decomposeMesh"]:
@@ -205,7 +199,7 @@ class CellsPrepare(CachePrepare):
 
 
 class RefineMeshPrepare(CachePrepare):
-    """ sets the number of cells or copies from a base to avoid remeshing """
+    """sets the number of cells or copies from a base to avoid remeshing"""
 
     # TODO factor clearing solvers to separate classes
 
@@ -223,8 +217,7 @@ class RefineMeshPrepare(CachePrepare):
 
         print("Refining Mesh", self.cache_case.path)
         for _ in range(self.refinements):
-            check_output(["refineMesh", "-overwrite"],
-                         cwd=self.cache_case.path)
+            check_output(["refineMesh", "-overwrite"], cwd=self.cache_case.path)
 
     def set_up_cache(self):
         self.set_up_cacheMesh()
@@ -232,8 +225,8 @@ class RefineMeshPrepare(CachePrepare):
         factor = 2 ** self.meshArgs["dimensions"]
 
         PrepareControlDict(
-            self.cache_case, max(
-                1, self.refinements * factor), self.controlDictArgs).set_up()
+            self.cache_case, max(1, self.refinements * factor), self.controlDictArgs
+        ).set_up()
 
         for field in self.fields:
             sf.clear_solver_settings(self.cache_case.fvSolution, field)
@@ -243,7 +236,7 @@ class RefineMeshPrepare(CachePrepare):
 
 
 class PathPrepare(CachePrepare):
-    """ sets the number of cells or copies from a base to avoid remeshing """
+    """sets the number of cells or copies from a base to avoid remeshing"""
 
     def __init__(self, path, fields):
         super().__init__(path=path)

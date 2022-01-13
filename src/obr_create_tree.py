@@ -18,10 +18,10 @@ from docopt import docopt
 import json
 
 from pathlib import Path
-from OBR import ParameterStudyTree as ps
-from OBR import CaseOrigins as co
-from OBR import setFunctions as sf
-from OBR.metadata import versions
+import ParameterStudyTree as ps
+import CaseOrigins as co
+import setFunctions as sf
+from metadata import versions
 
 
 def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
@@ -47,19 +47,16 @@ def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
     return parameter_study_arguments
 
 
-if __name__ == "__main__":
-    metadata = versions
-
-    arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
+def obr_create_tree(arguments):
 
     parameter_study_arguments = process_benchmark_description(
-        arguments.get("--parameters", "benchmark.json"), metadata
+        arguments.get("parameters", "benchmark.json"), versions
     )
 
     track_args = {"case_parameter": {"resolution": 0, "processes": 1}}
 
     pst = ps.ParameterStudyTree(
-        Path(arguments["--folder"]),
+        Path(arguments["folder"]),
         parameter_study_arguments,
         parameter_study_arguments["variation"],
         track_args,
