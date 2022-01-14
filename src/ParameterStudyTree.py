@@ -111,7 +111,7 @@ class ParameterStudyTree:
             self.base.copy_to(self.root_dir / "base")
 
         # execute build command
-        if getattr(self.base, "build"):
+        if hasattr(self.base, "build"):
             for step in self.base.build:
                 print(check_output(step.split(" "), cwd=self.root_dir / "base"))
 
