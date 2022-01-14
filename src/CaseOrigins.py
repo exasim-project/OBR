@@ -31,7 +31,9 @@ class OpenFOAMExternalCase(CaseOrigin):
         super().__init__(args_dict)
         print(args_dict)
         self.path = Path(self.args["origin"]).expanduser().resolve()
+        print(self.path)
         self.solver = self.args["solver"]
+        self.build = self.args.get("build", [])
 
 
 class TestCase(CaseOrigin):

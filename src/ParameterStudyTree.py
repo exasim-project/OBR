@@ -110,6 +110,11 @@ class ParameterStudyTree:
         if self.base:
             self.base.copy_to(self.root_dir / "base")
 
+        # execute build command
+        if getattr(self.base, "build"):
+            for step in self.base.build:
+                print(check_output(step.split(" "), cwd=self.root_dir / "base"))
+
         # if it has a parent case copy the parent case
         # and apply modifiers
         for case in self.cases:
