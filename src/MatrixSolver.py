@@ -25,6 +25,8 @@ class SolverSetter(Setter):
             "updateSysMatrix",
             "preconditioner",
             "executor",
+            "verbose",
+            "inner",
         ]
 
     def set_up(self):
