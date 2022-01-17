@@ -56,14 +56,7 @@ class Results:
 
             default_data_columns = [
                 "log_id",
-                "setup_time",
                 "run_time",
-                "number_iterations_p",
-                "number_iterations_U",
-                "init_linear_solve_p",
-                "linear_solve_p",
-                "init_linear_solve_U",
-                "linear_solve_U",
             ]
 
             header = []

@@ -1,12 +1,12 @@
-from metadata import versions
 import setFunctions as sf
 import CaseRunner as cr
 import ResultsAggregator as ra
-from OpenFOAMCase import OpenFOAMCase
-from pathlib import Path
 import os
 import json
 import datetime
+from metadata import versions
+from OpenFOAMCase import OpenFOAMCase
+from pathlib import Path
 from subprocess import check_output
 
 
@@ -57,6 +57,11 @@ def decompose_tree(arguments):
             filt = arguments.get("filter").split(",")
             filt = [f in root for f in filt]
             if any(filt):
+                continue
+        if arguments.get("--select"):
+            filt = arguments.get("--select").split(",")
+            filt = [f in root for f in filt]
+            if not all(filt):
                 continue
         if not "mpiRank" in root:
             continue
