@@ -17,7 +17,7 @@ class CaseRunner:
         self.time_runs = int(arguments["time_runs"])
         self.min_runs = int(arguments["min_runs"])
         self.continue_on_failure = arguments["continue_on_failure"]
-        self.test_run = arguments["test-run"]
+        self.test_run = arguments["test_run"]
         self.fail = arguments["fail_on_error"]
 
     def continue_running(self, accumulated_time, number_of_runs):
