@@ -73,9 +73,9 @@ if __name__ == "__main__":
     arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
 
     start = datetime.datetime.now()
-    for root, folder, files in os.walk(Path(arguments["--folder"]).expanduser()):
-        if arguments.get("--filter"):
-            filt = arguments.get("--filter").split(",")
+    for root, folder, files in os.walk(Path(arguments["folder"]).expanduser()):
+        if arguments.get("filter"):
+            filt = arguments.get("filter").split(",")
             filt = [f in root for f in filt]
             if any(filt):
                 continue
