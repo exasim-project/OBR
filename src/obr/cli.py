@@ -44,6 +44,9 @@ def decompose(ctx, **kwargs):
 @click.option("--report", default="report.csv")
 @click.option("--filter", default=None)
 @click.option("--select", default=None)
+@click.option("--continue_on_failure", default=True)
+@click.option("--time_runs", default=3600)
+@click.option("--min_runs", default=1)
 @click.pass_context
 def benchmark(ctx, **kwargs):
     import obr_benchmark_cases
