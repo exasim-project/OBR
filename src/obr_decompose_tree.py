@@ -15,11 +15,11 @@
 
 
 from docopt import docopt
-from OBR.metadata import versions
-from OBR import setFunctions as sf
-from OBR import CaseRunner as cr
-from OBR import ResultsAggregator as ra
-from OBR.OpenFOAMCase import OpenFOAMCase
+from metadata import versions
+import setFunctions as sf
+import CaseRunner as cr
+import ResultsAggregator as ra
+from OpenFOAMCase import OpenFOAMCase
 from pathlib import Path
 import os
 import json
