@@ -39,7 +39,7 @@ def symlink_all_procs(link_base, current):
         print("can not symlink: ", e)
 
 
-def decompose_tree(kwargs):
+def decompose_tree(arguments):
     metadata = {
         "node_data": {
             "host": sf.get_process(["hostname"]),
@@ -51,8 +51,6 @@ def decompose_tree(kwargs):
         },
     }
     metadata.update(versions)
-    print(metadata)
-
     start = datetime.datetime.now()
     for root, folder, files in os.walk(Path(arguments["folder"]).expanduser()):
         if arguments.get("filter"):
