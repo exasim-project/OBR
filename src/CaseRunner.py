@@ -4,8 +4,8 @@ from subprocess import check_output
 import datetime
 import sys
 import Owls as ow
-import OBR.setFunctions as sf
-from OBR.OpenFOAMCase import OpenFOAMCase
+import setFunctions as sf
+from OpenFOAMCase import OpenFOAMCase
 import hashlib
 from copy import deepcopy
 
@@ -57,14 +57,16 @@ class CaseRunner:
                 "linear solve U": ["linear_solve"],
             }
             ff = ow.read_log_str(log_str, deepcopy(keys_timings))
-            total_linear_solve = [(ff[ff.index.get_level_values("Key") == k]
-                                   ).sum()["linear_solve"]
-                                  for k in keys_timings.keys()]
+            total_linear_solve = [
+                (ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"]
+                for k in keys_timings.keys()
+            ]
             first_time = min(ff.index.get_level_values("Time"))
             ff = ff[ff.index.get_level_values("Time") == first_time]
-            init_linear_solve = [(ff[ff.index.get_level_values("Key") == k]
-                                  ).sum()["linear_solve"]
-                                 for k in keys_timings.keys()]
+            init_linear_solve = [
+                (ff[ff.index.get_level_values("Key") == k]).sum()["linear_solve"]
+                for k in keys_timings.keys()
+            ]
             return init_linear_solve, total_linear_solve
         except Exception as e:
             print("logs_for_timings", e)
@@ -80,8 +82,7 @@ class CaseRunner:
             log_file = log_fold / "logs"
             with open(log_file, "a") as log_handle:
                 print("writing to log", log_file, type(log_str))
-                log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str,
-                                                     "=" * 80)
+                log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str, "=" * 80)
                 log_handle.write(log_str_)
             keys = {
                 "{}:  Solving for {}".format(s, f): [
@@ -155,7 +156,8 @@ class CaseRunner:
             if number_of_runs == 1:
                 solver = self.results.get_solver(case)
                 log_hash, iterations = self.post_pro_logs_for_iters(
-                    case.path, ret, solver, self.results.log_fold)
+                    case.path, ret, solver, self.results.log_fold
+                )
 
             self.results.add(
                 log_id=log_hash,
