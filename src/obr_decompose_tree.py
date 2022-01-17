@@ -69,4 +69,8 @@ def decompose_tree(arguments):
                 print("decomposing", root)
                 sf.check_output(["decomposePar", "-force"], cwd=root)
     end = datetime.datetime.now()
-    print("run all selected cases in {} minutes".format((end - start).total_minutes()))
+    print(
+        "run all selected cases in {} minutes".format(
+            (end - start).total_seconds() / 60
+        )
+    )

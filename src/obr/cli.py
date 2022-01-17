@@ -28,11 +28,9 @@ def cli(ctx, debug):
 
 
 @cli.command()
-@click.option("--folder", default="cases")
-@click.option("--results", default="base")
-@click.option("--report", default="base")
-@click.option("--filter", default="base")
-@click.option("--select", default="base")
+@click.option("--folder")
+@click.option("--filter", default=None)
+@click.option("--select", default=None)
 @click.pass_context
 def decompose(ctx, **kwargs):
     import obr_decompose_tree
@@ -44,8 +42,8 @@ def decompose(ctx, **kwargs):
 @click.option("--folder", default="cases")
 @click.option("--results", default="base")
 @click.option("--report", default="base")
-@click.option("--filter", default="base")
-@click.option("--select", default="base")
+@click.option("--filter", default=None)
+@click.option("--select", default=None)
 @click.pass_context
 def benchmark(ctx, **kwargs):
     print("benchmark")
