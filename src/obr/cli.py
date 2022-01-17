@@ -40,15 +40,15 @@ def decompose(ctx, **kwargs):
 
 @cli.command()
 @click.option("--folder", default="cases")
-@click.option("--results", default="base")
-@click.option("--report", default="base")
+@click.option("--results", default="results", help="folder to store results")
+@click.option("--report", default="report.csv")
 @click.option("--filter", default=None)
 @click.option("--select", default=None)
 @click.pass_context
 def benchmark(ctx, **kwargs):
     import obr_benchmark_cases
 
-    obr_benchmark_cases.decompose_tree(kwargs)
+    obr_benchmark_cases.benchmark_cases(kwargs)
 
 
 @cli.command()
