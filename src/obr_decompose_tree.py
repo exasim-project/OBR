@@ -1,20 +1,3 @@
-#!/usr/bin/env python3
-"""
-    run ogl benchmarks
-
-    Usage:
-        obr_run_cases.py [options]
-
-    Options:
-        -h --help           Show this screen
-        -v --version        Print version and exit
-        --np=<nd>           Number of sub domains.
-        --folder=<folder>   Target folder  [default: Test].
-        --filter=<json> pass the parameters for given parameter study
-"""
-
-
-from docopt import docopt
 from metadata import versions
 import setFunctions as sf
 import CaseRunner as cr
@@ -69,8 +52,6 @@ def decompose_tree(kwargs):
     }
     metadata.update(versions)
     print(metadata)
-
-    arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
 
     start = datetime.datetime.now()
     for root, folder, files in os.walk(Path(arguments["folder"]).expanduser()):
