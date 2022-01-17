@@ -71,31 +71,29 @@ class Executor:
         self.backend = backend
 
 
-class OFExecutor(Executor):
-    def __init__(self, name):
-        super().__init__(name, "OF")
+class DefaultOF(Executor):
+    def __init__(self):
+        super().__init__("OF", "OF")
 
 
 class GKOExecutor(Executor):
     def __init__(self, name):
         super().__init__(name, "GKO")
 
-
-class MPI(OFExecutor):
-    def __init__(self):
-        super().__init__(name="mpi")
-        # self.num_ranks = num_ranks
-        # self.enviroment_setter = DecomposePar(max_num_ranks)
-
-
 class Reference(GKOExecutor):
     def __init__(self):
         super().__init__(name="reference")
 
+        # TODO move num_ranks to executor
+# class MPI(OFExecutor):
+#     def __init__(self):
+#         super().__init__(name="mpi")
+#         # self.num_ranks = num_ranks
+#         # self.enviroment_setter = DecomposePar(max_num_ranks)
 
-class Serial(OFExecutor):
-    def __init__(self):
-        super().__init__(name="reference")
+# class Serial(OFExecutor):
+#     def __init__(self):
+#         super().__init__(name="reference")
 
 
 class OMP(GKOExecutor):
