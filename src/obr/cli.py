@@ -47,6 +47,8 @@ def decompose(ctx, **kwargs):
 @click.option("--continue_on_failure", default=True)
 @click.option("--time_runs", default=3600)
 @click.option("--min_runs", default=1)
+@click.option("--test_run", default=False)
+@click.option("--fail_on_error", default=False)
 @click.pass_context
 def benchmark(ctx, **kwargs):
     import obr_benchmark_cases
