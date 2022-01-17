@@ -56,7 +56,7 @@ def symlink_all_procs(link_base, current):
         print("can not symlink: ", e)
 
 
-if __name__ == "__main__":
+def decompose_tree(kwargs):
     metadata = {
         "node_data": {
             "host": sf.get_process(["hostname"]),

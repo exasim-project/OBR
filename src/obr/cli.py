@@ -35,6 +35,9 @@ def cli(ctx, debug):
 @click.option("--select", default="base")
 @click.pass_context
 def decompose(ctx, **kwargs):
+    import obr_create_tree
+
+    obr_create_tree.obr_create_tree(kwargs)
 
 
 @cli.command()
@@ -54,6 +57,7 @@ def benchmark(ctx, **kwargs):
 @click.pass_context
 def create(ctx, **kwargs):
     import obr_create_tree
+
     obr_create_tree.obr_create_tree(kwargs)
 
 
