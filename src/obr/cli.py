@@ -46,7 +46,9 @@ def decompose(ctx, **kwargs):
 @click.option("--select", default=None)
 @click.pass_context
 def benchmark(ctx, **kwargs):
-    print("benchmark")
+    import obr_benchmark_cases
+
+    obr_benchmark_cases.decompose_tree(kwargs)
 
 
 @cli.command()

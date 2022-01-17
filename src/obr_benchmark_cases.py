@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-"""
-    run ogl benchmarks
-
-    Usage:
-        obr_run_cases.py [options]
-
-    Options:
-        -h --help           Show this screen
-        -v --version        Print version and exit
-        --clean             Remove existing cases [default: False].
-        --filter=<json>     pass the parameters for given parameter study
-        --select=<json>     pass the parameters for given parameter study
-        --folder=<folder>   Target folder  [default: Test].
-        --test-run          Run every case only once [default: False]
-        --min_runs=<n>      Number of applications runs [default: 3].
-        --time_runs=<s>     Time to applications runs [default: 20].
-        --fail_on_error     exit benchmark script when a run fails [default: False].
-        --continue_on_failure continue running benchmark and timing even on failure [default: False].
-        --report=<filename> Target file to store stats [default: report.csv].
-        --results_folder=<foldername> Target folder to store stats and logs [default: .].
-"""
 
 from docopt import docopt
 from metadata import versions
@@ -32,7 +11,8 @@ import json
 import datetime
 from subprocess import check_output
 
-if __name__ == "__main__":
+
+def benchmark_cases(arguments):
     metadata = {
         "node_data": {
             "host": sf.get_process(["hostname"]),
@@ -46,21 +26,19 @@ if __name__ == "__main__":
     metadata.update(versions)
     print(metadata)
 
-    arguments = docopt(__doc__, version=metadata["OBR_VERSION"])
-
-    results = ra.Results(arguments["--results_folder"], arguments["--report"])
+    results = ra.Results(arguments["results_folder"], arguments["report"])
     results.write_comment([str(metadata)])
     start = datetime.datetime.now()
-    for root, folder, files in os.walk(Path(arguments["--folder"]).expanduser()):
+    for root, folder, files in os.walk(Path(arguments["folder"]).expanduser()):
 
-        if arguments.get("--filter"):
-            filt = arguments.get("--filter").split(",")
+        if arguments.get("filter"):
+            filt = arguments.get("filter").split(",")
             filt = [f in root for f in filt]
             if any(filt):
                 continue
 
-        if arguments.get("--select"):
-            filt = arguments.get("--select").split(",")
+        if arguments.get("select"):
+            filt = arguments.get("select").split(",")
             filt = [f in root for f in filt]
             if not all(filt):
                 continue
