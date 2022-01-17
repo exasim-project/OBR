@@ -40,7 +40,7 @@ def decompose(ctx, **kwargs):
 
 @cli.command()
 @click.option("--folder", default="cases")
-@click.option("--results", default="results", help="folder to store results")
+@click.option("--results_folder", default="results", help="folder to store results")
 @click.option("--report", default="report.csv")
 @click.option("--filter", default=None)
 @click.option("--select", default=None)
