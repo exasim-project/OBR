@@ -68,6 +68,7 @@ class ParameterStudyTree:
         base_0 = base_path / "0"
         base_0org = base_path / "0.org"
         base_system = base_path / "system"
+        base_scripts = base_path / "All*"
         if not case.link_mesh:
             # TODO copy zero if not linked
             dst = self.variation_dir / case.name / "base"
@@ -87,6 +88,11 @@ class ParameterStudyTree:
             cmd = ["cp", "-r", base_system, "."]
             check_output(cmd, cwd=case.path)
 
+            cmd = ["cp", "-r", base_system, "."]
+            check_output(cmd, cwd=case.path)
+
+            cmd = ["cp", "-r", base_scripts, "."]
+            check_output(cmd, cwd=case.path)
         else:
             dst = self.variation_dir / case.name / "base"
             cmd = ["mkdir", "-p", dst]
