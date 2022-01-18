@@ -36,7 +36,7 @@ class MeshVariant(Variant):
 
 class ExistingCaseVariants(Variant):
     def __init__(self, root_dir, input_dict, value_dict, track_args):
-        self.value = value_dict[0]
+        self.value = value_dict[0][1]
         name = str(self.value)
         self.build = input_dict.get("build", False)
         self.prepare_controlDict = es.PrepareControlDict(
@@ -51,7 +51,7 @@ class ExistingCaseVariants(Variant):
         self.track_args["case_parameter"]["resolution"] = self.value
         self.link_mesh = False
         self.map_fields = False
-        self.base = "../../../base/" + self.value
+        self.base = "../../../base/" + self.value[0]
 
     def set_up(self):
         self.prepare_controlDict.set_up()
