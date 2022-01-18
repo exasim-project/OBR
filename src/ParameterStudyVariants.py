@@ -60,7 +60,10 @@ class ExistingCaseVariants(Variant):
         print("track args", self.track_args)
         if self.build:
             for step in self.build:
-                print(check_output(step.split(" "), cwd=self.path))
+                try:
+                    print(check_output(step.split(" "), cwd=self.path))
+                except:
+                    pass
 
 
 class InitCase(Variant):
