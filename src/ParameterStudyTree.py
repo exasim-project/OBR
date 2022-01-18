@@ -96,9 +96,6 @@ class ParameterStudyTree:
                     continue
                 cmd = ["cp", "-r", base_path / f, "."]
                 check_output(cmd, cwd=case.path)
-
-            cmd = ["cp", "-r", base_scripts, "."]
-            check_output(cmd, cwd=case.path)
         else:
             dst = self.variation_dir / case.name / "base"
             cmd = ["mkdir", "-p", dst]
