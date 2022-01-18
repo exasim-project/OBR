@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import ParameterStudyVariants as variants
 import setFunctions as sf
 from OpenFOAMCase import OpenFOAMCase
@@ -16,6 +17,7 @@ class ParameterStudyTree:
         self, root_dir, root_dict, input_dict, track_args, parent=None, base=None
     ):
         """parent = the part of the tree above
+
         base = the base case on which the tree is based
         """
         self.parent = parent
