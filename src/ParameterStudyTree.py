@@ -64,6 +64,7 @@ class ParameterStudyTree:
         base_path = Path(case.base)
         base_constant = base_path / "constant"
         base_0 = base_path / "0"
+        base_0org = base_path / "0.org"
         base_system = base_path / "system"
         if not case.link_mesh:
             # TODO copy zero if not linked
@@ -72,7 +73,10 @@ class ParameterStudyTree:
             check_output(cmd)
 
             if not case.map_fields:
-                cmd = ["cp", "-r", base_0, "."]
+                if os.path.exists(case.path / base_0):
+                    cmd = ["cp", "-r", base_0, "."]
+                else:
+                    cmd = ["cp", "-r", base_0org, "."]
                 check_output(cmd, cwd=case.path)
 
             cmd = ["cp", "-r", base_constant, "constant"]
