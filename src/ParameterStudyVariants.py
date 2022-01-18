@@ -51,7 +51,7 @@ class ExistingCaseVariants(Variant):
         self.track_args["case_parameter"]["resolution"] = self.value
         self.link_mesh = False
         self.map_fields = False
-        self.base = "../../../base/" + self.value[0]
+        self.base = "../../../base/" + value_dict[0][0]
 
     def set_up(self):
         self.prepare_controlDict.set_up()
