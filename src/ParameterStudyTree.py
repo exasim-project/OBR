@@ -90,7 +90,7 @@ class ParameterStudyTree:
             cmd = ["cp", "-r", base_system, "."]
             check_output(cmd, cwd=case.path)
 
-            _, _, files = next(os.walk(base_path))
+            _, _, files = next(os.walk(case.path / base_path))
             for f in files:
                 if not "All" in f:
                     continue
