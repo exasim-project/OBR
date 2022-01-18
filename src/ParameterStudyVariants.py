@@ -10,6 +10,7 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
     def __init__(self, root_dir, name, track_args, variant_of):
         self.name = name
         super().__init__(root_dir / self.name / "base")
+        self.base = "../../../base"
         if variant_of:
             self.valid = False
             for variant in variant_of:
@@ -33,9 +34,33 @@ class MeshVariant(Variant):
         self.map_fields = True
 
 
-# class LinearSolverVariant(Variant):
-#     def __init__(self, root_dir, name, track_args, _of):
-#         super().__init__(root_dir, name, track_args, varaint_of)
+class ExistingCaseVariants(Variant):
+    def __init__(self, root_dir, input_dict, value_dict, track_args):
+        self.value = value_dict[0]
+        name = str(self.value)
+        self.build = input_dict.get("build", False)
+        self.prepare_controlDict = es.PrepareControlDict(
+            self, 1, input_dict["controlDict"]
+        )
+        super().__init__(
+            root_dir,
+            name,
+            track_args,
+            variant_of=input_dict.get("variant_of", False),
+        )
+        self.track_args["case_parameter"]["resolution"] = self.value
+        self.link_mesh = False
+        self.map_fields = False
+        self.base = "../../../base/" + self.value
+
+    def set_up(self):
+        self.prepare_controlDict.set_up()
+
+        # execute build command
+        print("track args", self.track_args)
+        if self.build:
+            for step in self.build:
+                print(check_output(step.split(" "), cwd=self.path))
 
 
 class InitCase(Variant):
@@ -152,9 +177,7 @@ class ReBlockMesh(MeshVariant):
             print("mapping field")
         else:
             print("copying zero folder")
-            cmd = [
-                "cp", "-r", "../../../base/0", "."
-                ]
+            cmd = ["cp", "-r", "../../../base/0", "."]
 
         check_output(cmd, cwd=self.path)
 

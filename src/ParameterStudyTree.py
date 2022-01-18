@@ -61,6 +61,10 @@ class ParameterStudyTree:
         if case.path.exists():
             return
 
+        base_path = Path(case.base)
+        base_constant = base_path / "constant"
+        base_0 = base_path / "0"
+        base_system = base_path / "system"
         if not case.link_mesh:
             # TODO copy zero if not linked
             dst = self.variation_dir / case.name / "base"
@@ -68,16 +72,13 @@ class ParameterStudyTree:
             check_output(cmd)
 
             if not case.map_fields:
-                src = Path("../../../base/0")
-                cmd = ["cp", "-r", src, "."]
+                cmd = ["cp", "-r", base_0, "."]
                 check_output(cmd, cwd=case.path)
 
-            src = Path("../../../base/constant")
-            cmd = ["cp", "-r", src, "constant"]
+            cmd = ["cp", "-r", base_constant, "constant"]
             check_output(cmd, cwd=case.path)
 
-            src = Path("../../../base/system")
-            cmd = ["cp", "-r", src, "."]
+            cmd = ["cp", "-r", base_system, "."]
             check_output(cmd, cwd=case.path)
 
         else:
@@ -85,18 +86,15 @@ class ParameterStudyTree:
             cmd = ["mkdir", "-p", dst]
             check_output(cmd)
 
-            src = Path("../../../base/constant")
             dst = Path("constant")
-            cmd = ["ln", "-s", src, dst]
+            cmd = ["ln", "-s", base_constant, dst]
             check_output(cmd, cwd=case.path)
 
-            src = Path("../../../base/system")
-            cmd = ["cp", "-r", src, "."]
+            cmd = ["cp", "-r", base_system, "."]
             check_output(cmd, cwd=case.path)
 
-            src = Path("../../../base/0")
             dst = "0"
-            cmd = ["ln", "-s", src, dst]
+            cmd = ["ln", "-s", base_0, dst]
             check_output(cmd, cwd=case.path)
 
     def set_up(self):

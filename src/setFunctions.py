@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
+import subprocess
+import sys
 from subprocess import check_output
+import sys
 
 
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):
-    """ wrapper around sed """
-    ret = check_output(["sed", "-i", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn])
+    """wrapper around sed"""
+    if sys.platform == "darwin":
+        ret = check_output(
+            ["sed", "-i", "", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn]
+        )
+    else:
+        ret = check_output(
+            ["sed", "-i", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn]
+        )
 
 
 def clean_block_from_file(fn, block_starts, block_end, replace):
-    """ cleans everything from block_start to block_end and replace it """
+    """cleans everything from block_start to block_end and replace it"""
     with open(fn, "r") as f:
         lines = f.readlines()
     with open(fn, "w") as f:
