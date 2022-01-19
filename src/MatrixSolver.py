@@ -140,6 +140,10 @@ class ISAI:
     name = "ISAI"
 
 
+class Multigrid:
+    name = "Multigrid"
+
+
 class DIC:
     name = "DIC"
 
