@@ -136,6 +136,10 @@ class ILU:
     name = "ILU"
 
 
+class ISAI:
+    name = "ISAI"
+
+
 class DIC:
     name = "DIC"
 
@@ -192,7 +196,7 @@ class CG(SolverSetter):
                 "prefix": "P",
             },
             "GKO": {
-                "preconditioner": ["BJ", "ILU", "none"],
+                "preconditioner": ["BJ", "ILU", "ISAI", "Multigrid", "none"],
                 "prefix": "GKO",
             },
         }
@@ -207,7 +211,18 @@ class BiCGStab(SolverSetter):
                 "prefix": "P",
             },
             "GKO": {
-                "preconditioner": ["BJ", "ILU", "none"],
+                "preconditioner": ["BJ", "ILU", "ISAI", "Multigrid", "none"],
+                "prefix": "GKO",
+            },
+        }
+
+
+class GMRES(SolverSetter):
+    def __init__(self, path, fields, defaults):
+        super().__init__(path, "GMRES", fields, defaults)
+        self.avail_backend_handler = {
+            "GKO": {
+                "preconditioner": ["BJ", "ILU", "ISAI", "Multigrid", "none"],
                 "prefix": "GKO",
             },
         }
