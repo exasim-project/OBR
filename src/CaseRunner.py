@@ -126,7 +126,7 @@ class CaseRunner:
         if sub_domains:
             execution_parameter["prefix"] = [
                 "mpirun",
-                "--bind-to-core",
+                "--bind-to core",
                 "-np",
                 str(sub_domains),
             ]
