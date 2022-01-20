@@ -107,7 +107,7 @@ class CaseRunner:
         log_path = path / self.log_name
         log_path = log_path.with_suffix(".log")
         log_str = ret.decode("utf-8")
-        log_file = log_fold / "logs"
+        log_file = log_fold / self.log_name
         with open(log_file, "a") as log_handle:
             print("writing to log", log_file, type(log_str))
             log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str, "=" * 80)
