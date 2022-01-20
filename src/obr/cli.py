@@ -50,6 +50,7 @@ def decompose(ctx, **kwargs):
 @click.option("--single_run", default=True)
 @click.option("--fail_on_error", default=False)
 @click.option("--log_name", default="logs")
+@click.option("--mpi_flags", default="logs")
 @click.pass_context
 def benchmark(ctx, **kwargs):
     import obr_benchmark_cases
