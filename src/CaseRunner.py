@@ -117,10 +117,7 @@ class CaseRunner:
         import time
         from pathlib import Path
 
-        path_orig = Path(path)
-        run_path = Path(path).parents[0] / str(int(time.time()))
-
-        check_output(["cp", "-r", path_orig, run_path])
+        run_path = Path(path)
 
         case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
