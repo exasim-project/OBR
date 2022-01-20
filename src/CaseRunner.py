@@ -20,6 +20,7 @@ class CaseRunner:
         self.test_run = arguments["single_run"]
         self.fail = arguments["fail_on_error"]
         self.log_name = arguments["log_name"]
+        self.mpi_flags = arguments["mpi_flags"]
 
     def continue_running(self, accumulated_time, number_of_runs):
         if self.test_run and number_of_runs == 1:
@@ -123,7 +124,12 @@ class CaseRunner:
         case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
         if sub_domains:
-            execution_parameter["prefix"] = ["mpirun", "-np", str(sub_domains)]
+            execution_parameter["prefix"] = [
+                "mpirun",
+                "--bind-to-core",
+                "-np",
+                str(sub_domains),
+            ]
             execution_parameter["flags"] = ["-parallel"]
         app_cmd_prefix = execution_parameter.get("prefix", [])
         app_cmd_flags = execution_parameter.get("flags", [])
