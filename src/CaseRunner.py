@@ -19,6 +19,7 @@ class CaseRunner:
         self.continue_on_failure = arguments["continue_on_failure"]
         self.test_run = arguments["single_run"]
         self.fail = arguments["fail_on_error"]
+        self.log_name = arguments["log_name"]
 
     def continue_running(self, accumulated_time, number_of_runs):
         if self.test_run and number_of_runs == 1:
@@ -103,7 +104,7 @@ class CaseRunner:
 
     def hash_and_store_log(self, ret, path, log_fold):
         log_hash = hashlib.md5(ret).hexdigest()
-        log_path = path / "logs"
+        log_path = path / self.log_name
         log_path = log_path.with_suffix(".log")
         log_str = ret.decode("utf-8")
         log_file = log_fold / "logs"
