@@ -113,11 +113,11 @@ class ParameterStudyTree:
             cmd = ["ln", "-s", base_0, dst]
             check_output(cmd, cwd=case.path)
 
-    async def call_setup(self, case):
+    def call_setup(self, case):
         case_dir = self.variation_dir / case.name
         sf.ensure_path(case_dir)
         self.copy_base_to(case)
-        case.setup()
+        case.set_up()
 
     def set_up(self):
         """creates the tree of case variations"""
