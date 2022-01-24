@@ -140,7 +140,9 @@ class ParameterStudyTree:
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             # Start the load operations and mark each future with its URL
-            future_to_url = [executor.submit(call_setup, case) for case in self.cases]
+            future_to_url = [
+                executor.submit(self.call_setup, case) for case in self.cases
+            ]
             for future in concurrent.futures.as_completed(future_to_url):
                 try:
                     data = future.result()
