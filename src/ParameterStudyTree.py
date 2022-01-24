@@ -8,6 +8,7 @@ from itertools import product
 from subprocess import check_output
 from copy import deepcopy
 import json
+import asyncio
 
 
 class ParameterStudyTree:
@@ -112,6 +113,12 @@ class ParameterStudyTree:
             cmd = ["ln", "-s", base_0, dst]
             check_output(cmd, cwd=case.path)
 
+    async def call_setup(self, case):
+        case_dir = self.variation_dir / case.name
+        sf.ensure_path(case_dir)
+        self.copy_base_to(case)
+        case.setup()
+
     def set_up(self):
         """creates the tree of case variations"""
 
@@ -128,13 +135,17 @@ class ParameterStudyTree:
             for step in self.base.build:
                 print(check_output(step.split(" "), cwd=self.root_dir / "base"))
 
-        # if it has a parent case copy the parent case
-        # and apply modifiers
-        for case in self.cases:
-            case_dir = self.variation_dir / case.name
-            sf.ensure_path(case_dir)
-            self.copy_base_to(case)
-            case.set_up()
+        # We can use a with statement to ensure threads are cleaned up promptly
+        import concurrent.futures
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # Start the load operations and mark each future with its URL
+            future_to_url = [executor.submit(call_setup, case) for case in self.cases]
+            for future in concurrent.futures.as_completed(future_to_url):
+                try:
+                    data = future.result()
+                except Exception as exc:
+                    print(exc)
 
         # descend one level to the subvariations
         if self.subvariations:
