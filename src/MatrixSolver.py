@@ -156,6 +156,10 @@ class FDIC:
     name = "FDIC"
 
 
+class GAMG:
+    name = "GAMG"
+
+
 class Diag:
     name = "diagonal"
 
@@ -196,7 +200,7 @@ class CG(SolverSetter):
         super().__init__(path, "CG", fields, defaults)
         self.avail_backend_handler = {
             "OF": {
-                "preconditioner": ["DIC", "FDIC", "Diag", "none"],
+                "preconditioner": ["DIC", "FDIC", "GAMG", "Diag", "none"],
                 "prefix": "P",
             },
             "GKO": {
@@ -211,7 +215,7 @@ class BiCGStab(SolverSetter):
         super().__init__(path, "BiCGStab", fields, defaults)
         self.avail_backend_handler = {
             "OF": {
-                "preconditioner": ["DIC", "FDIC", "Diag", "none"],
+                "preconditioner": ["DIC", "FDIC", "GAMG", "Diag", "none"],
                 "prefix": "P",
             },
             "GKO": {
@@ -264,9 +268,9 @@ class IR(SolverSetter):
         }
 
 
-class GAMG(SolverSetter):
+class SGAMG(SolverSetter):
     def __init__(self, path, fields, defaults):
-        super().__init__(path, "GAMG", fields, defaults)
+        super().__init__(path, "SGAMG", fields, defaults)
         self.avail_backend_handler = {
             "OF": {"prefix": "", "preconditioner": ["none"]},
         }
