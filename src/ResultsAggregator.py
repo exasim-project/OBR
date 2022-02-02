@@ -55,6 +55,7 @@ class Results:
             ]
 
             default_data_columns = [
+                "timestamp",
                 "log_id",
                 "run_time",
             ]

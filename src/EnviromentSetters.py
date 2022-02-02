@@ -91,7 +91,10 @@ class PrepareControlDict:
         timeSteps = self.controlDictArgs["timeSteps"]
         # adapt deltaT for instationary cases
         if not self.controlDictArgs["stationary"]:
-            deltaT = sf.read_deltaT(self.case.controlDict)
+            requested_dT = self.controlDictArgs.get("deltaT")
+            deltaT = (
+                requested_dT if requested_dT else sf.read_deltaT(self.case.controlDict)
+            )
             new_deltaT = deltaT / self.cell_ratio
             sf.set_deltaT(self.case.controlDict, new_deltaT)
         else:
