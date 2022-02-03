@@ -1,6 +1,7 @@
 # #!/usr/bin/env python3
 from OpenFOAMCase import OpenFOAMCase
 from subprocess import check_output
+import multiprocessing
 import MatrixSolver as ms
 import EnviromentSetters as es
 import setFunctions as sf
@@ -259,4 +260,9 @@ class ChangeNumberOfSubdomains(Variant):
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
-        sf.set_number_of_subdomains(self.decomposeParDict, self.value[0])
+        number_cores = self.value[0]
+        if isinstance(number_cores, str):
+            if number_cores == "fullNode":
+                number_cores = multiprocessing.cpu_count()
+
+        sf.set_number_of_subdomains(self.decomposeParDict, number_cores)
