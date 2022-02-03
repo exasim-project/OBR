@@ -249,7 +249,11 @@ class ChangeNumberOfSubdomains(Variant):
 
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict
-        name = str(self.value[0])
+        self.number_cores = self.value[0]
+        if isinstance(number_cores, str):
+            if number_cores == "fullNode":
+                number_cores = multiprocessing.cpu_count() / 2
+        name = str(number_cores)
         super().__init__(
             root_dir,
             name,
@@ -260,9 +264,5 @@ class ChangeNumberOfSubdomains(Variant):
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
-        number_cores = self.value[0]
-        if isinstance(number_cores, str):
-            if number_cores == "fullNode":
-                number_cores = multiprocessing.cpu_count()
 
-        sf.set_number_of_subdomains(self.decomposeParDict, number_cores)
+        sf.set_number_of_subdomains(self.decomposeParDict, self.number_cores)
