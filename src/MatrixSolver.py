@@ -26,6 +26,7 @@ class SolverSetter(Setter):
             "preconditioner",
             "executor",
             "verbose",
+            "scaling",
             "inner",
         ]
 
