@@ -31,6 +31,7 @@ def cli(ctx, debug):
 @click.option("--folder")
 @click.option("--filter", default=None)
 @click.option("--select", default=None)
+@click.option("--force", default=False)
 @click.pass_context
 def decompose(ctx, **kwargs):
     import obr_decompose_tree

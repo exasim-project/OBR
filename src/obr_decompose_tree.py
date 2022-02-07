@@ -58,8 +58,8 @@ def decompose_tree(arguments):
             filt = [f in root for f in filt]
             if any(filt):
                 continue
-        if arguments.get("--select"):
-            filt = arguments.get("--select").split(",")
+        if arguments.get("select"):
+            filt = arguments.get("select").split(",")
             filt = [f in root for f in filt]
             if not all(filt):
                 continue
@@ -67,6 +67,8 @@ def decompose_tree(arguments):
             continue
         if "obr.json" in files:
             symlink_base = can_be_symlinked(root)
+            if ("processor0" in folder) and not arguments.get("force"):
+                continue
             if symlink_base:
                 print("symlinking", root, "to", symlink_base)
                 symlink_all_procs(symlink_base, root)
