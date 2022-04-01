@@ -177,7 +177,7 @@ def set_writeInterval(controlDict, writeInterval):
 
 def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
     # TODO check if keyword is already present
-    block = read_block_from_file(fvSolution, ['"' + field], "}", exclude)
+    block = read_block_from_file(fvSolution, [field], "}", exclude)
     # clear_solver_settings(fvSolution, field)
     block.insert(1, "{} {};\n".format(keyword["name"], value))
     clean_block_from_file(fvSolution, [field + '.*"{'], "}\n", " ".join(block[:-1]))
