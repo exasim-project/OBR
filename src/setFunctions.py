@@ -190,7 +190,9 @@ def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
     if i >= 0:
         block.pop(old_key_pos)
 
-    block.insert(block_length - 1, "{} {};\n".format(keyword["name"], value))
+    new_key_pos = old_key_pos if old_key_pos >= 1 else block_length - 1
+
+    block.insert(new_key_pos, "{} {};\n".format(keyword["name"], value))
     clean_block_from_file(fvSolution, [field], "}\n", " ".join(block[:-1]), exclude)
 
 
