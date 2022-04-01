@@ -184,7 +184,7 @@ def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
     block_length = len(block)
     # TODO pop old value if exists
     block.insert(block_length - 1, "{} {};\n".format(keyword["name"], value))
-    clean_block_from_file(fvSolution, [field], "}\n", " ".join(block[:-1]), excludes)
+    clean_block_from_file(fvSolution, [field], "}\n", " ".join(block[:-1]), exclude)
 
 
 def clear_solver_settings(fvSolution, field):
