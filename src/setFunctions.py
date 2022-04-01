@@ -17,7 +17,7 @@ def sed(fn, in_reg_exp, out_reg_exp, inline=True):
         )
 
 
-def clean_block_from_file(fn, block_starts, block_end, replace):
+def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
     """cleans everything from block_start to block_end and replace it"""
     with open(fn, "r") as f:
         lines = f.readlines()
@@ -25,7 +25,9 @@ def clean_block_from_file(fn, block_starts, block_end, replace):
         skip = False
         for line in lines:
             is_start = [block_start in line for block_start in block_starts]
-            if any(is_start):
+            if excludes:
+                is_excluded = [exclude in line for exclude in excludes]
+            if any(is_start) and not any(is_excluded):
                 skip = True
             if skip and block_end in line:
                 skip = False
@@ -179,8 +181,10 @@ def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
     # TODO check if keyword is already present
     block = read_block_from_file(fvSolution, [field], "}", exclude)
     # clear_solver_settings(fvSolution, field)
-    block.insert(1, "{} {};\n".format(keyword["name"], value))
-    clean_block_from_file(fvSolution, [field + '.*"{'], "}\n", " ".join(block[:-1]))
+    block_length = len(block)
+    # TODO pop old value if exists
+    block.insert(block_length - 1, "{} {};\n".format(keyword["name"], value))
+    clean_block_from_file(fvSolution, [field], "}\n", " ".join(block[:-1]), excludes)
 
 
 def clear_solver_settings(fvSolution, field):
