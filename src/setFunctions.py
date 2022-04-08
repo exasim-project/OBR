@@ -21,19 +21,22 @@ def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
     """cleans everything from block_start to block_end and replace it"""
     with open(fn, "r") as f:
         lines = f.readlines()
+    is_excluded_block = False
+    skip = False
     with open(fn, "w") as f:
-        skip = False
         for line in lines:
             is_start = [block_start in line for block_start in block_starts]
             if excludes:
-                is_excluded = [exclude in line for exclude in excludes]
-            if any(is_start) and not any(is_excluded):
+                is_excluded_block = any([exclude in line for exclude in excludes])
+            if any(is_start) and not is_excluded_block:
                 skip = True
-            if skip and block_end in line:
-                skip = False
-                f.write(replace)
             if not skip:
                 f.write(line)
+            if skip and block_end in line:
+                if not is_excluded_block:
+                    f.write(replace)
+                skip = False
+                is_excluded_block = False
 
 
 def read_block_from_file(fn, block_starts, block_end, excludes=None):
