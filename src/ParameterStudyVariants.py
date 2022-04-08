@@ -237,7 +237,7 @@ class ChangeMatrixSolverProperties(Variant):
         )
         self.input_dict = input_dict
         self.field = input_dict["field"]
-        self.exclude = input_dict.get("exclude", "Final")
+        self.exclude = input_dict.get("exclude", ["Final"])
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
