@@ -27,17 +27,15 @@ def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
         for line in lines:
             is_start = [block_start in line for block_start in block_starts]
             if excludes:
-                is_excluded = [exclude in line for exclude in excludes]
-            if any(is_excluded):
-                is_excluded_block = True
+                is_excluded_block = any([exclude in line for exclude in excludes])
             if any(is_start) and not is_excluded_block:
                 skip = True
             if not skip:
                 f.write(line)
             if skip and block_end in line:
-                skip = False
                 if not is_excluded_block:
                     f.write(replace)
+                skip = False
                 is_excluded_block = False
 
 
