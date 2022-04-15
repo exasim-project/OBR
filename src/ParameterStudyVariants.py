@@ -251,7 +251,9 @@ class ChangeNumberOfSubdomains(Variant):
 
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict
-        self.number_cores = self.value[0]
+        multiplier = int(input_dict.get("multiplier", 1))
+        self.number_cores = self.value[0] * multiplier
+
         if isinstance(self.number_cores, str):
             if self.number_cores == "fullNode":
                 self.number_cores = int(multiprocessing.cpu_count() / 2)
