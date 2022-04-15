@@ -44,13 +44,14 @@ def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
         parameters_str = parameters_handle.read()
 
     lines = parameters_str.split("\n")
+    cleaned = []
 
     for line in lines:
         if not line:
             continue
-        line = parse_variables(line, os.environ, "env")
+        cleaned.append(parse_variables(line, os.environ, "env"))
 
-    parameters_str = "\n".join(lines)
+    parameters_str = "\n".join(cleaned)
 
     # parse file
     parameter_study_arguments = json.loads(parameters_str)
