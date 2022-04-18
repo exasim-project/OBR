@@ -35,6 +35,7 @@ def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
             if skip and block_end in line:
                 if not is_excluded_block:
                     f.write(replace)
+                    f.write("\t}")
                 skip = False
                 is_excluded_block = False
 
