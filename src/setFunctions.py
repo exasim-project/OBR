@@ -34,9 +34,9 @@ def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
                 f.write(line)
             if skip and block_end in line:
                 if not is_excluded_block:
-                    new_lines = replace.split()
+                    new_lines = replace.split(";")
                     for new_line in new_lines:
-                        f.write(new_line)
+                        f.write(new_line + ";")
                     f.write("\t}")
                 skip = False
                 is_excluded_block = False
