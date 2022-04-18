@@ -44,7 +44,7 @@ def benchmark_cases(arguments):
                 continue
 
         if "obr.json" in files:
-            case_runner = cr.CaseRunner(results, arguments)
+            case_runner = get_attr(cr, arguments["runner"])(results, arguments)
             fn = Path(root) / "obr.json"
             with open(fn, "r") as parameters_handle:
                 parameters_str = parameters_handle.read()
