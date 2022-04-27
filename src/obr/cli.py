@@ -62,6 +62,7 @@ def benchmark(ctx, **kwargs):
 
 @cli.command()
 @click.option("--folder", default="cases")
+@click.option("--filter", default=None)
 @click.option("--parameters", default="base")
 @click.pass_context
 def create(ctx, **kwargs):
