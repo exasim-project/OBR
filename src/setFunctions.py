@@ -34,9 +34,7 @@ def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
                 f.write(line)
             if skip and block_end in line:
                 if not is_excluded_block:
-                    new_lines = replace.split(";")
-                    for new_line in new_lines:
-                        f.write(new_line + ";")
+                    f.write(replace)
                     f.write("\t}")
                 skip = False
                 is_excluded_block = False
@@ -199,7 +197,7 @@ def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
     new_key_pos = old_key_pos if old_key_pos >= 1 else block_length - 1
 
     block.insert(new_key_pos, "{} {};\n".format(keyword["name"], value))
-    clean_block_from_file(fvSolution, [field], "}\n", " ".join(block[:-1]), exclude)
+    clean_block_from_file(fvSolution, [field], "}\n", "\n".join(block[:-1]), exclude)
 
 
 def clear_solver_settings(fvSolution, field):
