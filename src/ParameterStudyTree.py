@@ -44,7 +44,7 @@ class ParameterStudyTree:
         self.cases = [case for case in self.cases if case.valid]
 
         # filter out explicitly blocked cases
-        if root_dict.get("filter"):
+        if root_dict["cli"].get("filter"):
             filters = root_dict.get("filter").split(",")
             self.cases = [
                 case

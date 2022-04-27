@@ -73,6 +73,7 @@ def obr_create_tree(arguments):
     parameter_study_arguments = process_benchmark_description(
         arguments.get("parameters", "benchmark.json"), versions
     )
+    parameter_study_arguments["cli"] = arguments
 
     track_args = {"case_parameter": {"resolution": 0, "processes": 1}}
 
