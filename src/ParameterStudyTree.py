@@ -39,7 +39,18 @@ class ParameterStudyTree:
             for variant_dict in product(*input_dict["variants"].values())
         ]
 
+        # only add cases which are valid, eg some combinations of executor
+        # and preconditioner might not exist
         self.cases = [case for case in self.cases if case.valid]
+
+        # filter out explicitly blocked cases
+        if root_dict.get("filter"):
+            filters = root_dict.get("filter").split(",")
+            self.cases = [
+                case
+                for case in self.cases
+                if not any([filt in case.name for filt in filters])
+            ]
 
         # check for further varations
         self.subvariations = []
@@ -56,8 +67,6 @@ class ParameterStudyTree:
                             parent=self,
                         )
                     )
-
-        # deduplicate files later
 
     def copy_base_to(self, case):
         # copy or link only if case.path doesn not exist
