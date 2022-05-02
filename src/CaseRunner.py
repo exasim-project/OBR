@@ -17,7 +17,6 @@ class SlurmCaseRunner:
         self.p = arguments["partition"]
         self.t = arguments["time"]
         self.task_per_node = arguments["ntasks-per-node"]
-        self.gpus_per_node = arguments["gpus-per-node"]
 
     def run(self, path, execution_parameter, case_parameter):
         import time
