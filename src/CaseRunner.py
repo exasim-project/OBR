@@ -38,7 +38,7 @@ class SlurmCaseRunner:
         app_cmd_prefix = execution_parameter.get("prefix", [])
         app_cmd_flags = execution_parameter.get("flags", [])
         app_cmd = (
-            app_cmd_prefix + execution_parameter["exec"] + app_cmd_flags + " > log"
+            app_cmd_prefix + execution_parameter["exec"] + app_cmd_flags + [" > log"]
         )
 
         print("writing run.sh to", run_path)
