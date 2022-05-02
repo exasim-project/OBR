@@ -51,6 +51,8 @@ class SlurmCaseRunner:
 
         sbatch_cmd = [
             "sbatch",
+            "-J",
+            sub_domains,
             "-p",
             self.p,
             "-N",
@@ -73,8 +75,7 @@ class SlurmCaseRunner:
             ]
 
         sbatch_cmd.append("run.sh")
-        print("submit to queue", sbatch_cmd)
-        # check_output(sbatch_cmd, cwd=case.path)
+        check_output(sbatch_cmd, cwd=case.path)
 
 
 class LocalCaseRunner:
