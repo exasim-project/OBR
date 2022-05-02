@@ -14,9 +14,9 @@ class SlurmCaseRunner:
     def __init__(self, results_aggregator, arguments):
         self.results = results_aggregator
         self.arguments = arguments
-        self.N = arguments["N"]
-        self.p = arguments["p"]
-        self.t = arguments["t"]
+        self.N = arguments["nodes"]
+        self.p = arguments["partition"]
+        self.t = arguments["time"]
         self.task_per_node = arguments["ntasks-per-node"]
         self.gpus_per_node = arguments["gpus-per-node"]
 
@@ -43,7 +43,8 @@ class SlurmCaseRunner:
             app_cmd_prefix + execution_parameter["exec"] + app_cmd_flags + " > log"
         )
 
-        with open("run.sh") as fh:
+        print("writing run.sh to", run_path)
+        with open(run_path / "run.sh") as fh:
             fh.write("#!/bin/bash")
             fh.write(" ".join(app_cmd))
 
@@ -59,7 +60,9 @@ class SlurmCaseRunner:
             self.task_per_node,
             "--gpus-per-node",
             self.gpus_per_node,
+            "run.sh",
         ]
+        print("submit to queue", sbatch_cmd)
         check_output(sbatch_cmd, cwd=case.path)
 
 

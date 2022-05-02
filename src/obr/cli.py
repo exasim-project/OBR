@@ -53,6 +53,11 @@ def decompose(ctx, **kwargs):
 @click.option("--log_name", default="logs")
 @click.option("--mpi_flags", default="logs")
 @click.option("--runner", default="LocalCaseRunner")
+@click.option("--partition")
+@click.option("--nodes")
+@click.option("--time")
+@click.option("--gpus-per-node")
+@click.option("--ntasks-per-node")
 @click.pass_context
 def benchmark(ctx, **kwargs):
     import obr_benchmark_cases
