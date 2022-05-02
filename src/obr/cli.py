@@ -54,9 +54,8 @@ def decompose(ctx, **kwargs):
 @click.option("--mpi_flags", default="logs")
 @click.option("--runner", default="LocalCaseRunner")
 @click.option("--partition")
-@click.option("--nodes")
 @click.option("--time")
-@click.option("--gpus-per-node")
+@click.option("--gpus-per-node", default=1)
 @click.option("--ntasks-per-node")
 @click.pass_context
 def benchmark(ctx, **kwargs):

@@ -14,7 +14,6 @@ class SlurmCaseRunner:
     def __init__(self, results_aggregator, arguments):
         self.results = results_aggregator
         self.arguments = arguments
-        self.N = arguments["nodes"]
         self.p = arguments["partition"]
         self.t = arguments["time"]
         self.task_per_node = arguments["ntasks-per-node"]
@@ -48,22 +47,34 @@ class SlurmCaseRunner:
             fh.write("#!/bin/bash")
             fh.write(" ".join(app_cmd))
 
+        number_nodes = int(sub_domains / task_per_node)
+
         sbatch_cmd = [
             "sbatch",
             "-p",
             self.p,
             "-N",
-            self.N,
+            number_nodes,
             "-t",
             self.t,
-            "--ntasks-per-node",
-            self.task_per_node,
-            "--gpus-per-node",
-            self.gpus_per_node,
-            "run.sh",
         ]
+
+        if self.p == "accelerated":
+            sbatch_cmd += [
+                "--ntasks-per-node",
+                self.task_per_node,
+                "--gpus-per-node",
+                self.task_per_node,
+            ]
+        else:
+            sbatch_cmd += [
+                "--ntasks-per-node",
+                self.task_per_node,
+            ]
+
+        sbatch_cmd.append("run.sh")
         print("submit to queue", sbatch_cmd)
-        check_output(sbatch_cmd, cwd=case.path)
+        # check_output(sbatch_cmd, cwd=case.path)
 
 
 class LocalCaseRunner:
