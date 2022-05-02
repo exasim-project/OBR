@@ -32,7 +32,6 @@ class SlurmCaseRunner:
             "core",
             "--map-by",
             "core",
-            str(sub_domains),
         ]
         execution_parameter["flags"] = ["-parallel"]
         app_cmd_prefix = execution_parameter.get("prefix", [])
@@ -52,30 +51,32 @@ class SlurmCaseRunner:
         sbatch_cmd = [
             "sbatch",
             "-J",
-            sub_domains,
+            str(sub_domains),
             "-p",
-            self.p,
+            str(self.p),
             "-N",
-            number_nodes,
+            str(number_nodes),
             "-t",
-            self.t,
+            str(self.t),
         ]
 
         if self.p == "accelerated":
             sbatch_cmd += [
                 "--ntasks-per-node",
-                tasks,
+                str(tasks),
                 "--gpus-per-node",
-                tasks,
+                str(tasks),
             ]
         else:
             sbatch_cmd += [
                 "--ntasks-per-node",
-                tasks,
+                str(tasks),
             ]
 
         sbatch_cmd.append("run.sh")
-        check_output(sbatch_cmd, cwd=case.path)
+
+        print("call", sbatch_cmd)
+        check_output(sbatch_cmd, cwd=run_path)
 
 
 class LocalCaseRunner:
