@@ -16,7 +16,7 @@ class SlurmCaseRunner:
         self.arguments = arguments
         self.p = arguments["partition"]
         self.t = arguments["time"]
-        self.task_per_node = arguments["ntasks_per_node"]
+        self.task_per_node = int(arguments.get("ntasks_per_node", 1))
 
     def run(self, path, execution_parameter, case_parameter):
         import time
@@ -46,7 +46,7 @@ class SlurmCaseRunner:
             fh.write("#!/bin/bash\n")
             fh.write(" ".join(app_cmd))
 
-        number_nodes = max(int(sub_domains / int(self.task_per_node)), 1)
+        number_nodes = max(int(sub_domains / self.task_per_node), 1)
         tasks = min(sub_domains, self.task_per_node)
 
         sbatch_cmd = [
