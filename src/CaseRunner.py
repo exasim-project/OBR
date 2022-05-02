@@ -47,6 +47,7 @@ class SlurmCaseRunner:
             fh.write(" ".join(app_cmd))
 
         number_nodes = max(int(sub_domains / int(self.task_per_node)), 1)
+        tasks = min(sub_domain, self.task_per_node)
 
         sbatch_cmd = [
             "sbatch",
@@ -61,14 +62,14 @@ class SlurmCaseRunner:
         if self.p == "accelerated":
             sbatch_cmd += [
                 "--ntasks-per-node",
-                self.task_per_node,
+                tasks,
                 "--gpus-per-node",
-                self.task_per_node,
+                tasks,
             ]
         else:
             sbatch_cmd += [
                 "--ntasks-per-node",
-                self.task_per_node,
+                tasks,
             ]
 
         sbatch_cmd.append("run.sh")
