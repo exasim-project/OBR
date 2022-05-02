@@ -16,7 +16,7 @@ class SlurmCaseRunner:
         self.arguments = arguments
         self.p = arguments["partition"]
         self.t = arguments["time"]
-        self.task_per_node = arguments["ntasks-per-node"]
+        self.task_per_node = arguments["ntasks_per_node"]
 
     def run(self, path, execution_parameter, case_parameter):
         import time
