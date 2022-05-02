@@ -47,7 +47,7 @@ class SlurmCaseRunner:
             fh.write(" ".join(app_cmd))
 
         number_nodes = max(int(sub_domains / int(self.task_per_node)), 1)
-        tasks = min(sub_domain, self.task_per_node)
+        tasks = min(sub_domains, self.task_per_node)
 
         sbatch_cmd = [
             "sbatch",
