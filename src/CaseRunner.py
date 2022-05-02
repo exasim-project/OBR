@@ -89,7 +89,7 @@ class ResultsCollector:
         log_hash = hashlib.md5(ret.encode("utf-8")).hexdigest()
         log_path = path / self.log_name
         log_path = log_path.with_suffix(".log")
-        log_str = ret # ret.decode("utf-8")
+        log_str = ret
         log_file = log_fold / self.log_name
         with open(log_file, "a") as log_handle:
             print("writing to log", log_file, type(log_str))
