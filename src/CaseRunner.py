@@ -43,10 +43,10 @@ class SlurmCaseRunner:
 
         print("writing run.sh to", run_path)
         with open(run_path / "run.sh", "w+") as fh:
-            fh.write("#!/bin/bash")
+            fh.write("#!/bin/bash\n")
             fh.write(" ".join(app_cmd))
 
-        number_nodes = int(sub_domains / task_per_node)
+        number_nodes = int(sub_domains / self.task_per_node)
 
         sbatch_cmd = [
             "sbatch",
