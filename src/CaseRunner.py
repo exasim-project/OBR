@@ -73,6 +73,13 @@ class SlurmCaseRunner:
                 str(tasks),
             ]
 
+        mem = self.arguments.get("mem")
+        if mem:
+            sbatch_cmd += [
+                "--mem",
+                str(mem),
+            ]
+
         sbatch_cmd.append("run.sh")
 
         print("call", sbatch_cmd)
