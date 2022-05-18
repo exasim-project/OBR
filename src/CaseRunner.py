@@ -98,7 +98,7 @@ class ResultsCollector:
         _, _, files = next(os.walk(path))
         for f in files:
             if "slurm-" in f and ".out" in f:
-                with open(path + "/" + f, encoding="utf-8") as fh:
+                with open(path / f, encoding="utf-8") as fh:
                     slurm_logs += fh.read()
         return slurm_logs
 
