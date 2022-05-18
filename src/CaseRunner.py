@@ -92,15 +92,27 @@ class ResultsCollector:
         self.arguments = arguments
         self.log_name = arguments["log_name"]
 
+    def get_slurm_log(self, path):
+        slurm_logs = ""
+        _, _, files = next(os.walk(path))
+        for f in files:
+            if "slurm-" in f and ".out" in f:
+                with open(path + "/" + f, encoding="utf-8") as fh:
+                    slurm_logs += fh.read()
+        return slurm_logs
+
     def hash_and_store_log(self, ret, path, log_fold):
         log_hash = hashlib.md5(ret.encode("utf-8")).hexdigest()
         log_path = path / self.log_name
         log_path = log_path.with_suffix(".log")
         log_str = ret
         log_file = log_fold / self.log_name
+        slurm_log = get_slurm_log(path)
         with open(log_file, "a") as log_handle:
             print("writing to log", log_file, type(log_str))
             log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str, "=" * 80)
+            if slurm_log:
+                log_handle.write(slurm_log)
             log_handle.write(log_str_)
         return log_hash
 
@@ -113,7 +125,7 @@ class ResultsCollector:
         case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
 
-        with open(run_path / "log","r",encoding='utf-8') as fh:
+        with open(run_path / "log", "r", encoding="utf-8") as fh:
             ret = fh.read()
         log_hash = self.hash_and_store_log(ret, case.path, self.results.log_fold)
 
