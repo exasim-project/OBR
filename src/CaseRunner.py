@@ -3,6 +3,7 @@
 from subprocess import check_output
 import datetime
 import sys
+import os
 import Owls as ow
 import setFunctions as sf
 from OpenFOAMCase import OpenFOAMCase
