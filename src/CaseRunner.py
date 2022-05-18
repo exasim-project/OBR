@@ -84,7 +84,11 @@ class SlurmCaseRunner:
         sbatch_cmd.append("run.sh")
 
         print("call", sbatch_cmd)
-        check_output(sbatch_cmd, cwd=run_path)
+        try:
+            check_output(sbatch_cmd, cwd=run_path)
+        except Exception as e:
+            print(e)
+            return
 
 
 class ResultsCollector:
