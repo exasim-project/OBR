@@ -56,7 +56,7 @@ class SlurmCaseRunner:
             "-p",
             str(self.p),
             "-N",
-            str(number_nodes),
+            "N" + str(number_nodes) + "d" + str(sub_domain),
             "-t",
             str(self.t),
         ]
