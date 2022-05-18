@@ -52,11 +52,11 @@ class SlurmCaseRunner:
         sbatch_cmd = [
             "sbatch",
             "-J",
-            str(sub_domains),
+            "N" + str(number_nodes) + "d" + str(sub_domains),
             "-p",
             str(self.p),
             "-N",
-            "N" + str(number_nodes) + "d" + str(sub_domains),
+            str(number_nodes),
             "-t",
             str(self.t),
         ]
