@@ -107,7 +107,7 @@ class ResultsCollector:
         log_path = log_path.with_suffix(".log")
         log_str = ret
         log_file = log_fold / self.log_name
-        slurm_log = get_slurm_log(path)
+        slurm_log = self.get_slurm_log(path)
         with open(log_file, "a") as log_handle:
             print("writing to log", log_file, type(log_str))
             log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str, "=" * 80)
