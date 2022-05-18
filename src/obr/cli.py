@@ -54,6 +54,7 @@ def decompose(ctx, **kwargs):
 @click.option("--mpi_flags", default="logs")
 @click.option("--runner", default="LocalCaseRunner")
 @click.option("--partition")
+@click.option("--mem")
 @click.option("--time")
 @click.option("--ntasks_per_node")
 @click.pass_context
