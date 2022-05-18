@@ -74,9 +74,10 @@ def decompose_tree(arguments):
                 symlink_all_procs(symlink_base, root)
             else:
                 print("decomposing", root)
-                sf.check_output(
-                    ["decomposePar", "-force", ">", "decompose.log"], cwd=root
-                )
+                ret = sf.check_output(["decomposePar", "-force"], cwd=root)
+                with open("decompose.log", "w") as log_handle:
+                    log_handle.write(ret.decode("utf-8"))
+
     end = datetime.datetime.now()
     print(
         "run all selected cases in {} minutes".format(
