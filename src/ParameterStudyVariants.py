@@ -53,8 +53,8 @@ class ExistingCaseVariants(Variant):
         self.link_mesh = False
         self.map_fields = False
         self.base = "../../../base/" + value_dict[0][0]
-        print("base",self.base)
-        print("value",self.value)
+        print("base", self.base)
+        print("value", self.value)
 
     def set_up(self):
         self.prepare_controlDict.set_up()
@@ -256,7 +256,7 @@ class ChangeNumberOfSubdomains(Variant):
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict
         multiplier = int(input_dict.get("multiplier", 1))
-        self.method_ = int(input_dict.get("method", "scotch"))
+        self.method_ = input_dict.get("method", "scotch")
         self.number_cores = int(self.value[0] * multiplier)
 
         if isinstance(self.number_cores, str):
