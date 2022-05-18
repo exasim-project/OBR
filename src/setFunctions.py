@@ -144,6 +144,47 @@ def set_number_of_subdomains(decomposeParDict, subDomains):
     )
 
 
+def calculate_simple_partition(nSubDomains):
+    decomp = (1, 1, 1)
+    domains = lambda x: x[0] * x[1] * x[2]
+    remainder = lambda x: nSubDomains - domains(x)
+
+    def next_decomposition(x):
+        if x[0] >= x[1] and x[0] > x[2]:
+            if x[1] > x[2]:
+                return (x[0], x[1], x[2] * 2)
+            else:
+                return (x[0], x[1] * 2, x[2])
+        else:
+            return (x[0] * 2, x[1], x[2])
+
+    remaining = nSubDomains
+    while remaining:
+        decomp = next_decomposition(decomp)
+        remaining = remainder(decomp)
+    return decomp
+
+
+def set_number_of_subdomains_simple(decomposeParDict, subDomains):
+    partition = calculate_simple_partition(subDomains)
+    print(
+        "setting number of subdomains for simple decomposition",
+        subDomains,
+        partition,
+        decomposeParDict,
+    )
+    sed(
+        decomposeParDict,
+        "method[ ]*[A-Za-z]*;",
+        "method {};".format("simple"),
+    )
+    sed(
+        decomposeParDict,
+        "n[ ]*[\(\)0-9]*;",
+        "n ({});".format(str(partition)),
+    )
+
+
 def set_end_time(controlDict, endTime):
     sed(controlDict, "^endTime[ ]*[0-9.]*;", "endTime {};".format(endTime))
 

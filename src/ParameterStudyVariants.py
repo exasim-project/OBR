@@ -256,6 +256,7 @@ class ChangeNumberOfSubdomains(Variant):
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict
         multiplier = int(input_dict.get("multiplier", 1))
+        self.method_ = int(input_dict.get("method", "scotch"))
         self.number_cores = int(self.value[0] * multiplier)
 
         if isinstance(self.number_cores, str):
@@ -273,4 +274,7 @@ class ChangeNumberOfSubdomains(Variant):
 
     def set_up(self):
 
-        sf.set_number_of_subdomains(self.decomposeParDict, self.number_cores)
+        if self.method_ == "scotch":
+            sf.set_number_of_subdomains(self.decomposeParDict, self.number_cores)
+        if self.method_ == "simple":
+            sf.set_number_of_subdomains_simple(self.decomposeParDict, self.number_cores)
