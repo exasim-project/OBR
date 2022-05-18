@@ -175,13 +175,18 @@ def set_number_of_subdomains_simple(decomposeParDict, subDomains):
     )
     sed(
         decomposeParDict,
+        "numberOfSubdomains[ ]*[0-9.]*;",
+        "numberOfSubdomains {};".format(subDomains),
+    )
+    sed(
+        decomposeParDict,
         "method[ ]*[A-Za-z]*;",
         "method {};".format("simple"),
     )
     sed(
         decomposeParDict,
-        "n[ ]*[\(\)0-9]*;",
-        "n ({});".format(str(partition)),
+        "n[ ]*([0-9 ]*);",
+        "n {};".format(str(partition).replace(",", " ")),
     )
 
 
