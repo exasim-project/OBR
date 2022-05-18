@@ -53,6 +53,8 @@ class ExistingCaseVariants(Variant):
         self.link_mesh = False
         self.map_fields = False
         self.base = "../../../base/" + value_dict[0][0]
+        print("base",self.base)
+        print("value",self.value)
 
     def set_up(self):
         self.prepare_controlDict.set_up()
@@ -62,8 +64,10 @@ class ExistingCaseVariants(Variant):
         if self.build:
             for step in self.build:
                 try:
+                    print(step.split(" "))
                     print(check_output(step.split(" "), cwd=self.path))
                 except:
+                    print(step, "failed")
                     pass
 
 
