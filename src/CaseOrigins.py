@@ -34,7 +34,7 @@ class OpenFOAMExternalCase(CaseOrigin):
         if raw_path.startswith("~"):
             raw_path = Path(self.args["origin"]).expanduser()
         else:
-            raw_path = Path(self.args["origin"]).expandvars()
+            raw_path = Path(os.path.expandvars(raw_path))
         self.path = raw_path.resolve()
         print(self.path)
         self.solver = self.args["solver"]
