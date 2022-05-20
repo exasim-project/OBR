@@ -30,7 +30,12 @@ class OpenFOAMExternalCase(CaseOrigin):
     def __init__(self, args_dict):
         super().__init__(args_dict)
         print(args_dict)
-        self.path = Path(self.args["origin"]).expanduser().resolve()
+        raw_path = self.args["origin"]
+        if raw_path.startswith("~"):
+            raw_path = Path(self.args["origin"]).expanduser()
+        else:
+            raw_path = Path(self.args["origin"]).expandvars()
+        self.path = raw_path.resolve()
         print(self.path)
         self.solver = self.args["solver"]
         self.build = self.args.get("build", [])
