@@ -53,7 +53,7 @@ class SolverSetter(Setter):
                     except BaseException:
                         pass
 
-            raw_solver_str = '"' + field + '.*"{ ' + raw_solver_str
+            raw_solver_str = '"' + field + '.*"{ ' + raw_solver_str.replace(";",";\\n")
             print(raw_solver_str)
 
             sf.clear_solver_settings(self.fvSolution, field)
@@ -136,6 +136,9 @@ class IC:
 class ILU:
     name = "ILU"
 
+class IRILU:
+    name = "IRILU"
+
 
 class ISAI:
     name = "ISAI"
@@ -205,7 +208,7 @@ class CG(SolverSetter):
                 "prefix": "P",
             },
             "GKO": {
-                "preconditioner": ["BJ", "ILU", "ISAI", "Multigrid", "none"],
+                "preconditioner": ["BJ", "ILU", "ISAI", "IRILU", "Multigrid", "none"],
                 "prefix": "GKO",
             },
         }
