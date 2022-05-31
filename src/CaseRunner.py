@@ -106,11 +106,30 @@ class ResultsCollector:
                     slurm_logs += fh.read()
         return slurm_logs
 
+    def sanitize_log(self, log):
+        log_lines = log.split("\n")
+        if "Finalising parallel run" in log_lines[-1]:
+            return log
+        log_end = ["", "End", "", "Finalising parallel run"]
+
+        try:
+            # find last ExecutionTime and discard last incomplete timestep
+            for i, log_line in enumerate(log_lines[::-1]):
+                if "ExecutionTime" in log_line:
+                    break
+
+            log_lines = log_lines[: -i - 1]
+            log_lines += log_end
+            return "\n".join(log_lines)
+        except:
+            print("Failed to sanitize log")
+            return ""
+
     def hash_and_store_log(self, ret, path, log_fold):
         log_hash = hashlib.md5(ret.encode("utf-8")).hexdigest()
         log_path = path / self.log_name
         log_path = log_path.with_suffix(".log")
-        log_str = ret
+        log_str = self.sanitize_log(ret)
         log_file = log_fold / self.log_name
         slurm_log = self.get_slurm_log(path)
         with open(log_file, "a") as log_handle:
