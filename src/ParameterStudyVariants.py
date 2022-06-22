@@ -1,6 +1,5 @@
 # #!/usr/bin/env python3
 from OpenFOAMCase import OpenFOAMCase
-import sys
 import subprocess
 from subprocess import check_output
 import multiprocessing
@@ -174,12 +173,9 @@ class ReBlockMesh(MeshVariant):
         print("[OBR] run blockMesh", self.path)
         process = subprocess.Popen(["blockMesh"], cwd=self.path, stdout=subprocess.PIPE)
         for c in iter(lambda: process.stdout.read(1), b""):
-            sys.stdout.buffer.write(c)
-
-        check_output(["blockMesh"], cwd=self.path)
+            sys.stdout.buffer.write(str(self.path) + c)
 
         # TODO check if mapFields is requested
-
         if self.input_dict["mapFields"]:
             cmd = [
                 "mapFields",
@@ -188,9 +184,9 @@ class ReBlockMesh(MeshVariant):
                 "-sourceTime",
                 "latestTime",
             ]
-            print("[OBR] mapping field")
+            print("[OBR] mapping field", self.path)
         else:
-            print("[OBR] copying zero folder")
+            print("[OBR] copying zero folder", self.path)
             cmd = ["cp", "-r", "../../../base/0", "."]
 
         check_output(cmd, cwd=self.path)
