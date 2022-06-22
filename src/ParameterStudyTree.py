@@ -142,7 +142,10 @@ class ParameterStudyTree:
         # execute build command
         if hasattr(self.base, "build"):
             for step in self.base.build:
-                print(check_output(step.split(" "), cwd=self.root_dir / "base"))
+                print(
+                    "[OBR] build output: ",
+                    check_output(step.split(" "), cwd=self.root_dir / "base"),
+                )
 
         # We can use a with statement to ensure threads are cleaned up promptly
         import concurrent.futures
@@ -156,7 +159,7 @@ class ParameterStudyTree:
                 try:
                     data = future.result()
                 except Exception as exc:
-                    print(exc)
+                    print("[OBR] failure: ", exc)
 
         # descend one level to the subvariations
         if self.subvariations:
@@ -176,4 +179,4 @@ class ParameterStudyTree:
                 with open(case_dir / "base/obr.json", "w") as jsonFile:
                     jsonFile.write(jsonString)
 
-                print("writing exec script", case_dir / "base")
+                print("[OBR] writing exec script", case_dir / "base")

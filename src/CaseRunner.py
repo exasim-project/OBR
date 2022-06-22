@@ -48,13 +48,13 @@ class TemplatedCaseRunner:
         run_template = os.environ[run_env]
         submit_template = os.environ[submit_env]
 
-        print("writing run.sh to", run_path)
+        print("[OBR] writing run.sh to", run_path)
         with open(run_path / "run.sh", "w+") as fh:
             fh.write(run_template.format(executable=execution_parameter["exec"][0]))
 
         sbatch_cmd = submit_template.format(**submit_args).split(" ")
 
-        print("call", sbatch_cmd)
+        print("[OBR] call", sbatch_cmd)
         # try:
         #     check_output(sbatch_cmd, cwd=run_path)
         # except Exception as e:
