@@ -11,6 +11,54 @@ import hashlib
 from copy import deepcopy
 
 
+class TemplatedCaseRunner:
+    def __init__(self, results_aggregator, arguments):
+        self.results = results_aggregator
+        self.arguments = arguments
+        self.p = arguments["partition"]
+        self.t = arguments["time"]
+        self.task_per_node = int(arguments.get("ntasks_per_node", 1))
+
+    def run(self, path, execution_parameter, case_parameter):
+        import time
+        from pathlib import Path
+
+        run_path = Path(path)
+
+        mem = self.arguments.get("mem")
+        submit_args = {
+            "number_nodes": max(int(sub_domains / self.task_per_node), 1),
+            "tasks": min(sub_domains, self.task_per_node),
+            "mem": mem,
+        }
+
+        run_env = (
+            "SlurmRunTemplateGPU" if self.p == "accelerated" else "SlurmRunTemplateCPU"
+        )
+
+        submit_env = (
+            "SlurmSubmitTemplateGPU"
+            if self.p == "accelerated"
+            else "SlurmSubmitTemplateCPU"
+        )
+
+        run_template = os.environ[run_env]
+        submit_template = os.environ[submit_env]
+
+        print("writing run.sh to", run_path)
+        with open(run_path / "run.sh", "w+") as fh:
+            fh.write(template.format(executable=execution_parameter["exec"]))
+
+        sbatch_cmd = submit_template.format(**submit_args).split(" ")
+
+        print("call", sbatch_cmd)
+        # try:
+        #     check_output(sbatch_cmd, cwd=run_path)
+        # except Exception as e:
+        #     print(e)
+        #     return
+
+
 class SlurmCaseRunner:
     def __init__(self, results_aggregator, arguments):
         self.results = results_aggregator
