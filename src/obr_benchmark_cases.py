@@ -24,7 +24,6 @@ def benchmark_cases(arguments):
         },
     }
     metadata.update(versions)
-    print(metadata)
 
     results = ra.Results(arguments["results_folder"], arguments["report"])
     results.write_comment([str(metadata)])
