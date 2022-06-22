@@ -49,7 +49,7 @@ class TemplatedCaseRunner:
 
         print("writing run.sh to", run_path)
         with open(run_path / "run.sh", "w+") as fh:
-            fh.write(template.format(executable=execution_parameter["exec"]))
+            fh.write(run_template.format(executable=execution_parameter["exec"]))
 
         sbatch_cmd = submit_template.format(**submit_args).split(" ")
 
