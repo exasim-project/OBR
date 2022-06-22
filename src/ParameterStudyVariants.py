@@ -98,11 +98,11 @@ class InitCase(Variant):
         if self.blockMesh:
             cmd = ["blockMesh"]
 
-            print("running blockMesh for initial run")
+            print("[OBR] running blockMesh for initial run")
             check_output(cmd, cwd=self.path)
 
         cmd = sf.get_application_solver(self.controlDict)
-        print("running initial case")
+        print("[OBR] running initial case")
         check_output(cmd, cwd=self.path)
 
 
@@ -169,7 +169,7 @@ class ReBlockMesh(MeshVariant):
             self.input_dict["block"],
             "{x} {x} {x}".format(x=str(self.value)),
         )
-        print("run blockMesh", self.path)
+        print("[OBR] run blockMesh", self.path)
         check_output(["blockMesh"], cwd=self.path)
 
         # TODO check if mapFields is requested
@@ -182,9 +182,9 @@ class ReBlockMesh(MeshVariant):
                 "-sourceTime",
                 "latestTime",
             ]
-            print("mapping field")
+            print("[OBR] mapping field")
         else:
-            print("copying zero folder")
+            print("[OBR] copying zero folder")
             cmd = ["cp", "-r", "../../../base/0", "."]
 
         check_output(cmd, cwd=self.path)

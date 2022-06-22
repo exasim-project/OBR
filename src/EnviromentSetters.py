@@ -162,7 +162,7 @@ class CellsPrepare(CachePrepare):
         self.cell_ratio = float(self.cells) / orig_cells[0]
         sf.set_cells(self.cache_case.blockMeshDict, orig_cells_str, new_cells)
 
-        print("Meshing", self.cache_case.path)
+        print("[OBR] Meshing", self.cache_case.path)
         check_output(["blockMesh"], cwd=self.cache_case.path)
 
         if self.meshArgs["renumberMesh"]:
@@ -193,7 +193,7 @@ class CellsPrepare(CachePrepare):
             self.set_up_cache()
 
         # check if cache_path exists otherwise copy
-        print("copying from", self.cache_path, " to ", target_path)
+        print("[OBR] copying from", self.cache_path, " to ", target_path)
         sf.ensure_path(target_path)
         check_output(["cp", "-r", self.cache_path, target_path])
 
