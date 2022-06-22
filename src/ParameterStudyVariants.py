@@ -1,6 +1,7 @@
 # #!/usr/bin/env python3
 from OpenFOAMCase import OpenFOAMCase
 import subprocess
+import sys
 from subprocess import check_output
 import multiprocessing
 import MatrixSolver as ms
