@@ -26,6 +26,7 @@ class TemplatedCaseRunner:
         run_path = Path(path)
 
         mem = self.arguments.get("mem")
+        case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
         submit_args = {
             "number_nodes": max(int(sub_domains / self.task_per_node), 1),
