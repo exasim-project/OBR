@@ -1,7 +1,6 @@
 # #!/usr/bin/env python3
 from OpenFOAMCase import OpenFOAMCase
 import subprocess
-import sys
 from subprocess import check_output
 import multiprocessing
 import MatrixSolver as ms
@@ -174,7 +173,7 @@ class ReBlockMesh(MeshVariant):
         print("[OBR] run blockMesh", self.path)
         process = subprocess.Popen(["blockMesh"], cwd=self.path, stdout=subprocess.PIPE)
         for c in iter(lambda: process.stdout.read(1), b""):
-            sys.stdout.buffer.write(str(self.path) + c)
+            sys.stdout.buffer.write(c)
 
         # TODO check if mapFields is requested
         if self.input_dict["mapFields"]:
