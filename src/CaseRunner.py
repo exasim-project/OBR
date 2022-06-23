@@ -201,7 +201,7 @@ class ResultsCollector:
         sub_domains = sf.get_number_of_subDomains(case.path)
 
         log_file = run_path / "log"
-        if not log_file.exist():
+        if not log_file.exists():
             return
 
         with open(run_file, "r", encoding="utf-8") as fh:
