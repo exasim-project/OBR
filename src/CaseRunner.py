@@ -200,7 +200,11 @@ class ResultsCollector:
         case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
 
-        with open(run_path / "log", "r", encoding="utf-8") as fh:
+        log_file = run_path / "log"
+        if not log_file.exist():
+            return
+
+        with open(run_file, "r", encoding="utf-8") as fh:
             ret = fh.read()
         log_hash = self.hash_and_store_log(ret, case.path, self.results.log_fold)
 
