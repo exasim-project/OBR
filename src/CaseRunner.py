@@ -204,7 +204,7 @@ class ResultsCollector:
         if not log_file.exists():
             return
 
-        with open(run_file, "r", encoding="utf-8") as fh:
+        with open(log_file, "r", encoding="utf-8") as fh:
             ret = fh.read()
         log_hash = self.hash_and_store_log(ret, case.path, self.results.log_fold)
 
