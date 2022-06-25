@@ -16,9 +16,7 @@ def can_be_symlinked(path):
     variation_root = path / "../../../.."
     _, dirs, _ = next(os.walk(variation_root))
     for d in dirs:
-        variation = (
-            variation_root / d / "Variation_mpiRank" / num_procs / "base" / "processor0"
-        )
+        variation = variation_root / d / "mpiRank" / num_procs / "base" / "processor0"
         if variation.exists():
             return variation.parents[0].resolve()
     return False

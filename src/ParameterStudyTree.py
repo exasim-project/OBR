@@ -26,7 +26,7 @@ class ParameterStudyTree:
         self.input_dict = input_dict
         self.root_dir = root_dir
         self.case_dir = root_dir / "base"
-        self.variation_dir = root_dir / ("Variation_" + input_dict["name"])
+        self.variation_dir = root_dir / (input_dict["name"])
         self.variation_type = input_dict["type"]
         self.root_dict = root_dict
 
