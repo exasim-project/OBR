@@ -5,9 +5,11 @@ import setFunctions as sf
 from OpenFOAMCase import OpenFOAMCase
 from pathlib import Path
 from itertools import product
+import subprocess
 from subprocess import check_output
 from copy import deepcopy
 import json
+import sys
 import asyncio
 
 
@@ -140,12 +142,12 @@ class ParameterStudyTree:
             self.base.copy_to(self.root_dir / "base")
 
         # execute build command
+
         if hasattr(self.base, "build"):
             for step in self.base.build:
-                print(
-                    "[OBR] build output: ",
-                    check_output(step.split(" "), cwd=self.root_dir / "base"),
-                )
+                process = subprocess.Popen(step.split(" "), cwd=self.root_dir / "base", stdout=subprocess.PIPE)
+                for c in iter(lambda: process.stdout.read(1), b""):
+                    sys.stdout.buffer.write(c)
 
         # We can use a with statement to ensure threads are cleaned up promptly
         import concurrent.futures
