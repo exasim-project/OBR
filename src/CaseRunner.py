@@ -49,6 +49,7 @@ class TemplatedCaseRunner:
 
         print("[OBR] writing run.sh to", run_path)
         with open(run_path / "run.sh", "w+") as fh:
+            fh.write("#!/bin/bash\n")
             fh.write(run_template.format(executable=execution_parameter["exec"][0]))
 
         sbatch_cmd = submit_template.format(**submit_args).split(" ")
@@ -99,9 +100,9 @@ class ResultsCollector:
         log_hash = hashlib.md5(ret.encode("utf-8")).hexdigest()
         log_path = path / self.log_name
         log_path = log_path.with_suffix(".log")
-        log_str = self.sanitize_log(ret)
+        log_str = ret  # self.sanitize_log(ret)
         log_file = log_fold / self.log_name
-        slurm_log = self.get_slurm_log(path)
+        slurm_log = False  # self.get_slurm_log(path)
         with open(log_file, "a") as log_handle:
             print("writing to log", log_file, type(log_str))
             log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str, "=" * 80)
