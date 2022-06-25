@@ -3,6 +3,7 @@ import subprocess
 import sys
 from subprocess import check_output
 import sys
+import math
 
 
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):
@@ -144,29 +145,41 @@ def set_number_of_subdomains(decomposeParDict, subDomains):
     )
 
 
-def calculate_simple_partition(nSubDomains):
-    decomp = (1, 1, 1)
+def calculate_simple_partition(nSubDomains, decomp):
+
     domains = lambda x: x[0] * x[1] * x[2]
     remainder = lambda x: nSubDomains - domains(x)
 
-    def next_decomposition(x):
-        if x[0] >= x[1] and x[0] > x[2]:
-            if x[1] > x[2]:
-                return (x[0], x[1], x[2] * 2)
-            else:
-                return (x[0], x[1] * 2, x[2])
-        else:
-            return (x[0] * 2, x[1], x[2])
+    def next_position(x):
+        if x[0] == x[1]:
+            return 0
+        if x[1] == x[2]:
+            return 1
+        return 2
 
-    remaining = nSubDomains
-    while remaining:
-        decomp = next_decomposition(decomp)
-        remaining = remainder(decomp)
-    return decomp
+    def isPrime(n):
+        for i in range(2, n):
+            if n % i == 0:
+                return False, i  # i at this iteration is equal to the smallest factor
+        return True, n
+
+    i = next_position(decomp)
+    is_prime, factor = isPrime(nSubDomains)
+
+    if is_prime:
+        decomp[i] *= factor
+        return decomp
+    if nSubDomains > 0:
+        decomp[i] *= factor
+        return calculate_simple_partition(int(nSubDomains / factor), decomp)
+    else:
+        return decomp
 
 
 def set_number_of_subdomains_simple(decomposeParDict, subDomains):
-    partition = calculate_simple_partition(subDomains)
+    decomp = (1, 1, 1)
+    partition = calculate_simple_partition(subDomains, decomp)
+    partition.sort(reverse=True)
     print(
         "setting number of subdomains for simple decomposition",
         subDomains,
