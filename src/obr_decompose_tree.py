@@ -51,6 +51,9 @@ def decompose_tree(arguments):
     metadata.update(versions)
     start = datetime.datetime.now()
     for root, folder, files in os.walk(Path(arguments["folder"]).expanduser()):
+        exclude = "processor"
+        folder[:] = [d for d in folder if exclude not in d]
+
         if arguments.get("filter"):
             filt = arguments.get("filter").split(",")
             filt = [f in root for f in filt]
