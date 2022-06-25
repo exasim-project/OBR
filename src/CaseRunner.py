@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """ This module implements Runner needed to run cases and collect statistics """
+import time
+from pathlib import Path
 from subprocess import check_output
 import datetime
 import sys
 import os
-import Owls as ow
 import setFunctions as sf
 from OpenFOAMCase import OpenFOAMCase
 import hashlib
@@ -20,8 +21,6 @@ class TemplatedCaseRunner:
         self.task_per_node = int(arguments.get("ntasks_per_node", 1))
 
     def run(self, path, execution_parameter, case_parameter):
-        import time
-        from pathlib import Path
 
         run_path = Path(path)
 
@@ -55,86 +54,6 @@ class TemplatedCaseRunner:
         sbatch_cmd = submit_template.format(**submit_args).split(" ")
 
         print("[OBR] call", sbatch_cmd)
-        # try:
-        #     check_output(sbatch_cmd, cwd=run_path)
-        # except Exception as e:
-        #     print(e)
-        #     return
-
-
-class SlurmCaseRunner:
-    def __init__(self, results_aggregator, arguments):
-        self.results = results_aggregator
-        self.arguments = arguments
-        self.p = arguments["partition"]
-        self.t = arguments["time"]
-        self.task_per_node = int(arguments.get("ntasks_per_node", 1))
-
-    def run(self, path, execution_parameter, case_parameter):
-        import time
-        from pathlib import Path
-
-        run_path = Path(path)
-
-        case = OpenFOAMCase(run_path)
-        sub_domains = sf.get_number_of_subDomains(case.path)
-        execution_parameter["prefix"] = [
-            "mpirun",
-            "--bind-to",
-            "core",
-            "--map-by",
-            "core",
-        ]
-        execution_parameter["flags"] = ["-parallel"]
-        app_cmd_prefix = execution_parameter.get("prefix", [])
-        app_cmd_flags = execution_parameter.get("flags", [])
-        app_cmd = (
-            app_cmd_prefix + execution_parameter["exec"] + app_cmd_flags + [" > log"]
-        )
-
-        print("writing run.sh to", run_path)
-        with open(run_path / "run.sh", "w+") as fh:
-            fh.write("#!/bin/bash\n")
-            fh.write(" ".join(app_cmd))
-
-        number_nodes = max(int(sub_domains / self.task_per_node), 1)
-        tasks = min(sub_domains, self.task_per_node)
-
-        sbatch_cmd = [
-            "sbatch",
-            "-J",
-            "N" + str(number_nodes) + "d" + str(sub_domains),
-            "-p",
-            str(self.p),
-            "-N",
-            str(number_nodes),
-            "-t",
-            str(self.t),
-        ]
-
-        if self.p == "accelerated":
-            sbatch_cmd += [
-                "--ntasks-per-node",
-                str(tasks),
-                "--gpus-per-node",
-                str(tasks),
-            ]
-        else:
-            sbatch_cmd += [
-                "--ntasks-per-node",
-                str(tasks),
-            ]
-
-        mem = self.arguments.get("mem")
-        if mem:
-            sbatch_cmd += [
-                "--mem",
-                str(mem),
-            ]
-
-        sbatch_cmd.append("run.sh")
-
-        print("call", sbatch_cmd)
         try:
             check_output(sbatch_cmd, cwd=run_path)
         except Exception as e:
@@ -204,17 +123,21 @@ class ResultsCollector:
         if not log_file.exists():
             return
 
+        print("[OBR] processing ", log_file)
         with open(log_file, "r", encoding="utf-8") as fh:
             ret = fh.read()
+        print("[OBR] hashing ", log_file)
         log_hash = self.hash_and_store_log(ret, case.path, self.results.log_fold)
 
         self.results.set_case(case, execution_parameter, case_parameter)
 
+        print("[OBR] adding log ", log_file)
         self.results.add(
             timestamp=str(datetime.datetime.utcnow()),
             log_id=log_hash,
             run_time=0,
         )
+        print("[OBR] done processing log ", log_file)
 
 
 class LocalCaseRunner:

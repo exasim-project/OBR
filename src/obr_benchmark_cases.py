@@ -29,6 +29,9 @@ def benchmark_cases(arguments):
     results.write_comment([str(metadata)])
     start = datetime.datetime.now()
     for root, folder, files in os.walk(Path(arguments["folder"]).expanduser()):
+        # dont descend in processor folder
+        exclude = "processor"
+        folder[:] = [d for d in folder if exclude not in d]
 
         if arguments.get("filter"):
             filt = arguments.get("filter").split(",")
