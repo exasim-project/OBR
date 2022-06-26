@@ -47,6 +47,7 @@ class ParameterStudyTree:
 
         # check if input_dict["variants"] need to be generated first
         if not (input_dict["variants"].values()):
+            print("[OBR] generate variants")
             start = int(
                 parse_variables(input_dict["variants_generator"].get("start", "1"))
             )
@@ -169,7 +170,9 @@ class ParameterStudyTree:
 
         if hasattr(self.base, "build"):
             for step in self.base.build:
-                process = subprocess.Popen(step.split(" "), cwd=self.root_dir / "base", stdout=subprocess.PIPE)
+                process = subprocess.Popen(
+                    step.split(" "), cwd=self.root_dir / "base", stdout=subprocess.PIPE
+                )
                 for c in iter(lambda: process.stdout.read(1), b""):
                     sys.stdout.buffer.write(c)
 
