@@ -278,7 +278,12 @@ class ChangeNumberOfSubdomains(Variant):
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
-        print("[OBR] change domain decompositon", self.path, self.method, self.number_cores)
+        print(
+            "[OBR] change domain decompositon",
+            self.path,
+            self.method_,
+            self.number_cores,
+        )
         if self.method_ == "scotch":
             sf.set_number_of_subdomains(self.decomposeParDict, self.number_cores)
         if self.method_ == "simple":
