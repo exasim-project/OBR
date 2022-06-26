@@ -11,6 +11,19 @@ from copy import deepcopy
 import json
 import sys
 import asyncio
+import os
+
+
+def parse_variables_impl(in_str, args, domain):
+
+    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    for inst in ocurrances:
+        in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
+    return in_str
+
+
+def parse_variables(in_str):
+    return parse_variables_impl(in_str, os.environ, "env")
 
 
 class ParameterStudyTree:
@@ -31,6 +44,17 @@ class ParameterStudyTree:
         self.variation_dir = root_dir / (input_dict["name"])
         self.variation_type = input_dict["type"]
         self.root_dict = root_dict
+
+        # check if input_dict["variants"] need to be generated first
+        if not (input_dict["variants"].values()):
+            start = int(
+                parse_variables(input_dict["variants_generator"].get("start", "1"))
+            )
+            end = int(parse_variables(input_dict["variants_generator"].get("end", "1")))
+            step = int(
+                parse_variables(input_dict["variants_generator"].get("step", "1"))
+            )
+            input_dict["variants"] = list(range(start, end + 1, step))
 
         # go through the top level
         # construct the type of variation
