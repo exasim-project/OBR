@@ -226,6 +226,7 @@ class ChangeMatrixSolver(Variant):
         self.track_args["case_parameter"]["executor_" + field] = self.value[2]
 
     def set_up(self):
+        print("[OBR] change linear solver", self.path)
         self.solver_setter.set_up()
 
 
@@ -248,6 +249,7 @@ class ChangeMatrixSolverProperties(Variant):
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
+        print("[OBR] add or set linear solver settings", self.path)
         sf.add_or_set_solver_settings(
             self.fvSolution, self.field, self.input_dict, self.value[0], self.exclude
         )
@@ -276,7 +278,7 @@ class ChangeNumberOfSubdomains(Variant):
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
-
+        print("[OBR] change domain decompositon", self.path, self.method, self.number_cores)
         if self.method_ == "scotch":
             sf.set_number_of_subdomains(self.decomposeParDict, self.number_cores)
         if self.method_ == "simple":
