@@ -12,13 +12,15 @@ import json
 import sys
 import asyncio
 import os
+import re
 
 
 def parse_variables_impl(in_str, args, domain):
-
+    in_str = str(in_str)
+    print("parse_variables", in_str, args, domain)
     ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
     for inst in ocurrances:
-        in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
+        in_str = in_str.replace("${{" + domain + "." + inst + "}}", str(args.get(inst, "")))
     return in_str
 
 
@@ -46,7 +48,9 @@ class ParameterStudyTree:
         self.root_dict = root_dict
 
         # check if input_dict["variants"] need to be generated first
-        if not (input_dict["variants"].values()):
+        print("[OBR] checking variants", input_dict["variants"], root_dir)
+        key = list(input_dict["variants"].keys())[0]
+        if not (input_dict["variants"][key]):
             print("[OBR] generate variants")
             start = int(
                 parse_variables(input_dict["variants_generator"].get("start", "1"))
@@ -55,7 +59,7 @@ class ParameterStudyTree:
             step = int(
                 parse_variables(input_dict["variants_generator"].get("step", "1"))
             )
-            input_dict["variants"] = list(range(start, end + 1, step))
+            input_dict["variants"][key] = list(range(start, end + 1, step))
 
         # go through the top level
         # construct the type of variation
