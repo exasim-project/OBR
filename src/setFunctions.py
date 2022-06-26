@@ -180,6 +180,7 @@ def set_number_of_subdomains_simple(decomposeParDict, subDomains):
     decomp = [1, 1, 1]
     partition = calculate_simple_partition(subDomains, decomp)
     partition.sort(reverse=True)
+    partition = tuple(partition)
     print(
         "setting number of subdomains for simple decomposition",
         subDomains,

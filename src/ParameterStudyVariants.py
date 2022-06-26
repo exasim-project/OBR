@@ -173,8 +173,11 @@ class ReBlockMesh(MeshVariant):
         )
         print("[OBR] run blockMesh", self.path)
         process = subprocess.Popen(["blockMesh"], cwd=self.path, stdout=subprocess.PIPE)
-        for c in iter(lambda: process.stdout.read(1), b""):
-            sys.stdout.buffer.write(c)
+        marker = str.encode("#")
+        with open(self.path / "blockMesh.log", "w") as log_handle:
+            for c in iter(lambda: process.stdout.read(1), b""):
+                sys.stdout.buffer.write(marker)
+                log_handle.write(c.decode("utf-8"))
 
         # TODO check if mapFields is requested
         if self.input_dict["mapFields"]:
