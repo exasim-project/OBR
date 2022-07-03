@@ -103,7 +103,7 @@ def set_U_init_value(U):
 
 
 def add_libs(controlDict, libs):
-    with open(fn, "r") as f:
+    with open(controlDict, "r") as f:
         lines = f.readlines()
 
     has_libs = any(["libs" in l for l in lines])
