@@ -113,7 +113,7 @@ def add_libs(controlDict, libs):
             ctrlDict_handle.write(line)
 
         if not has_libs:
-            ctrlDict_handle.write("libs(")
+            ctrlDict_handle.write("libs (")
             for lib in libs:
                 ctrlDict_handle.write('"' + lib + '" ')
             ctrlDict_handle.write(");")
