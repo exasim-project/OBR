@@ -102,9 +102,21 @@ def set_U_init_value(U):
     sed(U, "type[  ]*cyclic;", "type fixedValue;value uniform (0 0 0);")
 
 
-def add_libOGL_so(controlDict):
-    with open(controlDict, "a") as ctrlDict_handle:
-        ctrlDict_handle.write('libs ("libOGL.so");')
+def add_libs(controlDict, libs):
+    with open(fn, "r") as f:
+        lines = f.readlines()
+
+    has_libs = any(["libs" in l for l in lines])
+
+    with open(controlDict, "w") as ctrlDict_handle:
+        for line in lines[:-1]:
+            ctrlDict_handle.write(line)
+
+        if not has_libs:
+            ctrlDict_handle.write("libs(")
+            for lib in libs:
+                ctrlDict_handle.write('"' + lib + '" ')
+            ctrlDict_handle.write(");")
 
 
 def get_process(cmd):
