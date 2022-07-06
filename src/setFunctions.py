@@ -36,7 +36,30 @@ def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
             if skip and block_end in line:
                 if not is_excluded_block:
                     f.write(replace)
-                    f.write("\t}")
+                    f.write("\t}\n")
+                skip = False
+                is_excluded_block = False
+
+
+def set_block(fn, block_start, block_end, replace, excludes=None):
+    """cleans everything from block_start to block_end and replace it"""
+    with open(fn, "r") as f:
+        lines = f.readlines()
+    is_excluded_block = False
+    skip = False
+    with open(fn, "w") as f:
+        for line in lines:
+            is_start = block_start in line
+            if excludes:
+                is_excluded_block = any([exclude in line for exclude in excludes])
+            if is_start and not is_excluded_block:
+                skip = True
+            if not skip:
+                f.write(line)
+            if skip and block_end in line:
+                if not is_excluded_block:
+                    f.write(block_start + replace)
+                    f.write("\t}\n")
                 skip = False
                 is_excluded_block = False
 
@@ -276,11 +299,11 @@ def clear_solver_settings(fvSolution, field):
     clean_block_from_file(
         fvSolution,
         ["   {}\n".format(field), '"' + field + '.*"'],
-        "  }\n",
-        field + "{}\n",
+        "}\n",
+        field + "{\n",
     )
 
 
 def ensure_path(path):
-    print("creating", path)
+    print("[OBR] creating", path)
     check_output(["mkdir", "-p", path])

@@ -14,13 +14,14 @@ import asyncio
 import os
 import re
 
-
+# TODO this is redundant since it should have been already parsed in obr_create_tree
 def parse_variables_impl(in_str, args, domain):
     in_str = str(in_str)
-    print("parse_variables", in_str, args, domain)
     ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
     for inst in ocurrances:
-        in_str = in_str.replace("${{" + domain + "." + inst + "}}", str(args.get(inst, "")))
+        in_str = in_str.replace(
+            "${{" + domain + "." + inst + "}}", str(args.get(inst, ""))
+        )
     return in_str
 
 
@@ -192,7 +193,7 @@ class ParameterStudyTree:
                 try:
                     data = future.result()
                 except Exception as exc:
-                    print("[OBR] failure: ", exc)
+                    print("[OBR] failure: ", exc, self.root_dir)
 
         # descend one level to the subvariations
         if self.subvariations:

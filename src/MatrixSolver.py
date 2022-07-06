@@ -7,274 +7,204 @@ import setFunctions as sf
 
 
 class SolverSetter(Setter):
-    def __init__(self, path, solver_name, fields, defaults):
+    def __init__(self, backend, path, fields, defaults):
 
         super().__init__(
             path=path,
         )
         self.fields = fields
-        self.solver = solver_name
         self.defaults = defaults
-        self.supported_keys = [
-            "tolerance",
-            "relTol",
-            "minIter",
-            "maxIter",
-            "smoother",
-            "sort",
-            "updateSysMatrix",
-            "preconditioner",
-            "executor",
-            "verbose",
-            "scaling",
-            "inner",
-        ]
-
-    def set_up(self):
-        for field in self.fields:
-            if field == "U" and self.solver == "CG":
-                solver = "BiCGStab"
-            else:
-                solver = self.solver
-
-            matrix_solver = (
-                self.avail_backend_handler[self.executor.backend]["prefix"] + solver
-            )
-
-            raw_solver_str = "solver " + matrix_solver + ";"
-            for key in self.supported_keys:
-                sub_dict = self.defaults[field]
-                if key in sub_dict.keys():
-                    raw_solver_str += "{} {};".format(key, str(sub_dict[key]))
-                else:
-                    try:
-                        attr = getattr(self, key).name
-                        raw_solver_str += "{} {};".format(key, attr)
-                    except BaseException:
-                        pass
-
-            raw_solver_str = '"' + field + '.*"{ ' + raw_solver_str.replace(";",";\\n")
-            print(raw_solver_str)
-
-            sf.clear_solver_settings(self.fvSolution, field)
-            sf.sed(self.fvSolution, field + "{}", raw_solver_str)
-
-
-# Executor
-
-
-class Executor:
-    """An Executor holds its own name and can be queried by the case runner from the case
-    additionally might prepare the Case/Enviroment before the case is run
-    """
-
-    def __init__(self, name, backend):
-        self.name = name
         self.backend = backend
 
+    def set_up(self):
+        for field in [self.fields]:
+            raw_solver_str = self.backend.emit_solver_dict()
 
-class DefaultOF(Executor):
-    def __init__(self):
-        super().__init__("OF", "OF")
-
-
-class GKOExecutor(Executor):
-    def __init__(self, name):
-        super().__init__(name, "GKO")
+            sf.clear_solver_settings(self.fvSolution, field)
+            sf.set_block(self.fvSolution, field + "{", "}", raw_solver_str, ["Final"])
 
 
-class Reference(GKOExecutor):
-    def __init__(self):
-        super().__init__(name="reference")
+class Backend:
+    def __init__(
+        self,
+        solver_template,
+    ):
+        self.solver_template = solver_template
 
-        # TODO move num_ranks to executor
-
-
-# class MPI(OFExecutor):
-#     def __init__(self):
-#         super().__init__(name="mpi")
-#         # self.num_ranks = num_ranks
-#         # self.enviroment_setter = DecomposePar(max_num_ranks)
-
-# class Serial(OFExecutor):
-#     def __init__(self):
-#         super().__init__(name="reference")
-
-
-class OMP(GKOExecutor):
-    def __init__(self, max_processes=4):
-        super().__init__(name="omp")
-        # self.enviroment_setter = PrepareOMPMaxThreads(max_processes)
-
-
-class CUDA(GKOExecutor):
-    def __init__(self):
-        super().__init__(name="cuda")
-
-
-class HIP(GKOExecutor):
-    def __init__(self):
-        super().__init__(name="hip")
-
-
-class DPCPP(GKOExecutor):
-    def __init__(self):
-        super().__init__(name="dpcpp")
-
-
-# Preconditioner
-
-
-class BJ:
-    name = "BJ"
-
-
-class IC:
-    name = "IC"
-
-
-class ILU:
-    name = "ILU"
-
-class IRILU:
-    name = "IRILU"
-
-
-class ISAI:
-    name = "ISAI"
-
-
-class Multigrid:
-    name = "Multigrid"
-
-
-class DIC:
-    name = "DIC"
-
-
-class DILU:
-    name = "DILU"
-
-
-class FDIC:
-    name = "FDIC"
-
-
-class GAMG:
-    name = "GAMG"
-
-
-class Diag:
-    name = "diagonal"
-
-
-class NoPrecond:
-    name = "none"
-
-
-# Backend handler
-
-
-class OF:
-
-    name = "OF"
-    executor_support = ["MPI", "Ref"]
-    executor = None
-
-    def __init__(self, prefix="P"):
-        self.prefix = prefix
-
-
-class GKO:
-
-    name = "GKO"
-    prefix = "GKO"
-    executor_support = ["OMP", "CUDA", "Ref", "HIP", "DPCPP"]
-    executor = None
-
-    def __init__(self):
+    def set_up(self):
         pass
 
 
-# Solver
+class PETSC(Backend):
+    name = "PETSC"
+    option_defaults = {}
+    valid_ = True
 
-
-class CG(SolverSetter):
-    def __init__(self, path, fields, defaults):
-        super().__init__(path, "CG", fields, defaults)
-        self.avail_backend_handler = {
-            "OF": {
-                "preconditioner": ["DIC", "FDIC", "GAMG", "Diag", "none"],
-                "prefix": "P",
-            },
-            "GKO": {
-                "preconditioner": ["BJ", "ILU", "ISAI", "IRILU", "Multigrid", "none"],
-                "prefix": "GKO",
-            },
-        }
-
-
-class BiCGStab(SolverSetter):
-    def __init__(self, path, fields, defaults):
-        super().__init__(path, "BiCGStab", fields, defaults)
-        self.avail_backend_handler = {
-            "OF": {
-                "preconditioner": ["DIC", "FDIC", "GAMG", "Diag", "none"],
-                "prefix": "P",
-            },
-            "GKO": {
-                "preconditioner": ["BJ", "ILU", "ISAI", "Multigrid", "none"],
-                "prefix": "GKO",
-            },
-        }
-
-
-class GMRES(SolverSetter):
-    def __init__(self, path, fields, defaults):
-        super().__init__(path, "GMRES", fields, defaults)
-        self.avail_backend_handler = {
-            "GKO": {
-                "preconditioner": ["BJ", "ILU", "ISAI", "Multigrid", "none"],
-                "prefix": "GKO",
-            },
-        }
-
-
-class smooth(SolverSetter):
-    def __init__(
-        self,
-        base_path,
-        field,
-        case_name,
-        solver_stub,
-    ):
-        name = "smooth"
+    def __init__(self, solver, preconditioner, executor, options=None):
         super().__init__(
-            base_path=base_path,
-            solver=name,
-            field=field,
-            case_name=case_name,
-            solver_stub=solver_stub,
+            solver_template="""
+    solver petsc;
+    preconditioner petsc;
+
+    petsc
+    {{
+        options
+        {{
+                ksp_type {solver};
+                pc_type bjacobi;
+                sub_pc_type {preconditioner};
+        }}
+
+        caching
+        {{
+                matrix
+                {{
+                    update always;
+                }}
+
+                preconditioner
+                {{
+                    update always;
+                }}
+        }}
+    }}
+    {options}
+""",
         )
-        self.avail_backend_handler = {
-            "OF": {"backend": OF(prefix=""), "preconditioner": []},
-        }
+        import PETSC.solver as petscsolver
+
+        self.solver = (
+            getattr(petscsolver, solver)() if solver in dir(petscsolver) else None
+        )
+
+        self.preconditioner = (
+            getattr(petscsolver, preconditioner)()
+            if preconditioner in dir(petscsolver)
+            else None
+        )
+
+        if (not self.solver) or (not self.preconditioner):
+            self.valid_ = False
+
+        self.options_str = ""
+        if options:
+            self.options_str = "\n".join(
+                ["\t{} {};".format(key, value) for key, value in options.items()]
+            )
+
+    def is_valid(self):
+        return self.valid_
+
+    def emit_solver_dict(self):
+        return self.solver_template.format(
+            solver=self.solver.name,
+            preconditioner=self.preconditioner.name,
+            options=self.options_str,
+        )
 
 
-class IR(SolverSetter):
-    def __init__(self, path, fields, defaults):
-        super().__init__(path, "IR", fields, defaults)
-        self.avail_backend_handler = {
-            "GKO": {
-                "preconditioner": ["none"],
-                "prefix": "GKO",
-            },
-        }
+class Ginkgo(Backend):
+    name = "Ginkgo"
+    option_defaults = {}
+    valid_ = True
+
+    def __init__(self, solver, preconditioner, executor, options=None):
+        super().__init__(
+            solver_template="""
+    solver {solver};
+    preconditioner
+    {{
+        preconditioner {preconditioner};
+        {preconditioner_options}
+    }}
+    {options}
+    executor {executor};
+    verbose 1;
+""",
+        )
+        import Ginkgo.solver as gkosolver
+
+        self.solver = getattr(gkosolver, solver)() if solver in dir(gkosolver) else None
+
+        self.preconditioner = (
+            getattr(gkosolver, preconditioner)()
+            if preconditioner in dir(gkosolver)
+            else None
+        )
+
+        self.executor = (
+            getattr(gkosolver, executor)() if executor in dir(gkosolver) else None
+        )
+
+        if (not self.solver) or (not self.preconditioner) or (not self.executor):
+            self.valid_ = False
+
+        self.options_str = ""
+        if options:
+            self.options_str = "\n".join(
+                ["\t{} {};".format(key, value) for key, value in options.items()]
+            )
+
+    def is_valid(self):
+        return self.valid_
+
+    def emit_solver_dict(self):
+        return self.solver_template.format(
+            solver=self.solver.name,
+            preconditioner=self.preconditioner.name,
+            executor=self.executor.name,
+            preconditioner_options="",
+            options=self.options_str,
+        )
 
 
-class SGAMG(SolverSetter):
-    def __init__(self, path, fields, defaults):
-        super().__init__(path, "SGAMG", fields, defaults)
-        self.avail_backend_handler = {
-            "OF": {"prefix": "", "preconditioner": ["none"]},
-        }
+class OpenFOAM(Backend):
+    name = "OpenFOAM"
+    option_defaults = {}
+    valid_ = True
+
+    def __init__(self, solver, preconditioner, executor, options=None):
+        super().__init__(
+            solver_template="""
+    solver {solver};
+    preconditioner
+    {{
+        preconditioner {preconditioner};
+        {preconditioner_options}
+    }}
+    {options}
+""",
+        )
+        import OpenFOAM.solver as ofsolver
+
+        self.solver = getattr(ofsolver, solver)() if solver in dir(ofsolver) else None
+
+        self.preconditioner = (
+            getattr(ofsolver, preconditioner)()
+            if preconditioner in dir(ofsolver)
+            else None
+        )
+
+        self.executor = (
+            getattr(ofsolver, executor)() if executor in dir(ofsolver) else None
+        )
+
+        if (not self.solver) or (not self.preconditioner):
+            self.valid_ = False
+
+        self.options_str = ""
+        if options:
+            self.options_str = "\n".join(
+                ["\t{} {};".format(key, value) for key, value in options.items()]
+            )
+
+    def is_valid(self):
+        return self.valid_
+
+    def emit_solver_dict(self):
+        return self.solver_template.format(
+            solver=self.solver.name,
+            preconditioner=self.preconditioner.name,
+            preconditioner_options="",
+            options=self.options_str,
+        )

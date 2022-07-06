@@ -18,6 +18,7 @@ from docopt import docopt
 import json
 import os
 import re
+import sys
 
 from pathlib import Path
 import ParameterStudyTree as ps
@@ -27,7 +28,6 @@ from metadata import versions
 
 
 def parse_variables(in_str, args, domain):
-
     ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
     for inst in ocurrances:
         in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
@@ -69,6 +69,10 @@ def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
 
 
 def obr_create_tree(arguments):
+
+    if not os.environ.get("FOAM_ETC"):
+        print("[OBR] Error OpenFOAM not sourced")
+        sys.exit(-1)
 
     parameter_study_arguments = process_benchmark_description(
         arguments.get("parameters", "benchmark.json"), versions

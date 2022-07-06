@@ -209,28 +209,36 @@ class ChangeMatrixSolver(Variant):
             variant_of=input_dict.get("variant_of", False),
         )
         self.input_dict = input_dict
-        self.solver_setter = getattr(ms, value_dict[0])(
-            self.path, input_dict["fields"], input_dict["defaults"]
+        fields = input_dict["fields"][0]
+        defaults = input_dict.get("defaults")[fields]
+        # eg CG, BiCGStab
+        print(value_dict, input_dict["variants"])
+
+        # eg, GKO, DefaultOF, PETSC
+        solver = value_dict[0]
+        preconditioner = value_dict[1]
+        executor = input_dict["variants"]["backend"][value_dict[2]][0]
+        backend_name = value_dict[2]
+        backend = getattr(ms, backend_name)(
+            solver=solver,
+            preconditioner=preconditioner,
+            executor=executor,
+            options=defaults,
         )
-        self.solver_setter.preconditioner = getattr(ms, value_dict[1])()
-        self.solver_setter.executor = getattr(ms, value_dict[2])()
+
+        self.setter = ms.SolverSetter(backend, self.path, fields, defaults)
+
         # check whether preconditioner and executor combinations are
         # supported/valid
-        backend = self.solver_setter.executor.backend
-        if backend in self.solver_setter.avail_backend_handler.keys():
-            support = self.solver_setter.avail_backend_handler[backend]
-            if self.solver_setter.preconditioner.name not in support["preconditioner"]:
-                self.valid = False
-        else:
-            self.valid = False
-        field = input_dict["fields"][0]
-        self.track_args["case_parameter"]["solver_" + field] = self.value[0]
-        self.track_args["case_parameter"]["preconditioner_" + field] = self.value[1]
-        self.track_args["case_parameter"]["executor_" + field] = self.value[2]
+        self.valid = backend.is_valid()
+        self.track_args["case_parameter"]["solver_" + fields] = solver
+        self.track_args["case_parameter"]["preconditioner_" + fields] = preconditioner
+        self.track_args["case_parameter"]["backend_" + fields] = backend_name
+        self.track_args["case_parameter"]["executor_" + fields] = executor
 
     def set_up(self):
         print("[OBR] change linear solver", self.path)
-        self.solver_setter.set_up()
+        self.setter.set_up()
 
 
 # TODO this is a lot of duplicated boilerplate
