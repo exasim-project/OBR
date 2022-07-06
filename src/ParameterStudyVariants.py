@@ -201,7 +201,11 @@ class ChangeMatrixSolver(Variant):
 
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict
-        name = str("_".join(self.value))
+        solver = value_dict[0]
+        preconditioner = value_dict[1]
+        executor = input_dict["variants"]["backend"][value_dict[2]][0]
+        backend_name = value_dict[2]
+        name = "{}_{}_{}_{}".format(solver, preconditioner, backend_name, executor)
         super().__init__(
             root_dir,
             name,
@@ -215,10 +219,6 @@ class ChangeMatrixSolver(Variant):
         print(value_dict, input_dict["variants"])
 
         # eg, GKO, DefaultOF, PETSC
-        solver = value_dict[0]
-        preconditioner = value_dict[1]
-        executor = input_dict["variants"]["backend"][value_dict[2]][0]
-        backend_name = value_dict[2]
         backend = getattr(ms, backend_name)(
             solver=solver,
             preconditioner=preconditioner,
