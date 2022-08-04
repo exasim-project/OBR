@@ -53,6 +53,7 @@ class PETSC(Backend):
                 ksp_type {solver};
                 pc_type bjacobi;
                 sub_pc_type {preconditioner};
+                matrixtype {matrixtype};
         }}
 
         caching
@@ -73,6 +74,8 @@ class PETSC(Backend):
         )
         import PETSC.solver as petscsolver
 
+        self.executor = executor
+
         self.solver = (
             getattr(petscsolver, solver)() if solver in dir(petscsolver) else None
         )
@@ -92,6 +95,14 @@ class PETSC(Backend):
                 ["\t{} {};".format(key, value) for key, value in options.items()]
             )
 
+    def get_matrixtype(self):
+        d = {
+            "HIP": "mpiaijviennacl",
+            "CUDA": "aijcusparse",
+            "Default": "mpiaij",
+        }
+        return d[self.executor]
+
     def is_valid(self):
         return self.valid_
 
@@ -100,6 +111,7 @@ class PETSC(Backend):
             solver=self.solver.name,
             preconditioner=self.preconditioner.name,
             options=self.options_str,
+            matrixtype=self.get_matrixtype(),
         )
 
 
