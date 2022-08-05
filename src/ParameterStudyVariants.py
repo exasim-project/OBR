@@ -217,7 +217,7 @@ class ChangeMatrixSolver(Variant):
         print(value_dict, input_dict["variants"])
 
     @property
-    def is_valid(self):
+    def valid(self):
         self.executor = self.executors[0]
         self.name = "{}_{}_{}_{}".format(
             self.solver, self.preconditioner, self.backend_name, self.executor
@@ -239,12 +239,13 @@ class ChangeMatrixSolver(Variant):
 
         # check whether preconditioner and executor combinations are
         # supported/valid
-        self.valid = backend.is_valid()
+        self.is_valid = backend.is_valid()
         # eg, GKO, DefaultOF, PETSC
         self.track_args["case_parameter"]["solver_" + fields] = solver
         self.track_args["case_parameter"]["preconditioner_" + fields] = preconditioner
         self.track_args["case_parameter"]["backend_" + fields] = backend_name
         self.track_args["case_parameter"]["executor_" + fields] = executor
+        return self.is_valid
 
     def set_up(self):
         print("[OBR] change linear solver", self.path)
