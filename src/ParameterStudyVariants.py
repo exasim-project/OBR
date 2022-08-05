@@ -221,7 +221,6 @@ class ChangeMatrixSolver(Variant):
 
     @property
     def valid(self):
-        self.executor = self.executors[0]
         self.name = "{}_{}_{}_{}".format(
             self.solver, self.preconditioner, self.backend_name, self.executor
         )
