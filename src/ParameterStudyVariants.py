@@ -226,7 +226,7 @@ class ChangeMatrixSolver(Variant):
             self.root_dir,
             self.name,
             self.track_args_init,
-            variant_of=input_dict.get("variant_of", False),
+            variant_of=self.input_dict.get("variant_of", False),
         )
         backend = getattr(ms, self.backend_name)(
             solver=self.solver,
