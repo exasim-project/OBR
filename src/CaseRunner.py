@@ -201,12 +201,13 @@ class LocalCaseRunner:
 
         # on first run get number of iterations and write log if demanded
         iterations = 0
+        time_out = os.environ.get("OBR_TIMEOUT", 300)
         print("running", app_cmd, case.path)
         while self.continue_running(accumulated_time, number_of_runs):
             number_of_runs += 1
             try:
                 start = datetime.datetime.now()
-                ret = check_output(app_cmd, cwd=case.path, timeout=180 * 60)
+                ret = check_output(app_cmd, cwd=case.path, timeout=time_out * 60)
                 end = datetime.datetime.now()
                 run_time = (end - start).total_seconds()  # - self.init_time
                 accumulated_time += run_time
