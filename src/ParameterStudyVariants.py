@@ -14,13 +14,16 @@ class Variant(OpenFOAMCase):  # At some point this inherits from Setter
         self.name = name
         super().__init__(root_dir / self.name / "base")
         self.base = "../../../base"
-        if variant_of:
-            self.valid = False
-            for variant in variant_of:
-                if variant in str(root_dir):
-                    self.valid = True
-        else:
-            self.valid = True
+        try:
+            if variant_of:
+                self.valid = False
+                for variant in variant_of:
+                    if variant in str(root_dir):
+                        self.valid = True
+            else:
+                self.valid = True
+        except:
+            pass
         self.track_args = track_args
         self.link_mesh = True
 
