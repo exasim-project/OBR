@@ -78,8 +78,6 @@ class ParameterStudyTree:
         for i, case in enumerate(self.cases):
             if hasattr(case, "executors"):
                 execs = case.executors
-                if len(execs) == 1:
-                    continue
                 pop_cases.append(i)
                 for executor in execs:
                     insert_case = deepcopy(case)
