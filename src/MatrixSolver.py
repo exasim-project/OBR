@@ -98,7 +98,7 @@ class PETSC(Backend):
     def get_matrixtype(self):
         d = {
             "HIP": "mpiaijviennacl",
-            "CUDA": "aijcusparse",
+            "CUDA": "mpiaijcusparse",
             "Default": "mpiaij",
         }
         return d[self.executor]
