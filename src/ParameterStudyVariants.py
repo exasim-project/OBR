@@ -201,36 +201,45 @@ class ChangeMatrixSolver(Variant):
 
     def __init__(self, root_dir, input_dict, value_dict, track_args):
         self.value = value_dict
-        solver = value_dict[0]
-        preconditioner = value_dict[1]
-        executor = input_dict["variants"]["backend"][value_dict[2]][0]
-        backend_name = value_dict[2]
-        name = "{}_{}_{}_{}".format(solver, preconditioner, backend_name, executor)
-        super().__init__(
-            root_dir,
-            name,
-            track_args,
-            variant_of=input_dict.get("variant_of", False),
-        )
+        self.solver = value_dict[0]
+        self.preconditioner = value_dict[1]
+        self.root_dir = root_dir
+        self.track_args_init = track_args
+
+        self.executors = input_dict["variants"]["backend"][value_dict[2]]
+        self.backend_name = value_dict[2]
+
         self.input_dict = input_dict
-        fields = input_dict["fields"][0]
-        defaults = input_dict.get("defaults")[fields]
+        self.fields = input_dict["fields"][0]
+        self.defaults = input_dict.get("defaults")[fields]
         # eg CG, BiCGStab
         print(value_dict, input_dict["variants"])
 
-        # eg, GKO, DefaultOF, PETSC
+    @property
+    def is_valid(self):
+        self.executor = self.executors[0]
+        self.name = "{}_{}_{}_{}".format(
+            self.solver, self.preconditioner, self.backend_name, self.executor
+        )
+        super().__init__(
+            self.root_dir,
+            name,
+            self.track_args_init,
+            variant_of=input_dict.get("variant_of", False),
+        )
         backend = getattr(ms, backend_name)(
-            solver=solver,
-            preconditioner=preconditioner,
-            executor=executor,
-            options=defaults,
+            solver=self.solver,
+            preconditioner=self.preconditioner,
+            executor=self.executor,
+            options=self.defaults,
         )
 
-        self.setter = ms.SolverSetter(backend, self.path, fields, defaults)
+        self.setter = ms.SolverSetter(backend, self.path, self.fields, self.defaults)
 
         # check whether preconditioner and executor combinations are
         # supported/valid
         self.valid = backend.is_valid()
+        # eg, GKO, DefaultOF, PETSC
         self.track_args["case_parameter"]["solver_" + fields] = solver
         self.track_args["case_parameter"]["preconditioner_" + fields] = preconditioner
         self.track_args["case_parameter"]["backend_" + fields] = backend_name

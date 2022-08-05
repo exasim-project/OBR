@@ -71,6 +71,26 @@ class ParameterStudyTree:
             for variant_dict in product(*input_dict["variants"].values())
         ]
 
+        # expand cases with subexecutor variations
+        # TODO this should be handled in a more generic way
+        pop_cases = []
+        insert_cases = []
+        for i, case in enumerate(self.cases):
+            if hasattr(case, "executors"):
+                execs = case.executors
+                if len(execs) == 1:
+                    continue
+                pop_cases.append(i)
+                for executor in execs:
+                    insert_case = deepcopy(case)
+                    insert_case.executor = executor
+                    insert_cases.append(insert_case)
+
+        for i in pop_cases[::-1]:
+            self.cases.pop(i)
+
+        self.cases += insert_cases
+
         # only add cases which are valid, eg some combinations of executor
         # and preconditioner might not exist
         self.cases = [case for case in self.cases if case.valid]
