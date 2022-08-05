@@ -129,7 +129,9 @@ def add_libs(controlDict, libs):
     with open(controlDict, "r") as f:
         lines = f.readlines()
 
-    has_libs = any(["libs" in l for l in lines if not l.startswith("//")])
+    has_libs = any(
+        ["libs" in l for l in lines if not l.replace(" ", "").startswith("//")]
+    )
 
     with open(controlDict, "w") as ctrlDict_handle:
         for line in lines[:-1]:
