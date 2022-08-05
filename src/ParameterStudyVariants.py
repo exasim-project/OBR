@@ -224,11 +224,11 @@ class ChangeMatrixSolver(Variant):
         )
         super().__init__(
             self.root_dir,
-            name,
+            self.name,
             self.track_args_init,
             variant_of=input_dict.get("variant_of", False),
         )
-        backend = getattr(ms, backend_name)(
+        backend = getattr(ms, self.backend_name)(
             solver=self.solver,
             preconditioner=self.preconditioner,
             executor=self.executor,
@@ -241,10 +241,12 @@ class ChangeMatrixSolver(Variant):
         # supported/valid
         self.is_valid = backend.is_valid()
         # eg, GKO, DefaultOF, PETSC
-        self.track_args["case_parameter"]["solver_" + fields] = solver
-        self.track_args["case_parameter"]["preconditioner_" + fields] = preconditioner
-        self.track_args["case_parameter"]["backend_" + fields] = backend_name
-        self.track_args["case_parameter"]["executor_" + fields] = executor
+        self.track_args["case_parameter"]["solver_" + self.fields] = self.solver
+        self.track_args["case_parameter"][
+            "preconditioner_" + self.fields
+        ] = self.preconditioner
+        self.track_args["case_parameter"]["backend_" + self.fields] = self.backend_name
+        self.track_args["case_parameter"]["executor_" + self.fields] = self.executor
         return self.is_valid
 
     def set_up(self):
