@@ -208,10 +208,11 @@ class ChangeMatrixSolver(Variant):
 
         self.executors = input_dict["variants"]["backend"][value_dict[2]]
         self.backend_name = value_dict[2]
+        self.executor = None
 
         self.input_dict = input_dict
         self.fields = input_dict["fields"][0]
-        self.defaults = input_dict.get("defaults")[fields]
+        self.defaults = input_dict.get("defaults")[self.fields]
         # eg CG, BiCGStab
         print(value_dict, input_dict["variants"])
 
