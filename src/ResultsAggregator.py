@@ -45,6 +45,7 @@ class Results:
         with open(self.fn, "w") as report_handle:
 
             default_header = [
+                "backend",
                 "executor_p",
                 "solver_p",
                 "preconditioner_p",

@@ -53,7 +53,7 @@ class PETSC(Backend):
                 ksp_type {solver};
                 pc_type bjacobi;
                 sub_pc_type {preconditioner};
-                matrixtype {matrixtype};
+                mat_type {matrixtype};
         }}
 
         caching
