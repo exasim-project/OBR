@@ -17,13 +17,19 @@ class IC:
 
 
 class NoPrecond:
-    name = "bjacobi"
+    name = "none"
     symmetric = True
     option_defaults = {}
 
 
 class IC:
     name = "cholesky"
+    symmetric = True
+    option_defaults = {}
+
+
+class BJ:
+    name = "bjacbi"
     symmetric = True
     option_defaults = {}
 
