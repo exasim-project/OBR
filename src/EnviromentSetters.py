@@ -86,7 +86,8 @@ class PrepareControlDict:
         self.controlDictArgs = controlDictArgs
 
     def set_up(self):
-        sf.add_libs(self.case.controlDict, self.controlDictArgs["libs"])
+        if self.controlDictArgs.get("libs"):
+            sf.add_libs(self.case.controlDict, self.controlDictArgs["libs"])
 
         timeSteps = self.controlDictArgs["timeSteps"]
         # adapt deltaT for instationary cases

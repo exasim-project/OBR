@@ -34,3 +34,15 @@ class HIP:
 
 class DPCPP:
     name = "dpcpp"
+
+
+class BJ:
+    name = "BJ"
+    symmetric = True
+    option_defaults = {}
+
+
+class ISAI:
+    name = "ISAI"
+    symmetric = True
+    option_defaults = {}

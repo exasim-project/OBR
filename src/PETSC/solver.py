@@ -17,6 +17,18 @@ class IC:
 
 
 class NoPrecond:
-    name = "none"
+    name = "bjacobi"
+    symmetric = True
+    option_defaults = {}
+
+
+class IC:
+    name = "cholesky"
+    symmetric = True
+    option_defaults = {}
+
+
+class Multigrid:
+    name = "gamg"
     symmetric = True
     option_defaults = {}

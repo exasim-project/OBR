@@ -11,3 +11,9 @@ class NoPrecond:
     name = "none"
     symmetric = True
     option_defaults = {}
+
+
+class DIC:
+    name = "DIC"
+    symmetric = True
+    option_defaults = {}
