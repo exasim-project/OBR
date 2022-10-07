@@ -215,7 +215,7 @@ class ChangeMatrixSolver(Variant):
 
         self.input_dict = input_dict
         self.fields = input_dict["fields"][0]
-        self.defaults = input_dict.get("defaults")[self.fields]
+        self.defaults = input_dict.get("properties")[self.fields]
         # eg CG, BiCGStab
         print(value_dict, input_dict["variants"])
 
@@ -270,12 +270,12 @@ class ChangeMatrixSolverProperties(Variant):
             variant_of=input_dict.get("variant_of", False),
         )
         self.input_dict = input_dict
-        self.field = input_dict["field"] + "\n"
+        self.field = input_dict["field"][0]
         self.exclude = input_dict.get("exclude", ["Final"])
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
 
     def set_up(self):
-        print("[OBR] add or set linear solver settings", self.path)
+        print("[OBR] add or set linear solver settings", self.path, self.field, self.value[0])
         sf.add_or_set_solver_settings(
             self.fvSolution, self.field, self.input_dict, self.value[0], self.exclude
         )
@@ -302,8 +302,22 @@ class ChangeNumberOfSubdomains(Variant):
         )
         self.input_dict = input_dict
         self.track_args["case_parameter"][input_dict["name"]] = self.value[0]
+        # TODO move to super class
+        self.exclude = input_dict.get("exclude", ["Final"])
+        properties = input_dict.get("properties")
+        self.fields = properties.keys() if properties else []
+        self.properties = properties
 
     def set_up(self):
+        if self.properties:
+            print("properties", self.fields)
+            for field in self.fields:
+                print("field", self.properties)
+                for key, val in self.properties[field].items():
+                    print(field, key, val, self.fvSolution)
+                    sf.add_or_set_solver_settings(
+                        self.fvSolution, field, key, val, self.exclude
+                    )
         print(
             "[OBR] change domain decompositon",
             self.path,

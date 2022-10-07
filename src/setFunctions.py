@@ -25,15 +25,20 @@ def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
     is_excluded_block = False
     skip = False
     with open(fn, "w") as f:
+        num_open_brackets = 0
         for line in lines:
             is_start = [block_start in line for block_start in block_starts]
+            if "{" in line:
+                num_open_brackets += 1
+            if "}" in line:
+                num_open_brackets -= 1
             if excludes:
                 is_excluded_block = any([exclude in line for exclude in excludes])
             if any(is_start) and not is_excluded_block:
                 skip = True
             if not skip:
                 f.write(line)
-            if skip and block_end in line:
+            if skip and block_end in line and num_open_brackets == 1:
                 if not is_excluded_block:
                     f.write(replace)
                     f.write("\t}\n")
@@ -69,8 +74,13 @@ def read_block_from_file(fn, block_starts, block_end, excludes=None):
     with open(fn, "r") as f:
         lines = f.readlines()
         started = False
+        num_open_brackets = 0
         for line in lines:
             is_start = [block_start in line for block_start in block_starts]
+            if "{" in line:
+                num_open_brackets += 1
+            if "}" in line:
+                num_open_brackets -= 1
             if excludes:
                 is_excluded = [exclude in line for exclude in excludes]
             if started:
@@ -78,7 +88,7 @@ def read_block_from_file(fn, block_starts, block_end, excludes=None):
             if any(is_start) and not any(is_excluded):
                 ret.append(line)
                 started = True
-            if started and block_end in line:
+            if started and block_end in line and num_open_brackets == 1:
                 return ret
     return []
 
@@ -280,21 +290,24 @@ def set_writeInterval(controlDict, writeInterval):
 
 def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
     # TODO check if keyword is already present
-    block = read_block_from_file(fvSolution, [field], "}", exclude)
+    keyword = keyword if isinstance(keyword, str) else keyword["name"] 
+    start = ['"' + field + '.*"', field + "\n", field + "{\n"]
+    block = read_block_from_file(fvSolution, start, "}", exclude)
     # clear_solver_settings(fvSolution, field)
     block_length = len(block)
     # TODO pop old value if exists
     old_key_pos = -1
     for i, keys in enumerate(block):
-        if keyword["name"] in keys:
+        print("block", block)
+        if keyword in keys:
             old_key_pos = i
-    if i >= 0:
-        block.pop(old_key_pos)
+            block.pop(old_key_pos)
 
     new_key_pos = old_key_pos if old_key_pos >= 1 else block_length - 1
 
-    block.insert(new_key_pos, "{} {};\n".format(keyword["name"], value))
-    clean_block_from_file(fvSolution, [field], "}\n", "\n".join(block[:-1]), exclude)
+    block.insert(new_key_pos, "{} {};\n".format(keyword, value))
+    print(block)
+    clean_block_from_file(fvSolution, start, "}\n", "".join(block[:-1]), exclude)
 
 
 def clear_solver_settings(fvSolution, field):
