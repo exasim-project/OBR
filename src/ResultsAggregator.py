@@ -86,4 +86,4 @@ class Results:
             for d in data:
                 report_handle.write(",".join(map(str, d)) + "\n")
 
-            print("[OBR] writing to report", data[-1])
+            print("[OBR] writing to report file {} {}".format(self.fn, data[-1]))
