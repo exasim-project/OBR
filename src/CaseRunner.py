@@ -27,11 +27,13 @@ class TemplatedCaseRunner:
         mem = self.arguments.get("mem")
         case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
+        short_path = str(run_path).replace("base","").replace("/","").replace("matrix_solver","").replace("mpiRank","").replace("mesh","")
         submit_args = {
             "sub_domains": sub_domains,
             "number_nodes": max(int(sub_domains / self.task_per_node), 1),
             "tasks": min(sub_domains, self.task_per_node),
             "mem": mem,
+            "short_path": short_path,
         }
 
         run_env = (
@@ -166,7 +168,7 @@ class LocalCaseRunner:
         log_str = ret.decode("utf-8")
         log_file = log_fold / self.log_name
         with open(log_file, "a") as log_handle:
-            print("writing to log", log_file, type(log_str))
+            print("writing to log", log_file)
             log_str_ = "hash: {}\n{}{}\n".format(log_hash, log_str, "=" * 80)
             log_handle.write(log_str_)
         return log_hash
