@@ -126,7 +126,7 @@ class ParameterStudyTree:
         base_path = Path(case.base)
         base_constant = base_path / "constant"
         base_0 = base_path / "0"
-        base_0org = base_path / "0.org"
+        base_0org = base_path / "0.or*g"
         base_system = base_path / "system"
         if not case.link_mesh:
             # TODO copy zero if not linked
