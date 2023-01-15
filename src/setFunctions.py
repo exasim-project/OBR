@@ -46,6 +46,14 @@ def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
                 is_excluded_block = False
 
 
+def replace_block(path, field, new_block, excludes=None):
+    print("field", field)
+    print(new_block)
+    print(path)
+    clear_solver_settings(path, field)
+    set_block(path, field + "{", "}", new_block, excludes)
+
+
 def set_block(fn, block_start, block_end, replace, excludes=None):
     """cleans everything from block_start to block_end and replace it"""
     with open(fn, "r") as f:
@@ -193,6 +201,7 @@ def set_number_of_subdomains(decomposeParDict, subDomains):
 
 
 def calculate_simple_partition(nSubDomains, decomp):
+    """Calculates a simple domain decomposition based on nSubDomains"""
 
     domains = lambda x: x[0] * x[1] * x[2]
     remainder = lambda x: nSubDomains - domains(x)
@@ -223,21 +232,20 @@ def calculate_simple_partition(nSubDomains, decomp):
         return decomp
 
 
-def set_number_of_subdomains_simple(decomposeParDict, subDomains):
-    decomp = [1, 1, 1]
-    partition = calculate_simple_partition(subDomains, decomp)
-    partition.sort(reverse=True)
+def set_number_of_subdomains_simple(
+    decomposeParDict, numberSubDomains, coeffs=[1, 1, 1]
+):
+    """ """
+    if not numberSubDomains == coeffs[0] * coeffs[1] * coeffs[2]:
+        partition = calculate_simple_partition(numberSubDomains, coeffs)
+        partition.sort(reverse=True)
+    else:
+        partition = coeffs
     partition = tuple(partition)
-    print(
-        "setting number of subdomains for simple decomposition",
-        subDomains,
-        partition,
-        decomposeParDict,
-    )
     sed(
         decomposeParDict,
         "numberOfSubdomains[ ]*[0-9.]*;",
-        "numberOfSubdomains {};".format(subDomains),
+        "numberOfSubdomains {};".format(numberSubDomains),
     )
     sed(
         decomposeParDict,
@@ -251,6 +259,16 @@ def set_number_of_subdomains_simple(decomposeParDict, subDomains):
     )
 
 
+def deprecated(func):
+    print(func.__name__, "is deprecated")
+
+    def wrapper(*args):
+        return func(*args)
+
+    return wrapper
+
+
+@deprecated
 def set_end_time(controlDict, endTime):
     sed(controlDict, "^endTime[ ]*[0-9.]*;", "endTime {};".format(endTime))
 
@@ -270,6 +288,7 @@ def read_block(blockMeshDict):
     return list(map(int, re.findall("[0-9]+", num_cells)))
 
 
+@deprecated
 def read_deltaT(controlDict):
     ret = (
         check_output(["grep", "deltaT", controlDict])
@@ -280,17 +299,19 @@ def read_deltaT(controlDict):
     return float(ret)
 
 
+@deprecated
 def set_deltaT(controlDict, deltaT):
     sed(controlDict, "deltaT[ ]*[0-9.]*", "deltaT {}".format(deltaT))
 
 
+@deprecated
 def set_writeInterval(controlDict, writeInterval):
     sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
 
 
 def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
     # TODO check if keyword is already present
-    keyword = keyword if isinstance(keyword, str) else keyword["name"] 
+    keyword = keyword if isinstance(keyword, str) else keyword["name"]
     start = ['"' + field + '.*"', field + "\n", field + "{\n"]
     block = read_block_from_file(fvSolution, start, "}", exclude)
     # clear_solver_settings(fvSolution, field)
@@ -317,8 +338,3 @@ def clear_solver_settings(fvSolution, field):
         "}\n",
         field + "{\n",
     )
-
-
-def ensure_path(path):
-    print("[OBR] creating", path)
-    check_output(["mkdir", "-p", path])

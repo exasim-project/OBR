@@ -24,6 +24,7 @@ from pathlib import Path
 import ParameterStudyTree as ps
 import CaseOrigins as co
 import setFunctions as sf
+from OpenFOAMCase import OpenFOAMCase
 from metadata import versions
 
 
@@ -68,27 +69,63 @@ def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
     return parameter_study_arguments
 
 
-def obr_create_tree(arguments):
+def obr_create_tree(project, config, arguments):
 
     if not os.environ.get("FOAM_ETC"):
         print("[OBR] Error OpenFOAM not sourced")
         sys.exit(-1)
 
-    parameter_study_arguments = process_benchmark_description(
-        arguments.get("parameters", "benchmark.json"), versions
-    )
-    parameter_study_arguments["cli"] = arguments
+    # TODO figure out how operations should be handled for statepoints
+    base_case_dict = {"case": config["case"]["type"]}
+    of_case = project.open_job(base_case_dict)
+    of_case.doc["is_base"] = True
+    of_case.doc["parameters"] = config["case"]
+    of_case.doc["pre_build"] = config["case"].get("pre_build", [])
+    of_case.doc["post_build"] = config["case"].get("post_build", [])
+    of_case.init()
+    base_id = of_case.id
 
-    track_args = {"case_parameter": {"resolution": 0, "processes": 1}}
+    operations = []
+    id_path_mapping = {of_case.id: "base/"}
 
-    pst = ps.ParameterStudyTree(
-        Path(arguments["folder"]),
-        parameter_study_arguments,
-        parameter_study_arguments["variation"],
-        track_args,
-        base=getattr(co, parameter_study_arguments["case"]["type"])(
-            parameter_study_arguments["case"]
-        ),
-    )
+    def add_variations(variations, base, base_dict):
+        for operation in variations:
+            key = list(operation["values"].keys())[0]
+            for value in operation["values"][key]:
+                sub_variation = operation.get("variation")
+                base_dict.update(
+                    {
+                        "case": config["case"]["type"],
+                        "operation": operation["operation"],
+                        key: value,
+                        "value": value,
+                        "args": key,
+                        "has_child": True if sub_variation else False,
+                    }
+                )
+                job = project.open_job(base_dict)
+                job.doc["base_id"] = base
+                job.doc["parameters"] = operation.get("parameters", [])
+                job.doc["pre_build"] = operation.get("pre_build", [])
+                job.doc["post_build"] = operation.get("post_build", [])
+                job.init()
+                print(key, value)
+                print(job.id)
+                id_path_mapping[job.id] = id_path_mapping.get(
+                    base, ""
+                ) + "{}/{}/".format(key, value)
+                if sub_variation:
+                    add_variations(sub_variation, job.id, base_dict)
+            operations.append(operation.get("operation"))
 
-    pst.set_up()
+    add_variations(config["variation"], base_id, base_case_dict)
+
+    operations = list(set(operations))
+    project.run(names=["fetch_case"])
+    project.run(names=operations)
+
+    if not (Path(arguments["folder"]) / "view").exists():
+        # FIXME this copies to views instead of linking
+        project.find_jobs(filter={"has_child": False}).export_to(
+            arguments["folder"], path=lambda job: "view/" + id_path_mapping[job.id]
+        )

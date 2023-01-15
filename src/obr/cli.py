@@ -15,6 +15,12 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 import click
+import yaml
+
+import flow
+import signac
+from signac_labels import *
+from signac_operations import *
 
 
 @click.group()
@@ -72,7 +78,24 @@ def benchmark(ctx, **kwargs):
 def create(ctx, **kwargs):
     import obr_create_tree
 
-    obr_create_tree.obr_create_tree(kwargs)
+    config_file = kwargs["parameters"]
+
+    with open(config_file, "r") as config_handle:
+        config = yaml.safe_load(config_handle)
+
+    project = OpenFOAMProject.init_project(root=kwargs["folder"])
+    obr_create_tree.obr_create_tree(project, config, kwargs)
+
+
+@cli.command()
+@click.option("--folder", default="cases")
+@click.option("--detailed", default=False)
+@click.pass_context
+def status(ctx, **kwargs):
+    import obr_create_tree
+
+    project = OpenFOAMProject.get_project(root=kwargs["folder"])
+    project.print_status(detailed=kwargs["detailed"])
 
 
 def main():

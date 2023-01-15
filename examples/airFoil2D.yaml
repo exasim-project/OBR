@@ -1,0 +1,54 @@
+case:
+    type: OpenFOAMTutorialCase
+    solver: pisoFoam
+    case: RAS/cavity
+    origin: incompressible
+    pre_build:
+      - shell: touch pre
+    post_build:
+      - blockMesh:
+          modifyBlock: ["(20 20 1)->(40 40 1)"]
+      - controlDict:
+          endTime: 1.0
+          deltaT: 1.0
+          writeFormat: binary
+          libs: "(libOGL.so)"
+      - fvSolution:
+           field: p
+           block: |
+             solver PCG;
+             preconditioner none;
+             tolerance 1e-6;
+      - shell: touch post
+      - setKeyValuePair:
+          file: constant/transportProperties
+          key: nu
+          value: 2e-05
+      - decomposePar:
+          simple:
+            coeffs: [1, 2, 3]
+variation:
+  - operation: controlDict
+    values:
+      deltaT: [1, 2, 4]
+    parameters:
+      key: False
+    variation:
+      - operation: controlDict
+        values:
+          startTime: [1, 2, 4]
+        parameters:
+          key: False
+    properties:
+      - a list of blocks
+    variant_of:
+      a simple filter
+  - operation: controlDict
+    values:
+      endTime: [10, 20, 40]
+    parameters:
+      key: False
+    properties:
+      - a list of blocks
+    variant_of:
+      a simple filter

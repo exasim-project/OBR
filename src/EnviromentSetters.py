@@ -76,6 +76,7 @@ class CachePrepare(DefaultPrepareEnviroment):
         check_output(["cp", "-r", self.cache_path, target_path])
 
 
+# TODO this should be a separate operation
 class PrepareControlDict:
     """prepares the control dict of a case"""
 
