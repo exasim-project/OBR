@@ -4,8 +4,8 @@ import signac
 from signac_labels import *
 
 import signac_wrapper
-from core import execute
-from OpenFOAMCase import OpenFOAMCase, modifies_file
+from core import execute, modifies_file
+from OpenFOAMCase import OpenFOAMCase
 
 import os
 import sys
@@ -102,7 +102,7 @@ def controlDict(job, args={}):
         args = {key: value for key, value in args.items()}
     else:
         args = {job.sp["args"]: job.sp["value"]}
-    OpenFOAMCase(str(job.path) + "/case", job).setControlDict(args)
+    OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
     job.doc.controlDict = True
 
 
@@ -120,7 +120,7 @@ def blockMesh(job, args={}):
 @OpenFOAMProject.operation
 def fvSolution(job, args={}):
     case_name = job.sp["case"]
-    OpenFOAMCase(str(job.path) + "/case", job).setLinearSolver(args)
+    OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
 
 
 @OpenFOAMProject.pre(base_case_is_ready)

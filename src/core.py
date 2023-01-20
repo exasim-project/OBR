@@ -6,6 +6,7 @@ import re
 import json
 from pathlib import Path
 from subprocess import check_output
+from functools import wraps
 
 
 def parse_variables_impl(in_str, args, domain):
@@ -83,3 +84,75 @@ def execute(steps, job):
         cmd = step.split(" ")
         logged_execute(step, path, job.doc)
     return True
+
+
+def modifies_file(fns):
+    """check if this job modifies a file, thus it needs to unlink
+    and copy the file if it is a symlink
+    """
+
+    def unlink(fn):
+        if Path(fn).is_symlink():
+            src = fn.resolve()
+            check_output(["rm", fn])
+            check_output(["cp", "-r", src, fn])
+
+    if isinstance(fns, list):
+        for fn in fns:
+            unlink(fn)
+    else:
+        unlink(fns)
+
+
+def writes_files(fns):
+    """check if this job modifies a file, thus it needs to unlink
+    and copy the file if it is a symlink
+    """
+
+    def unlink(fn):
+        if Path(fn).is_symlink():
+            src = fn.resolve()
+            check_output(["rm", fn])
+
+    if isinstance(fns, list):
+        for fn in fns:
+            unlink(fn)
+    else:
+        unlink(fns)
+
+
+# def check_authorization(attribute):
+#     def _check_authorization(f):
+#         def wrapper(self, *args):
+#             print getattr(self, attribute)
+#             return f(self, *args)
+#         return wrapper
+#     return _check_authorization
+
+
+def decorator_modifies_file(fns=["path"]):
+    def wrapper(f, *jobsp):
+        @wraps(f)
+        def wrapped(self, *args):
+            print("called wrapped", *args, fn)
+            for fn in fns:
+                print(fn)
+                modifies_file(getattr(self, fn))
+            f(self, *args)
+
+        return wrapped
+
+    return wrapper
+
+
+def decorator_writes_files(fns=["path"]):
+    def wrapper(f):
+        @wraps(f)
+        def wrapped(self, *args):
+            for fn in fns:
+                writes_file(getattr(self, fn))
+            f(self, *args)
+
+        return wrapped
+
+    return wrapper

@@ -14,11 +14,9 @@ case:
           writeFormat: binary
           libs: "(libOGL.so)"
       - fvSolution:
-           field: p
-           block: |
-             solver PCG;
-             preconditioner none;
-             tolerance 1e-6;
+          set: solvers/p
+          solver: PCG
+          preconditioner: none
       - shell: touch post
       - setKeyValuePair:
           file: constant/transportProperties
