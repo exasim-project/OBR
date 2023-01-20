@@ -20,8 +20,7 @@ case:
       - shell: touch post
       - setKeyValuePair:
           file: constant/transportProperties
-          key: nu
-          value: 2e-05
+          nu: 2e-05
       - decomposePar:
           simple:
             coeffs: [1, 2, 3]
