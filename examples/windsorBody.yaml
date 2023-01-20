@@ -1,0 +1,12 @@
+custom_operations:
+  - name: concatMeshes
+    post_build:
+      - shell: script.sh ${{variation.value}}
+      - createPatch:
+          ...
+case:
+  type: CaseOnDisk
+  origin: ${{env.MicroBenchmarksFolder}}/WindsorBody/baseCase
+  variation:
+    - operation: concatMeshes
+      values: [1, 2, 4]
