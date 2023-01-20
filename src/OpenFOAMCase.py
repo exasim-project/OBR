@@ -138,7 +138,12 @@ class OpenFOAMCase(BlockMesh):
         self._exec_operation(["decomposePar", "-force"])
 
     def setKeyValuePair(self, args):
-        pass
+        print("set_Key balue pair")
+        path = Path(args.pop("file"))
+        file_handle = File(
+            folder=self.path_ / path.parents[0], file=path.parts[-1], job=self.job
+        )
+        file_handle.set_key_value_pairs(args)
 
     # @decorator_modifies_file(["fvSolution"])
     # def setLinearSolver(self, args):

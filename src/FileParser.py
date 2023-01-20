@@ -172,7 +172,7 @@ class FileParser:
                 fh.write(to_str_kvp((key, value)))
             fh.write(self.footer)
 
-    def set_key_value_pairs(self, dictionary):
+    def set_key_value_pairs(self, dictionary, flush=True):
         """check if a given key exists and replaces it with the key value pair
 
         this can be used to modify the value in the file
@@ -186,4 +186,5 @@ class FileParser:
         else:
             d = self._dict
         d.update(dictionary)
-        self.write_to_disk()
+        if flush:
+            self.write_to_disk()
