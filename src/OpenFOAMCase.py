@@ -35,13 +35,6 @@ class File(FileParser):
     def get(self, name):
         return self._parse_file.get(name)
 
-    def __getattr__(self, attr):
-        if attr == "path":
-            return self.path
-        # if attr == "job":
-        #     return self.job
-        return self._parsed_file[attr]
-
     # @decorator_modifies_file
     def set(self, args):
         """modifies the current controlDict by the given dictionary
@@ -127,14 +120,13 @@ class OpenFOAMCase(BlockMesh):
             else:
                 numberSubDomains = args["simple"]["numberSubDomains"]
                 coeffs = args["simple"].get("coeffs", [1, 1, 1])
-            logged_func(
-                sf.set_number_of_subdomains_simple,
-                self.job.doc,
-                decomposeParDict=self.decomposeParDict,
-                numberSubDomains=numberSubDomains,
-                coeffs=coeffs,
+            self.decomposeParDict.set(
+                {
+                    "method": "simple",
+                    "numberOfSubdomains": numberSubDomains,
+                    "coeffs": {"n": coeffs},
+                }
             )
-
         self._exec_operation(["decomposePar", "-force"])
 
     def setKeyValuePair(self, args):

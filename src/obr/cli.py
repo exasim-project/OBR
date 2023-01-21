@@ -16,6 +16,7 @@ Why does this file exist, and why not put this in __main__?
 """
 import click
 import yaml
+import os
 
 import flow
 import signac
@@ -72,7 +73,16 @@ def benchmark(ctx, **kwargs):
 
 @cli.command()
 @click.option("--folder", default="cases")
-@click.option("--filter", default=None)
+@click.option("--operations")
+@click.pass_context
+def execute(ctx, **kwargs):
+    project = OpenFOAMProject.init_project(root=kwargs["folder"])
+    project.run(names=kwargs.get("operations", "").split(","))
+
+
+@cli.command()
+@click.option("--folder", default="cases")
+@click.option("--execute", default=True)
 @click.option("--parameters", default="base")
 @click.pass_context
 def create(ctx, **kwargs):
@@ -95,7 +105,25 @@ def status(ctx, **kwargs):
     import obr_create_tree
 
     project = OpenFOAMProject.get_project(root=kwargs["folder"])
-    project.print_status(detailed=kwargs["detailed"])
+    project.print_status(detailed=kwargs["detailed"], pretty=True)
+
+
+@cli.command()
+@click.option("--folder", default="cases")
+@click.pass_context
+def find(ctx, **kwargs):
+    import obr_create_tree
+
+    project = OpenFOAMProject.get_project(root=kwargs["folder"])
+    for job in project:
+
+        for operation, data in job.doc.obr.items():
+            if data["state"] == "failure":
+                print(
+                    f"job {job.path} operation {operation} failed with:{os.linesep} {data['log']}"
+                )
+                # using the job.id we can find jobs which have this job as child
+                print(list(job.doc.obr.keys()), job.sp)
 
 
 def main():

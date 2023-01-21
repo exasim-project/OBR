@@ -10,6 +10,7 @@ def decomposed(job):
 @FlowProject.label
 def has_generated_mesh(job):
     """TODO check also for .obr files for state of operation"""
+    # TODO if mesh
     return job.isfile("case/constant/polyMesh/points")
 
 
@@ -24,3 +25,15 @@ def final(job):
     """jobs that dont have children/variations are considered to be final and
     are thus eligable for execution"""
     return not job.sp.get("has_child")
+
+
+@FlowProject.label
+def failed_op(job):
+    if not job.doc.get("obr"):
+        return True
+
+    for operation, data in job.doc.obr.items():
+        if data["state"] == "failure":
+            return True
+
+    return False

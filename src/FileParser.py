@@ -1,6 +1,86 @@
 #!/usr/bin/env python3
 
+import os
 import pyparsing as pp
+
+
+extended_alphanum = pp.Word(pp.alphanums + '#_-."/')
+
+
+def dispatch_to_str(item, indent="", nl="\n\n"):
+    """dispatch to corresponding methods"""
+    key, value = item
+    if isinstance(key, str) and key.startswith("#"):
+        return OFInclude().to_str(key, value, indent=indent, nl=nl)
+    if key == "functions":
+        return OFFunctions().to_str(key, value, indent=indent, nl=nl)
+    if isinstance(value, str):
+        return indent + "{}\t{};{}".format(key, value, nl)
+    if isinstance(value, dict):
+        s = "{}{}\n{}{{\n".format(indent, key, indent)
+        new_indent = indent + "\t"
+        for k, v in value.items():
+            s += dispatch_to_str((k, v), new_indent, nl="\n")
+        s += indent + "}\n\n"
+        return s
+    elif isinstance(value, list):
+        return OFList().to_str(key, value, indent=indent, nl=nl)
+    return ""
+
+
+class OFList:
+    @staticmethod
+    def parse():
+        """matches (a b c)"""
+        # TODO make it recursive
+        return (
+            pp.Suppress("(")
+            + pp.delimitedList(pp.OneOrMore(pp.alphanums), delim=" ")
+            + pp.Suppress(")")
+        ).set_results_name("of_list")
+
+    def to_str(self, *args, **kwargs):
+        """Convert a python list to a str with OF syntax"""
+        key = args[0]
+        values = args[1]
+        return f'{kwargs.get("indent", "")}{key} ({" ".join(map(str,values))});{kwargs.get("nl",os.linesep)}'
+
+
+class OFVariable:
+    @staticmethod
+    def parse():
+        """matches $p;"""
+        # TODO make it recursive
+        return (
+            pp.Literal("$") + pp.Word(pp.alphanums) + pp.Suppress(";")
+        ).set_results_name("of_variable")
+
+    def to_str(self, *args, **kwargs):
+        """Convert a python list to a str with OF syntax"""
+        key = args[0]
+        value = args[1]
+        return f'{kwargs.get("indent", "")}{key}{value};{kwargs.get("nl",os.linesep)}'
+
+
+class OFFunctions:
+    def to_str(self, *args, **kwargs):
+        """Convert a python list to a str with OF syntax"""
+        key = args[0]
+        value = args[1]
+        indent = kwargs.get("indent", "")
+        ret = "functions {\n"
+        for k, v in value.items():
+            ret += dispatch_to_str((k, v), indent + "\t", nl="\n")
+        ret += "}\n\n"
+        return ret
+
+
+class OFInclude:
+    def to_str(self, *args, **kwargs):
+        """Convert a python list to a str with OF syntax"""
+        key = args[0].split("_")[0]
+        value = args[1]
+        return f'{kwargs.get("indent", "")}{key}{value};{kwargs.get("nl",os.linesep)}'
 
 
 class FileParser:
@@ -29,17 +109,6 @@ class FileParser:
         return "// " + "* " * 26 + "//"
 
     @property
-    def of_list(self):
-        """matches (a b c)"""
-        return (
-            pp.Suppress("(")
-            + pp.delimitedList(
-                pp.OneOrMore(self.extended_alphanum), delim=" "
-            ).add_parse_action(lambda t: [_ for _ in t])
-            + pp.Suppress(")")
-        ).set_results_name("of_list")
-
-    @property
     def key_value_pair(self):
         """matches a b; or a (a b c); or a {foo bar;}"""
         of_dict = pp.Forward()
@@ -54,10 +123,10 @@ class FileParser:
                     ^ pp.Word(
                         pp.alphanums + '".-/'
                     )  # for includes which are single strings can contain /
-                    ^ self.of_list + pp.Suppress(";")
+                    ^ OFList.parse() + pp.Suppress(";")
                 ).set_results_name("value")
                 # a variable
-                ^ pp.Literal("$") + pp.Word(pp.alphanums) + pp.Suppress(";")
+                ^ OFVariable.parse()
             )
             .ignore(pp.cStyleComment | pp.dblSlashComment)
             .set_results_name("key_value_pair")
@@ -66,11 +135,6 @@ class FileParser:
             pp.Suppress("{") + pp.ZeroOrMore(key_val_pair) + pp.Suppress("}")
         ).set_results_name("of_dict")
         return key_val_pair
-
-    @property
-    def extended_alphanum(self):
-        # TODO rename
-        return pp.Word(pp.alphanums + '#_-."/')
 
     @property
     def single_line_comment(self):
@@ -137,31 +201,6 @@ class FileParser:
         fn = self.path
         dictionary = self._dict
 
-        def to_str_kvp(item, indent="", nl="\n\n"):
-            key, value = item
-            print(key, value)
-            if key.startswith("#"):
-                return "{}{} {}{}".format(indent, key.split("_")[0], value, nl)
-            if key == "functions":
-                ret = "functions {\n"
-                for k, v in value.items():
-                    ret += to_str_kvp((k, v), indent + "\t", nl="\n")
-                ret += "}\n\n"
-                return ret
-            if isinstance(value, str):
-                return indent + "{}\t{};{}".format(key, value, nl)
-            if isinstance(value, dict):
-                s = "{}{}\n{}{{\n".format(indent, key, indent)
-                new_indent = indent + "\t"
-                for k, v in value.items():
-                    s += to_str_kvp((k, v), new_indent, nl="\n")
-                s += indent + "}\n\n"
-                return s
-            elif isinstance(value, list):
-                joined_values = " ".join(value)
-                return indent + "{} ({});".format(key, joined_values)
-            return ""
-
         with open(fn, "w") as fh:
             for line in self.of_comment_header:
                 fh.write(line)
@@ -169,7 +208,7 @@ class FileParser:
                 fh.write(line)
             fh.write("\n")
             for key, value in dictionary.items():
-                fh.write(to_str_kvp((key, value)))
+                fh.write(dispatch_to_str((key, value)))
             fh.write(self.footer)
 
     def set_key_value_pairs(self, dictionary, flush=True):
@@ -177,14 +216,17 @@ class FileParser:
 
         this can be used to modify the value in the file
         """
-        sub_dict = dictionary.get("set")
+        sub_dict = dictionary.pop("set", False)
         if sub_dict:
-            dictionary.pop("set")
             d = self._dict
             for s in sub_dict.split("/"):
                 d = d[s]
         else:
             d = self._dict
+        if dictionary.pop("clear", False):
+            keys = d.keys()
+            for k in keys:
+                d[k] = None
         d.update(dictionary)
         if flush:
             self.write_to_disk()

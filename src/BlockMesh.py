@@ -45,7 +45,7 @@ class BlockMesh:
                 target_block,
             )
 
-        self._exec_operation(["refineMesh", "-overwrite"])
+        self._exec_operation(["blockMesh"])
 
     # @decorator_writes_files(["polyMesh"])
     def blockMesh(self, args={}):

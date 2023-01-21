@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from subprocess import check_output
 
+# TODO operations should get an id/hash so that we can log success
+
 
 class OpenFOAMProject(flow.FlowProject):
     pass
@@ -92,54 +94,6 @@ def needs_init_dependent(job):
         return False
 
 
-@OpenFOAMProject.pre(base_case_is_ready)
-@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "controlDict"))
-@OpenFOAMProject.post.true("set_controlDict")
-@OpenFOAMProject.operation
-def controlDict(job, args={}):
-    """sets up the controlDict"""
-    if args:
-        args = {key: value for key, value in args.items()}
-    else:
-        args = {job.sp["args"]: job.sp["value"]}
-    OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
-    job.doc.controlDict = True
-
-
-@OpenFOAMProject.pre(base_case_is_ready)
-@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "blockMesh"))
-@OpenFOAMProject.post.true("set_blockMesh")
-@OpenFOAMProject.operation
-def blockMesh(job, args={}):
-    case_name = job.sp["case"]
-    OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
-
-
-@OpenFOAMProject.pre(base_case_is_ready)
-@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "fvSolution"))
-@OpenFOAMProject.operation
-def fvSolution(job, args={}):
-    case_name = job.sp["case"]
-    OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
-
-
-@OpenFOAMProject.pre(base_case_is_ready)
-@OpenFOAMProject.pre(is_case)
-@OpenFOAMProject.operation
-def setKeyValuePair(job, args={}):
-    modifies_file([Path(job.path) / fn for fn in args["file"]])
-    case_name = job.sp["case"]
-    OpenFOAMCase(str(job.path) + "/case", job).setKeyValuePair(args)
-
-
-@OpenFOAMProject.pre(base_case_is_ready)
-@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "decomposePar"))
-@OpenFOAMProject.operation
-def decomposePar(job, args={}):
-    case_name = job.sp["case"]
-    OpenFOAMCase(str(job.path) + "/case", job).decomposePar(args)
-
-
 def execute_operation(job, operation_name, operations):
     """check wether an operation is requested
 
@@ -176,6 +130,64 @@ def execute_pre_build(operation_name, job):
     """
     operations = job.doc.get("pre_build", [])
     execute_operation(job, operation_name, operations)
+
+
+@OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
+@OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.pre(base_case_is_ready)
+@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "controlDict"))
+@OpenFOAMProject.post.true("set_controlDict")
+@OpenFOAMProject.operation
+def controlDict(job, args={}):
+    """sets up the controlDict"""
+    if args:
+        args = {key: value for key, value in args.items()}
+    else:
+        args = {job.sp["args"]: job.sp["value"]}
+    OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
+    job.doc.controlDict = True
+
+
+@OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
+@OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.pre(base_case_is_ready)
+@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "blockMesh"))
+@OpenFOAMProject.post.true("set_blockMesh")
+@OpenFOAMProject.operation
+def blockMesh(job, args={}):
+    case_name = job.sp["case"]
+    OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
+
+
+@OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
+@OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.pre(base_case_is_ready)
+@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "fvSolution"))
+@OpenFOAMProject.operation
+def fvSolution(job, args={}):
+    case_name = job.sp["case"]
+    OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
+
+
+@OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
+@OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.pre(base_case_is_ready)
+@OpenFOAMProject.pre(is_case)
+@OpenFOAMProject.operation
+def setKeyValuePair(job, args={}):
+    modifies_file([Path(job.path) / fn for fn in args["file"]])
+    case_name = job.sp["case"]
+    OpenFOAMCase(str(job.path) + "/case", job).setKeyValuePair(args)
+
+
+@OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
+@OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.pre(base_case_is_ready)
+@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "decomposePar"))
+@OpenFOAMProject.operation
+def decomposePar(job, args={}):
+    case_name = job.sp["case"]
+    OpenFOAMCase(str(job.path) + "/case", job).decomposePar(args)
 
 
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
