@@ -3,17 +3,16 @@ case:
     solver: pisoFoam
     case: RAS/cavity
     origin: incompressible
-    pre_build:
-      - shell: touch pre
     post_build:
-      - blockMesh:
-          modifyBlock: ["(20 20 1)->(40 40 1)"]
-      - controlDict:
-          endTime: 1.0
-          deltaT: 1.0
-          writeFormat: binary
-          libs: "(libOGL.so)"
+      # - blockMesh:
+      #     modifyBlock: ["(20 20 1)->(40 40 1)"]
+      # - controlDict:
+      #     endTime: 1.0
+      #     deltaT: 1.0
+      #     writeFormat: binary
+      #     libs: "(libOGL.so)"
       - fvSolution:
+          clear: True
           set: solvers/p
           solver: PCG
           preconditioner: none
@@ -21,31 +20,23 @@ case:
       - setKeyValuePair:
           file: constant/transportProperties
           nu: 2e-05
-      - decomposePar:
-          simple:
-            coeffs: [1, 2, 3]
+      # - decomposePar:
+      #     simple:
+      #       coeffs: [1, 2, 3]
 variation:
-  - operation: controlDict
-    values:
-      deltaT: [1, 2, 4]
-    parameters:
-      key: False
-    variation:
-      - operation: controlDict
-        values:
-          startTime: [1, 2, 4]
-        parameters:
-          key: False
-    properties:
-      - a list of blocks
-    variant_of:
-      a simple filter
-  - operation: controlDict
-    values:
-      endTime: [10, 20, 40]
-    parameters:
-      key: False
-    properties:
-      - a list of blocks
-    variant_of:
-      a simple filter
+  - operation: blockMesh
+    parameter:
+      key: modifyBlock
+    values: ["(20 20 1)->(40 40 1)", "(20 20 1)->(30 30 1)"]
+    # variation:
+    #   - operation: fvSolution
+    #     schema: {solver}{preconditioner}
+    #     values:
+    #       - clear: True
+    #         set: solvers/p
+    #         solver: PCG
+    #         preconditioner: none
+    #       - clear: True
+    #         set: solvers/p
+    #         solver: GKOCG
+    #         preconditioner: none

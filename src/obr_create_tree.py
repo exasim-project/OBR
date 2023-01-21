@@ -91,9 +91,9 @@ def obr_create_tree(project, config, arguments):
 
     def add_variations(variations, base, base_dict):
         for operation in variations:
-            key = list(operation["values"].keys())[0]
-            for value in operation["values"][key]:
-                sub_variation = operation.get("variation")
+            sub_variation = operation.get("variation")
+            key = operation["parameter"]["key"]
+            for value in operation["values"]:
                 base_dict.update(
                     {
                         "case": config["case"]["type"],
