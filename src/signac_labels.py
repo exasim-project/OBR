@@ -30,7 +30,7 @@ def final(job):
 @FlowProject.label
 def failed_op(job):
     if not job.doc.get("obr"):
-        return True
+        return False
 
     for operation, data in job.doc.obr.items():
         if data["state"] == "failure":

@@ -20,6 +20,7 @@ import os
 import shutil
 import re
 import sys
+from copy import deepcopy
 
 from pathlib import Path
 import ParameterStudyTree as ps
@@ -89,32 +90,36 @@ def obr_create_tree(project, config, arguments):
     operations = []
     id_path_mapping = {of_case.id: "base/"}
 
-    def add_variations(variations, base, base_dict):
-        for operation in variations:
+    def add_variations(variation, base, base_dict):
+        for operation in variation:
             sub_variation = operation.get("variation")
-            key = operation["parameter"]["key"]
+            key = operation.get("key", None)
             for value in operation["values"]:
+                if not key:
+                    path = operation["schema"].format(**value)
+                    args = value
+                    print("args", args, type(args))
+                    keys = list(value.keys())
+                else:
+                    args = {key: value}
+                    path = "{}/{}/".format(key, value)
+                    keys = [key]
                 base_dict.update(
                     {
                         "case": config["case"]["type"],
                         "operation": operation["operation"],
-                        key: value,
-                        "value": value,
-                        "args": key,
                         "has_child": True if sub_variation else False,
+                        **args,
                     }
                 )
                 job = project.open_job(base_dict)
                 job.doc["base_id"] = base
+                job.doc["keys"] = keys
                 job.doc["parameters"] = operation.get("parameters", [])
                 job.doc["pre_build"] = operation.get("pre_build", [])
                 job.doc["post_build"] = operation.get("post_build", [])
                 job.init()
-                print(key, value)
-                print(job.id)
-                id_path_mapping[job.id] = id_path_mapping.get(
-                    base, ""
-                ) + "{}/{}/".format(key, value)
+                id_path_mapping[job.id] = id_path_mapping.get(base, "") + path
                 if sub_variation:
                     add_variations(sub_variation, job.id, base_dict)
             operations.append(operation.get("operation"))

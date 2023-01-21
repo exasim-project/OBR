@@ -41,6 +41,7 @@ def base_case_is_ready(job):
         parent_job = project.open_job(id=job.doc.get("base_id"))
         base_path = Path(project.open_job(id=job.doc.get("base_id")).path)
         dst_path = Path(job.path) / "case"
+        print(__name__, parent_job, base_path)
         if "is_case" in list(project.labels(parent_job)):
             # print("base_case_ready", list(project.labels(parent_job)))
             # print(job.doc)
@@ -94,6 +95,17 @@ def needs_init_dependent(job):
         return False
 
 
+def get_args(job, args):
+    """operation can get args either via function call or it statepoint
+    if no args are passed via function the args from the statepoint are taken
+    """
+    return (
+        {key: value for key, value in args.items()}
+        if args
+        else {key: job.sp[key] for key in job.doc["keys"]}
+    )
+
+
 def execute_operation(job, operation_name, operations):
     """check wether an operation is requested
 
@@ -143,10 +155,7 @@ def controlDict(job, args={}):
     # TODO gets args either from function arguments if function
     # was called directly from a pre/post build or from sp
     # if this was a variation. In any case this could be a decorator
-    if args:
-        args = {key: value for key, value in args.items()}
-    else:
-        args = {job.sp["args"]: job.sp["value"]}
+    args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
     job.doc.controlDict = True
 
@@ -158,10 +167,7 @@ def controlDict(job, args={}):
 @OpenFOAMProject.post.true("set_blockMesh")
 @OpenFOAMProject.operation
 def blockMesh(job, args={}):
-    if args:
-        args = {key: value for key, value in args.items()}
-    else:
-        args = {job.sp["args"]: job.sp["value"]}
+    args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
 
 
@@ -171,10 +177,7 @@ def blockMesh(job, args={}):
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "fvSolution"))
 @OpenFOAMProject.operation
 def fvSolution(job, args={}):
-    if args:
-        args = {key: value for key, value in args.items()}
-    else:
-        args = {job.sp["args"]: job.sp["value"]}
+    args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
 
 
@@ -185,10 +188,7 @@ def fvSolution(job, args={}):
 @OpenFOAMProject.operation
 def setKeyValuePair(job, args={}):
     modifies_file([Path(job.path) / fn for fn in args["file"]])
-    if args:
-        args = {key: value for key, value in args.items()}
-    else:
-        args = {job.sp["args"]: job.sp["value"]}
+    args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).setKeyValuePair(args)
 
 
@@ -198,10 +198,7 @@ def setKeyValuePair(job, args={}):
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "decomposePar"))
 @OpenFOAMProject.operation
 def decomposePar(job, args={}):
-    if args:
-        args = {key: value for key, value in args.items()}
-    else:
-        args = {job.sp["args"]: job.sp["value"]}
+    args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).decomposePar(args)
 
 

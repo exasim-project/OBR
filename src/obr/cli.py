@@ -17,6 +17,7 @@ Why does this file exist, and why not put this in __main__?
 import click
 import yaml
 import os
+import re
 
 import flow
 import signac
@@ -90,8 +91,17 @@ def create(ctx, **kwargs):
 
     config_file = kwargs["parameters"]
 
+    def parse_variables(in_str, args, domain):
+        ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+        for inst in ocurrances:
+            in_str = in_str.replace(
+                "${{" + domain + "." + inst + "}}", args.get(inst, "")
+            )
+        return in_str
+
     with open(config_file, "r") as config_handle:
-        config = yaml.safe_load(config_handle)
+        f = config_handle.read()
+        config = yaml.safe_load(parse_variables(f, os.environ, "env"))
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     obr_create_tree.obr_create_tree(project, config, kwargs)
@@ -116,14 +126,13 @@ def find(ctx, **kwargs):
 
     project = OpenFOAMProject.get_project(root=kwargs["folder"])
     for job in project:
-
         for operation, data in job.doc.obr.items():
             if data["state"] == "failure":
                 print(
                     f"job {job.path} operation {operation} failed with:{os.linesep} {data['log']}"
                 )
                 # using the job.id we can find jobs which have this job as child
-                print(list(job.doc.obr.keys()), job.sp)
+                # print(job.doc, list(job.doc.obr.keys()), job.sp)
 
 
 def main():
