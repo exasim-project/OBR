@@ -140,6 +140,9 @@ def execute_pre_build(operation_name, job):
 @OpenFOAMProject.operation
 def controlDict(job, args={}):
     """sets up the controlDict"""
+    # TODO gets args either from function arguments if function
+    # was called directly from a pre/post build or from sp
+    # if this was a variation. In any case this could be a decorator
     if args:
         args = {key: value for key, value in args.items()}
     else:
@@ -155,7 +158,10 @@ def controlDict(job, args={}):
 @OpenFOAMProject.post.true("set_blockMesh")
 @OpenFOAMProject.operation
 def blockMesh(job, args={}):
-    case_name = job.sp["case"]
+    if args:
+        args = {key: value for key, value in args.items()}
+    else:
+        args = {job.sp["args"]: job.sp["value"]}
     OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
 
 
@@ -165,7 +171,10 @@ def blockMesh(job, args={}):
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "fvSolution"))
 @OpenFOAMProject.operation
 def fvSolution(job, args={}):
-    case_name = job.sp["case"]
+    if args:
+        args = {key: value for key, value in args.items()}
+    else:
+        args = {job.sp["args"]: job.sp["value"]}
     OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
 
 
@@ -176,7 +185,10 @@ def fvSolution(job, args={}):
 @OpenFOAMProject.operation
 def setKeyValuePair(job, args={}):
     modifies_file([Path(job.path) / fn for fn in args["file"]])
-    case_name = job.sp["case"]
+    if args:
+        args = {key: value for key, value in args.items()}
+    else:
+        args = {job.sp["args"]: job.sp["value"]}
     OpenFOAMCase(str(job.path) + "/case", job).setKeyValuePair(args)
 
 
@@ -186,7 +198,10 @@ def setKeyValuePair(job, args={}):
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "decomposePar"))
 @OpenFOAMProject.operation
 def decomposePar(job, args={}):
-    case_name = job.sp["case"]
+    if args:
+        args = {key: value for key, value in args.items()}
+    else:
+        args = {job.sp["args"]: job.sp["value"]}
     OpenFOAMCase(str(job.path) + "/case", job).decomposePar(args)
 
 

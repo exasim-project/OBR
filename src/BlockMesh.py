@@ -4,6 +4,7 @@ import setFunctions as sf
 from core import modifies_file, writes_files
 
 
+# TODO use FileParse as a base for modifying the blockMeshDict
 class BlockMesh:
     """A mixin class to add block mesh functionalities and wrapper"""
 
@@ -26,7 +27,6 @@ class BlockMesh:
             self.constant_folder / "polyMesh" / "neighbour",
         ]
 
-    # @decorator_writes_files(["polyMesh"])
     def refineMesh(self, args):
         """ """
         modifies_file(self.polyMesh)
@@ -34,10 +34,13 @@ class BlockMesh:
             deltaT = self.deltaT
             self.setControlDict({"deltaT": deltaT / 2})
 
-    # @decorator_modifies_file(["blockMeshDict"])
     def modifyBlockMesh(self, args):
         modifies_file(self.blockMeshDict)
-        for block in args["modifyBlock"]:
+        blocks = args["modifyBlock"]
+        if isinstance(blocks, str):
+            blocks = [blocks]
+
+        for block in blocks:
             orig_block, target_block = block.split("->")
             sf.set_cells(
                 self.blockMeshDict,
@@ -47,8 +50,8 @@ class BlockMesh:
 
         self._exec_operation(["blockMesh"])
 
-    # @decorator_writes_files(["polyMesh"])
     def blockMesh(self, args={}):
+        # TODO replace this with writes_file and clean polyMesh folder
         modifies_file(self.polyMesh)
         if args.get("modifyBlock"):
             self.modifyBlockMesh(args)
