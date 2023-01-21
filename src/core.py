@@ -5,7 +5,7 @@ import subprocess
 import re
 import json
 from pathlib import Path
-from subprocess import check_output
+from subprocess import check_output, STDOUT
 from functools import wraps
 
 
@@ -29,15 +29,22 @@ def logged_execute(cmd, path, doc):
     """
     res = doc.get("obr", {})
     cmd_str = " ".join(cmd)
-    print("execute shell command: ", cmd)
+    # print("execute shell command: ", cmd)
     try:
-        ret = check_output(cmd, cwd=path).decode("utf-8")
+        ret = check_output(cmd, cwd=path, stderr=subprocess.STDOUT).decode("utf-8")
         res[cmd_str] = {"log": ret, "state": "success"}
     except subprocess.SubprocessError as e:
+        print("SubprocessError:", __file__, __name__, e, e.output, e.stderr)
         log = e.output.decode("utf-8")
         res[cmd_str] = {"log": log, "state": "failure"}
     except FileNotFoundError as e:
+        print(__file__, __name__, e)
         log = cmd + " not found"
+        res[cmd_str] = {"log": log, "state": "failure"}
+    except Exception as e:
+        print(__file__, __name__, e)
+        print("General Execption", __file__, __name__, e, e.output)
+        log = ret
         res[cmd_str] = {"log": log, "state": "failure"}
     doc["obr"] = res
 
@@ -54,7 +61,7 @@ def logged_func(func, doc, **kwargs):
         func(**kwargs)
         res[func.__name__] = {"args": str(kwargs), "state": "success"}
     except Exception as e:
-        print(e)
+        print("Failure", __file__, __name__, func.__name__, kwargs, e)
         res[func.__name__] = {"args": str(kwargs), "state": "failed"}
     doc["obr"] = res
 
@@ -75,14 +82,13 @@ def execute(steps, job):
             continue
         steps_filt.append(step)
 
-    steps_filt = map(lambda x: " ".join(x.split()), steps_filt)
+    # steps_filt = map(lambda x: " ".join(x.split()), steps_filt)
 
     for step in steps_filt:
         if not step:
             continue
         step = parse_variables(step)
-        cmd = step.split(" ")
-        logged_execute(step, path, job.doc)
+        logged_execute(step.split(), path, job.doc)
     return True
 
 
@@ -119,15 +125,6 @@ def writes_files(fns):
             unlink(fn)
     else:
         unlink(fns)
-
-
-# def check_authorization(attribute):
-#     def _check_authorization(f):
-#         def wrapper(self, *args):
-#             print getattr(self, attribute)
-#             return f(self, *args)
-#         return wrapper
-#     return _check_authorization
 
 
 def decorator_modifies_file(fns=["path"]):
