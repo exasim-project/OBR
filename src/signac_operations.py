@@ -112,6 +112,8 @@ def execute_operation(job, operation_name, operations):
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
     """
+    if not operations:
+        return True
     for operation in operations:
         if isinstance(operation, str):
             getattr(sys.modules[__name__], operation)(job)
