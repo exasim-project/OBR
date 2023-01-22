@@ -30,47 +30,6 @@ from OpenFOAMCase import OpenFOAMCase
 from metadata import versions
 
 
-def parse_variables(in_str, args, domain):
-    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
-    for inst in ocurrances:
-        in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
-    return in_str
-
-
-def process_benchmark_description(fn, metadata, supported_file_version="0.3.0"):
-    import sys
-    from packaging import version
-
-    # read benchmark description file
-    fn = Path(fn).expanduser()
-    with open(fn, "r") as parameters_handle:
-        parameters_str = parameters_handle.read()
-
-    lines = parameters_str.split("\n")
-    cleaned = []
-
-    for line in lines:
-        if not line:
-            continue
-        cleaned.append(parse_variables(line, os.environ, "env"))
-
-    parameters_str = "\n".join(cleaned)
-
-    # parse file
-    parameter_study_arguments = json.loads(parameters_str)
-
-    if parameter_study_arguments["obr"]["OBR_MIN_VERSION"] > metadata["OBR_VERSION"]:
-        print("The benchmark file needs a more recent version of OBR")
-        sys.exit(-1)
-    if (
-        parameter_study_arguments["obr"]["BENCHMARK_FILE_VERSION"]
-        < supported_file_version
-    ):
-        print("The benchmark file version is no longer supported")
-        sys.exit(-1)
-    return parameter_study_arguments
-
-
 def obr_create_tree(project, config, arguments):
 
     if not os.environ.get("FOAM_ETC"):
@@ -119,6 +78,8 @@ def obr_create_tree(project, config, arguments):
                 job.doc["pre_build"] = operation.get("pre_build", [])
                 job.doc["post_build"] = operation.get("post_build", [])
                 job.init()
+                path = path.replace(" ", "_").replace("(", "").replace(")", "")
+                path = path.split(">")[-1]
                 id_path_mapping[job.id] = id_path_mapping.get(base, "") + path
                 if sub_variation:
                     add_variations(sub_variation, job.id, base_dict)
@@ -127,9 +88,10 @@ def obr_create_tree(project, config, arguments):
     add_variations(config["variation"], base_id, base_case_dict)
 
     operations = list(set(operations))
+
     if arguments.get("execute"):
         project.run(names=["fetch_case"])
-        project.run(names=operations)
+        project.run(names=operations, np=arguments.get("tasks", -1))
 
     if not (Path(arguments["folder"]) / "view").exists():
         # FIXME this copies to views instead of linking
