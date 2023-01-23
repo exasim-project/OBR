@@ -55,4 +55,9 @@ class BlockMesh:
         modifies_file(self.polyMesh)
         if args.get("modifyBlock"):
             self.modifyBlockMesh(args)
-        self._exec_operation("blockMesh")
+        self._exec_operation(["blockMesh"])
+
+    def checkMesh(self, args={}):
+        # TODO replace this with writes_file and clean polyMesh folder
+        cli_args = args.get("cli_args")
+        self._exec_operation(["checkMesh"])

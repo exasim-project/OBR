@@ -2,7 +2,6 @@
 import subprocess
 import sys
 from subprocess import check_output
-import sys
 import math
 
 

@@ -31,9 +31,8 @@ class File(FileParser):
     def path(self):
         return self._folder / self._file
 
-    @property
     def get(self, name):
-        return self._parse_file.get(name)
+        return self._parsed_file.get(name)
 
     # @decorator_modifies_file
     def set(self, args):
@@ -137,14 +136,6 @@ class OpenFOAMCase(BlockMesh):
         )
         file_handle.set_key_value_pairs(args)
 
-    # @decorator_modifies_file(["fvSolution"])
-    # def setLinearSolver(self, args):
-    #     """ """
-    #     logged_func(
-    #         sf.replace_block,
-    #         self.job.doc,
-    #         path=self.fvSolution,
-    #         field=args["field"],
-    #         new_block=args["block"],
-    #         excludes=["Final"],
-    #     )
+    def run(self, args):
+        solver = self.controlDict.get("application")
+        self._exec_operation([solver])

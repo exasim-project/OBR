@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+from pathlib import Path
 from flow import FlowProject
 
 
@@ -8,16 +10,26 @@ def decomposed(job):
 
 
 @FlowProject.label
-def has_generated_mesh(job):
-    """TODO check also for .obr files for state of operation"""
-    # TODO if mesh
-    return job.isfile("case/constant/polyMesh/points")
+def owns_mesh(job):
+    """Check whether all mesh files are files (owning) or symlinks (non-owning)
+
+    TODO check also for .obr files for state of operation"""
+    fn = Path(job.path) / "case/constant/polyMesh/points"
+    return not fn.is_symlink()
 
 
 @FlowProject.label
-def is_case(job):
+def check_mesh(job):
+    """Check whether all mesh files are files (owning) or symlinks (non-owning)
+
+    TODO check also for .obr files for state of operation"""
+    return "success" == job.doc.get("obr", {}).get("checkMesh", {}).get("state")
+
+
+@FlowProject.label
+def not_case(job):
     has_ctrlDict = job.isfile("case/system/controlDict")
-    return has_ctrlDict
+    return not has_ctrlDict
 
 
 @FlowProject.label

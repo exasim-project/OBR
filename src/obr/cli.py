@@ -75,16 +75,21 @@ def benchmark(ctx, **kwargs):
 @cli.command()
 @click.option("--folder", default="cases")
 @click.option("--operations")
+@click.option("--args", default="")
+@click.option("--tasks", default=-1)
 @click.pass_context
 def execute(ctx, **kwargs):
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
-    project.run(names=kwargs.get("operations", "").split(","))
+    project.run(
+        names=kwargs.get("operations", "").split(","), np=kwargs.get("tasks", -1)
+    )
 
 
 @cli.command()
 @click.option("--folder", default="cases")
 @click.option("--execute", default=True)
 @click.option("--parameters", default="base")
+@click.option("--tasks", default=-1)
 @click.pass_context
 def create(ctx, **kwargs):
     import obr_create_tree
@@ -120,19 +125,32 @@ def status(ctx, **kwargs):
 
 @cli.command()
 @click.option("--folder", default="cases")
+@click.option("--state")
+@click.option("--operation")
 @click.pass_context
 def find(ctx, **kwargs):
     import obr_create_tree
 
     project = OpenFOAMProject.get_project(root=kwargs["folder"])
     for job in project:
+        if not job.doc.get("obr"):
+            continue
         for operation, data in job.doc.obr.items():
-            if data["state"] == "failure":
-                print(
-                    f"job {job.path} operation {operation} failed with:{os.linesep} {data['log']}"
-                )
-                # using the job.id we can find jobs which have this job as child
-                # print(job.doc, list(job.doc.obr.keys()), job.sp)
+            state = kwargs.get("state")
+            if state:
+                if data["state"] == state:
+                    print(
+                        f"job {job.path} operation {operation} is in state {state} with:{os.linesep} {data['log']}"
+                    )
+            get_operation = kwargs.get("operation")
+            print(operation, get_operation)
+            if get_operation:
+                if operation == get_operation:
+                    print(
+                        f"job {job.path} operation {operation} with:{os.linesep} {data['log']}"
+                    )
+            # using the job.id we can find jobs which have this job as child
+            # print(job.doc, list(job.doc.obr.keys()), job.sp)
 
 
 def main():

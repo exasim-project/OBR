@@ -19,6 +19,11 @@ class OpenFOAMProject(flow.FlowProject):
     pass
 
 
+def is_case(job):
+    has_ctrlDict = job.isfile("case/system/controlDict")
+    return has_ctrlDict
+
+
 def obr_create_operation(job, operation):
     """Operations that are used to create the case matrix this filters
     out operations that are not requested for the given job and performs
@@ -42,15 +47,15 @@ def base_case_is_ready(job):
         base_path = Path(project.open_job(id=job.doc.get("base_id")).path)
         dst_path = Path(job.path) / "case"
         print(__name__, parent_job, base_path)
-        if "is_case" in list(project.labels(parent_job)):
+        if "not_case" in list(project.labels(parent_job)):
             # print("base_case_ready", list(project.labels(parent_job)))
             # print(job.doc)
             if parent_job.sp.get("operation"):
                 # print("parent operation", parent_job.sp.get("operation"))
                 pass
-            return True
-        else:
             return False
+        else:
+            return True
 
 
 def needs_init_dependent(job):
@@ -220,7 +225,7 @@ def fetch_case(job):
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "RefineMesh"))
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
-@OpenFOAMProject.pre(has_generated_mesh)
+# @OpenFOAMProject.pre(has_generated_mesh)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.operation
 def RefineMesh(job):
@@ -228,3 +233,20 @@ def RefineMesh(job):
     parameters = job.doc["parameters"]
     for _ in range(value):
         OpenFOAMCase(str(job.path) + "/case", job).refineMesh(parameters)
+
+
+@OpenFOAMProject.pre(base_case_is_ready)
+@OpenFOAMProject.pre(owns_mesh)
+@OpenFOAMProject.operation
+def checkMesh(job, args={}):
+    args = get_args(job, args)
+    OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
+
+
+@OpenFOAMProject.pre(base_case_is_ready)
+@OpenFOAMProject.pre(owns_mesh)
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.operation
+def runSolver(job, args={}):
+    args = get_args(job, args)
+    OpenFOAMCase(str(job.path) + "/case", job).run(args)
