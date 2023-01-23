@@ -32,6 +32,7 @@ def logged_execute(cmd, path, doc):
     # print("execute shell command: ", cmd)
     try:
         ret = check_output(cmd, cwd=path, stderr=subprocess.STDOUT).decode("utf-8")
+        cmd_str = cmd_str.replace(".", "_dot_")
         res[cmd_str] = {"log": ret, "state": "success"}
     except subprocess.SubprocessError as e:
         print("SubprocessError:", __file__, __name__, e, e.output, e.stderr)
