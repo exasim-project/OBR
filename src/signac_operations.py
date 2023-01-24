@@ -19,9 +19,26 @@ class OpenFOAMProject(flow.FlowProject):
     pass
 
 
+# generate = OpenFOAMProject.make_group("generate", group_aggregator=flow.aggregator())
+# execute = OpenFOAAMProject.make_group("execute", group_aggregator=aggregator())
+
+
 def is_case(job):
     has_ctrlDict = job.isfile("case/system/controlDict")
     return has_ctrlDict
+
+
+def operation_complete(job, operation):
+    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
+    if job.doc.get("obr"):
+        state = job.doc.get("obr").get(operation)
+        if not state:
+            return False
+        args_in = get_args(job, False)
+        prev_args = {key: job.sp[key] for key in job.doc.get("keys", [])}
+        return (state["state"] == "success") and (args_in == prev_args)
+    else:
+        return False
 
 
 def obr_create_operation(job, operation):
@@ -46,7 +63,6 @@ def base_case_is_ready(job):
         parent_job = project.open_job(id=job.doc.get("base_id"))
         base_path = Path(project.open_job(id=job.doc.get("base_id")).path)
         dst_path = Path(job.path) / "case"
-        print(__name__, parent_job, base_path)
         if "not_case" in list(project.labels(parent_job)):
             # print("base_case_ready", list(project.labels(parent_job)))
             # print(job.doc)
@@ -171,7 +187,7 @@ def controlDict(job, args={}):
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "blockMesh"))
-@OpenFOAMProject.post.true("set_blockMesh")
+@OpenFOAMProject.post(lambda job: operation_complete(job, "blockMesh"))
 @OpenFOAMProject.operation
 def blockMesh(job, args={}):
     args = get_args(job, args)
@@ -222,11 +238,11 @@ def fetch_case(job):
     fetch_case_handler.init(job=job)
 
 
+@OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
+@OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "RefineMesh"))
-@OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
-# @OpenFOAMProject.pre(has_generated_mesh)
-@OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.post(lambda job: operation_complete(job, "RefineMesh"))
 @OpenFOAMProject.operation
 def RefineMesh(job):
     value = job.sp["value"]
@@ -243,8 +259,6 @@ def checkMesh(job, args={}):
     OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
 
-@OpenFOAMProject.pre(base_case_is_ready)
-@OpenFOAMProject.pre(owns_mesh)
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.operation
 def runSolver(job, args={}):

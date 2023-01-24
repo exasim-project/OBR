@@ -55,7 +55,6 @@ class OpenFOAMCase(BlockMesh):
 
     def __init__(self, path, job):
         self.path_ = Path(path)
-        print("case", self.path_)
         self.job = job
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
@@ -89,20 +88,6 @@ class OpenFOAMCase(BlockMesh):
     def init_U(self):
         return self.zero_folder / "U.orig"
 
-    # @property
-    # def decomposeParDict(self):
-    #     return self.system_folder / "decomposeParDict"
-
-    def obr_operation_was_sucessful(self, operation):
-        """Checks whether an operation was performed without error
-
-        This is performed in two steps,
-            1. check if an .obr/operation.log exists
-            2. check if .obr/operation.state is success
-        """
-        # TODO implement
-        pass
-
     @property
     def is_decomposed(self):
         """TODO check if number of processor folder is consitent with decomposeParDict"""
@@ -129,7 +114,6 @@ class OpenFOAMCase(BlockMesh):
         self._exec_operation(["decomposePar", "-force"])
 
     def setKeyValuePair(self, args):
-        print("set_Key balue pair")
         path = Path(args.pop("file"))
         file_handle = File(
             folder=self.path_ / path.parents[0], file=path.parts[-1], job=self.job

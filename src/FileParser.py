@@ -14,8 +14,6 @@ def dispatch_to_str(item, indent="", nl="\n\n"):
         return OFInclude().to_str(key, value, indent=indent, nl=nl)
     if key == "functions":
         return OFFunctions().to_str(key, value, indent=indent, nl=nl)
-    if isinstance(value, str):
-        return indent + "{}\t{};{}".format(key, value, nl)
     if isinstance(value, dict):
         s = "{}{}\n{}{{\n".format(indent, key, indent)
         new_indent = indent + "\t"
@@ -25,7 +23,10 @@ def dispatch_to_str(item, indent="", nl="\n\n"):
         return s
     elif isinstance(value, list):
         return OFList().to_str(key, value, indent=indent, nl=nl)
-    return ""
+    try:
+        return indent + "{}\t{};{}".format(key, str(value), nl)
+    except:
+        return ""
 
 
 class OFList:

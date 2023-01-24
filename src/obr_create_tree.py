@@ -20,6 +20,7 @@ import os
 import shutil
 import re
 import sys
+from collections.abc import MutableMapping
 from copy import deepcopy
 
 from pathlib import Path
@@ -37,32 +38,47 @@ def obr_create_tree(project, config, arguments):
         sys.exit(-1)
 
     # TODO figure out how operations should be handled for statepoints
-    base_case_dict = {"case": config["case"]["type"]}
+    base_case_dict = {"case": config["case"]["type"], "has_child": True}
     of_case = project.open_job(base_case_dict)
     of_case.doc["is_base"] = True
     of_case.doc["parameters"] = config["case"]
     of_case.doc["pre_build"] = config["case"].get("pre_build", [])
     of_case.doc["post_build"] = config["case"].get("post_build", [])
     of_case.init()
-    base_id = of_case.id
 
     operations = []
     id_path_mapping = {of_case.id: "base/"}
 
-    def add_variations(variation, base, base_dict):
+    def flatten(d, parent_key="", sep="/"):
+        items = []
+        for k, v in d.items():
+            new_key = parent_key + sep + k if parent_key else k
+            if isinstance(v, MutableMapping):
+                items.extend(flatten(v, new_key, sep=sep).items())
+            else:
+                items.append((new_key, v))
+        return dict(items)
+
+    def add_variations(variation, parent_job, base_dict):
+        base = parent_job.id
         for operation in variation:
             sub_variation = operation.get("variation")
             key = operation.get("key", None)
+            parent = operation.get("parent", {})
+            if parent:
+                if not dict(parent.items() & parent_job.sp.items()):
+                    continue
+
             for value in operation["values"]:
                 if not key:
-                    path = operation["schema"].format(**value)
+                    path = operation["schema"].format(**flatten(value)) + "/"
                     args = value
-                    print("args", args, type(args))
                     keys = list(value.keys())
                 else:
                     args = {key: value}
                     path = "{}/{}/".format(key, value)
                     keys = [key]
+
                 base_dict.update(
                     {
                         "case": config["case"]["type"],
@@ -82,10 +98,10 @@ def obr_create_tree(project, config, arguments):
                 path = path.split(">")[-1]
                 id_path_mapping[job.id] = id_path_mapping.get(base, "") + path
                 if sub_variation:
-                    add_variations(sub_variation, job.id, base_dict)
+                    add_variations(sub_variation, job, base_dict)
             operations.append(operation.get("operation"))
 
-    add_variations(config["variation"], base_id, base_case_dict)
+    add_variations(config["variation"], of_case, base_case_dict)
 
     operations = list(set(operations))
 

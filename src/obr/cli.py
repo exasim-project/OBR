@@ -49,39 +49,54 @@ def decompose(ctx, **kwargs):
 
 @cli.command()
 @click.option("--folder", default="cases")
-@click.option("--results_folder", default="results", help="folder to store results")
-@click.option("--report", default="report.csv")
-@click.option("--filter", default=None)
-@click.option("--select", default=None)
-@click.option("--continue_on_failure", default=True)
-@click.option("--time_runs", default=3600)
-@click.option("--min_runs", default=1)
-@click.option("--single_run", default=True)
-@click.option("--fail_on_error", default=False)
-@click.option("--log_name", default="logs")
-@click.option("--mpi_flags", default="logs")
-@click.option("--runner", default="LocalCaseRunner")
-@click.option("--partition")
-@click.option("--mem")
-@click.option("--time")
-@click.option("--ntasks_per_node")
+# @click.option("--results_folder", default="results", help="folder to store results")
+# @click.option("--report", default="report.csv")
+# @click.option("--filter", default=None)
+# @click.option("--select", default=None)
+# @click.option("--continue_on_failure", default=True)
+# @click.option("--time_runs", default=3600)
+# @click.option("--min_runs", default=1)
+# @click.option("--single_run", default=True)
+# @click.option("--fail_on_error", default=False)
+# @click.option("--log_name", default="logs")
+# @click.option("--mpi_flags", default="logs")
+# @click.option("--runner", default="LocalCaseRunner")
+# @click.option("--partition")
+@click.option("--pretend")
+@click.option("--operation")
+# @click.option("--ntasks_per_node")
 @click.pass_context
-def benchmark(ctx, **kwargs):
-    import obr_benchmark_cases
+def submit(ctx, **kwargs):
+    from flow.environment import TestEnvironment
+    from flow.scheduling.fake_scheduler import FakeScheduler
+    from flow.scheduling.slurm import SlurmScheduler
 
-    obr_benchmark_cases.benchmark_cases(kwargs)
+    project = OpenFOAMProject(environment=TestEnvironment).init_project(
+        root=kwargs["folder"],
+    )
+    OpenFOAMProject(environment=TestEnvironment).main()
+    # print(project.submit(names=["runSolver"]))
+
+    # # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
+    # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
 
 
 @cli.command()
-@click.option("--folder", default="cases")
-@click.option("--operations")
+@click.option("--folder", default=".")
+@click.option("-o", "--operations", default="")
+@click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("--tasks", default=-1)
 @click.pass_context
-def execute(ctx, **kwargs):
+def run(ctx, **kwargs):
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
+    jobs = (
+        [j for j in project if kwargs.get("job") == j.id]
+        if kwargs.get("job")
+        else project
+    )
     project.run(
-        names=kwargs.get("operations", "").split(","), np=kwargs.get("tasks", -1)
+        jobs=jobs, names=kwargs.get("operations").split(","), np=kwargs.get("tasks", -1)
     )
 
 
@@ -125,13 +140,16 @@ def status(ctx, **kwargs):
 
 @cli.command()
 @click.option("--folder", default="cases")
+@click.option("--detailed", default=False)
 @click.option("--state")
+@click.option("--groups")
 @click.option("--operation")
 @click.pass_context
 def find(ctx, **kwargs):
     import obr_create_tree
 
     project = OpenFOAMProject.get_project(root=kwargs["folder"])
+    detailed = kwargs.get("detailed")
     for job in project:
         if not job.doc.get("obr"):
             continue
@@ -140,15 +158,16 @@ def find(ctx, **kwargs):
             if state:
                 if data["state"] == state:
                     print(
-                        f"job {job.path} operation {operation} is in state {state} with:{os.linesep} {data['log']}"
+                        f"operation {operation} state is {state} for job {job.path} with {job.sp}{os.linesep}"
                     )
+                    if detailed:
+                        print(f"{data['log']}")
             get_operation = kwargs.get("operation")
-            print(operation, get_operation)
             if get_operation:
                 if operation == get_operation:
-                    print(
-                        f"job {job.path} operation {operation} with:{os.linesep} {data['log']}"
-                    )
+                    print(f"job {job.path} {job.sp} operation {operation}{os.linesep}")
+                    if detailed:
+                        print(f"{data['log']}")
             # using the job.id we can find jobs which have this job as child
             # print(job.doc, list(job.doc.obr.keys()), job.sp)
 

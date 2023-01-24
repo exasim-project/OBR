@@ -57,7 +57,7 @@ def logged_func(func, doc, **kwargs):
     otherwise a callable function is expected
     """
     res = doc.get("obr", {})
-    print("execute obr function: ", func.__name__, kwargs)
+    # print("execute obr function: ", func.__name__, kwargs)
     try:
         func(**kwargs)
         res[func.__name__] = {"args": str(kwargs), "state": "success"}

@@ -53,6 +53,10 @@ class BlockMesh:
     def blockMesh(self, args={}):
         # TODO replace this with writes_file and clean polyMesh folder
         modifies_file(self.polyMesh)
+        controlDictArgs = args.pop("controlDict", False)
+        if controlDictArgs:
+            modifies_file(self.controlDict.path)
+            self.controlDict.set(controlDictArgs)
         if args.get("modifyBlock"):
             self.modifyBlockMesh(args)
         self._exec_operation(["blockMesh"])
