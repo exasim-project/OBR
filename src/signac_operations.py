@@ -273,10 +273,12 @@ def checkMesh(job, args={}):
 
 @simulate
 @OpenFOAMProject.pre(final)
-@OpenFOAMProject.operation
-def runSolver(job, args={}):
+@OpenFOAMProject.operation(cmd=True)
+def runParallelSolver(job, args={}):
     args = get_args(job, args)
-    OpenFOAMCase(str(job.path) + "/case", job).run(args)
+    case = OpenFOAMCase(str(job.path) + "/case", job)
+    solver = case.controlDict.get("application")
+    return f"mpirun -np {solver} -parallel -case {job.ws}/case > {job.ws}/case/log"
 
 
 def func(x):
