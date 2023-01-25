@@ -114,7 +114,7 @@ class OpenFOAMCase(BlockMesh):
                     "coeffs": {"n": coeffs},
                 }
             )
-        # self._exec_operation(["decomposePar", "-force"])
+        self._exec_operation(["decomposePar", "-force"])
 
     def setKeyValuePair(self, args):
         path = Path(args.pop("file"))
