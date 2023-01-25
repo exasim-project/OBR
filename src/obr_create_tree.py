@@ -29,6 +29,7 @@ import CaseOrigins as co
 import setFunctions as sf
 from OpenFOAMCase import OpenFOAMCase
 from metadata import versions
+from subprocess import check_output
 
 
 def obr_create_tree(project, config, arguments):
@@ -109,10 +110,15 @@ def obr_create_tree(project, config, arguments):
         project.run(names=["fetch_case"])
         project.run(names=operations, np=arguments.get("tasks", -1))
 
+    def ln(src, dst):
+        src = Path(src)
+        dst = Path(dst)
+        check_output(["ln", "-s", src, dst])
+
     if not (Path(arguments["folder"]) / "view").exists():
         # FIXME this copies to views instead of linking
         project.find_jobs(filter={"has_child": False}).export_to(
             arguments["folder"],
             path=lambda job: "view/" + id_path_mapping[job.id],
-            copytree=lambda src, dst: shutil.copytree(src, dst, symlinks=True),
+            copytree=lambda src, dst: ln(src, dst),
         )

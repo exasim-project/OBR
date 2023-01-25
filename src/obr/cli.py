@@ -87,17 +87,37 @@ def submit(ctx, **kwargs):
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("--tasks", default=-1)
+@click.option("-a", "--aggregate", default=False)
 @click.pass_context
 def run(ctx, **kwargs):
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
+    # print(generate)
     jobs = (
         [j for j in project if kwargs.get("job") == j.id]
         if kwargs.get("job")
-        else project
+        # else project
+        else [j for j in project]
     )
-    project.run(
-        jobs=jobs, names=kwargs.get("operations").split(","), np=kwargs.get("tasks", -1)
-    )
+    # project._reregister_aggregates()
+    # print(project.groups)
+    # val = list(project._groups.values())[0]
+    # agg = project._group_to_aggregate_store[val]
+    # print(type(project._group_to_aggregate_store[val]))
+    # print(agg._aggregates_by_id)
+    # jobs = project.groups["generate"]
+    # print(list(project.groupby("doc.is_base")))
+    if not kwargs.get("aggregate"):
+        project.run(
+            jobs=jobs,  # project.groupby("doc.is_base"),
+            names=kwargs.get("operations").split(","),
+            np=kwargs.get("tasks", -1),
+        )
+    else:
+        # calling for aggregates does not work with jobs
+        project.run(
+            names=kwargs.get("operations").split(","),
+            np=kwargs.get("tasks", -1),
+        )
 
 
 @cli.command()

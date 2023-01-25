@@ -4,39 +4,71 @@ case:
     case: RAS/cavity
     origin: incompressible
     post_build:
-      # - blockMesh:
-      #     modifyBlock: ["(20 20 1)->(40 40 1)"]
       # - controlDict:
       #     endTime: 1.0
       #     deltaT: 1.0
       #     writeFormat: binary
       #     libs: "(libOGL.so)"
-      - fvSolution:
-          clear: True
-          set: solvers/p
-          solver: PCG
-          preconditioner: none
-      - shell: touch post
-      - setKeyValuePair:
-          file: constant/transportProperties
-          nu: 2e-05
-      # - decomposePar:
-      #     simple:
-      #       coeffs: [1, 2, 3]
+      - shell: cp -r 0.orig 0
+      # - setKeyValuePair:
+      #     file: constant/transportProperties
+      #     nu: 2e-05
 variation:
   - operation: blockMesh
-    parameter:
-      key: modifyBlock
-    values: ["(20 20 1)->(40 40 1)", "(20 20 1)->(30 30 1)"]
-    # variation:
-    #   - operation: fvSolution
-    #     schema: {solver}{preconditioner}
-    #     values:
-    #       - clear: True
-    #         set: solvers/p
-    #         solver: PCG
-    #         preconditioner: none
-    #       - clear: True
-    #         set: solvers/p
-    #         solver: GKOCG
-    #         preconditioner: none
+    schema: "mesh/{modifyBlock}"
+    values:
+      - modifyBlock: "(20 20 1)->(100 100 1)"
+        controlDict:
+          deltaT: 0.01
+          endTime: 0.1
+      - modifyBlock: "(20 20 1)->(200 200 1)"
+        controlDict:
+          deltaT: 0.01
+          endTime: 0.1
+      - modifyBlock: "(20 20 1)->(500 500 1)"
+        controlDict:
+          deltaT: 0.01
+          endTime: 0.1
+    variation:
+      - operation: fvSolution
+        schema: "linear_solver/{solver}{preconditioner}{executor}"
+        values:
+          - clear: True
+            set: solvers/p
+            solver: GKOCG
+            preconditioner: none
+            executor: ${{env.GINKGO_EXECUTOR}}
+          - clear: True
+            set: solvers/p
+            solver: PCG
+            preconditioner: none
+            executor: CPU
+        # variation:
+        #   - operation: decomposePar
+        #     schema: "decomposition_GPU/{simple/numberSubDomains}"
+        #     values:
+        #       # TODO introduce some kind of generator
+        #       # eg
+        #       # [4, 8, 16]
+        #       # parameters:
+        #       #   simple:
+        #       #     numberSubDomains: value
+        #       - simple:
+        #           numberSubDomains: 4
+        #       - simple:
+        #           numberSubDomains: 8
+        #       - simple:
+        #           numberSubDomains: 16
+        #     parent:
+        #       solver: GKOCG
+        #   - operation: decomposePar
+        #     schema: "decomposition_CPU/{simple/numberSubDomains}"
+        #     values:
+        #       - simple:
+        #           numberSubDomains: 40
+        #       - simple:
+        #           numberSubDomains: 80
+        #       - simple:
+        #           numberSubDomains: 160
+        #     parent:
+        #       solver: PCG

@@ -19,8 +19,11 @@ class OpenFOAMProject(flow.FlowProject):
     pass
 
 
-# generate = OpenFOAMProject.make_group("generate", group_aggregator=flow.aggregator())
-# execute = OpenFOAAMProject.make_group("execute", group_aggregator=aggregator())
+generate = OpenFOAMProject.make_group(
+    name="generate"
+)  # , group_aggregator=flow.aggregator())
+
+simulate = OpenFOAMProject.make_group("execute")  # , group_aggregator=aggregator())
 
 
 def is_case(job):
@@ -167,6 +170,7 @@ def execute_pre_build(operation_name, job):
     execute_operation(job, operation_name, operations)
 
 
+@generate
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
@@ -183,6 +187,7 @@ def controlDict(job, args={}):
     job.doc.controlDict = True
 
 
+@generate
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
@@ -194,6 +199,7 @@ def blockMesh(job, args={}):
     OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
 
 
+@generate
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
@@ -204,17 +210,21 @@ def fvSolution(job, args={}):
     OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
 
 
+@generate
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(is_case)
 @OpenFOAMProject.operation
 def setKeyValuePair(job, args={}):
-    modifies_file([Path(job.path) / fn for fn in args["file"]])
-    args = get_args(job, args)
-    OpenFOAMCase(str(job.path) + "/case", job).setKeyValuePair(args)
+    # FIXME
+    # modifies_file([Path(job.path) / fn for fn in args["file"]])
+    # args = get_args(job, args)
+    # OpenFOAMCase(str(job.path) + "/case", job).setKeyValuePair(args)
+    pass
 
 
+@generate
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
@@ -225,6 +235,7 @@ def decomposePar(job, args={}):
     OpenFOAMCase(str(job.path) + "/case", job).decomposePar(args)
 
 
+@generate
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(lambda job: job.doc.get("is_base", False))
@@ -238,6 +249,7 @@ def fetch_case(job):
     fetch_case_handler.init(job=job)
 
 
+@generate
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
@@ -259,8 +271,23 @@ def checkMesh(job, args={}):
     OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
 
+@simulate
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.operation
 def runSolver(job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).run(args)
+
+
+def func(x):
+    # print(f"called {__name__}", type(x), len(x), x)
+    return [True, True]
+
+
+# @OpenFOAMProject.pre(lambda *x: func(x))
+@generate
+# @OpenFOAMProject.pre(lambda *x: True)
+@OpenFOAMProject.operation  # (aggregator=flow.aggregator.groupsof(2))
+def update(jobs):
+    print("foo")
+    print("call update_case_matrix jobs", jobs)
