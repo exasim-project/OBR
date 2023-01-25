@@ -73,7 +73,7 @@ def obr_create_tree(project, config, arguments):
                     for k in intersect_keys
                     if parent[k] == parent_job.sp[k]
                 }
-                if intersect_dict:
+                if not intersect_dict:
                     continue
                 # does not work on python 3.8
                 # if not dict(parent.items() & parent_job.sp.items()):
