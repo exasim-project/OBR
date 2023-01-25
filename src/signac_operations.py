@@ -278,7 +278,8 @@ def runParallelSolver(job, args={}):
     args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
-    return f"mpirun -np {solver} -parallel -case {job.ws}/case > {job.ws}/case/log"
+    np = case.decomposeParDict.get("numberOfSubdomains")
+    return f"mpirun --bind-to core -np {np} {solver} -parallel -case {job.ws}/case > {job.ws}/case/log"
 
 
 def func(x):
