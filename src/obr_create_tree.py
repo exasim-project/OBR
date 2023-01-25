@@ -24,7 +24,6 @@ from collections.abc import MutableMapping
 from copy import deepcopy
 
 from pathlib import Path
-import ParameterStudyTree as ps
 import CaseOrigins as co
 import setFunctions as sf
 from OpenFOAMCase import OpenFOAMCase
