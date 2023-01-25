@@ -68,7 +68,11 @@ def obr_create_tree(project, config, arguments):
             # Filter out variations that have not the specified parent statepoint
             if parent:
                 intersect_keys = parent.keys() & parent_job.sp.keys()
-                intersect_dict = {k: parent[k] for k in intersect_keys if parent[k] == parent_job.sp[k]} 
+                intersect_dict = {
+                    k: parent[k]
+                    for k in intersect_keys
+                    if parent[k] == parent_job.sp[k]
+                }
                 if intersect_dict:
                     continue
                 # does not work on python 3.8

@@ -103,7 +103,10 @@ class OpenFOAMCase(BlockMesh):
                 numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
             else:
                 numberSubDomains = args["simple"]["numberSubDomains"]
-                coeffs = args["simple"].get("coeffs", [1, 1, 1])
+                coeffs = args["simple"].get("coeffs", None)
+                if not coeffs:
+                    coeffs = sf.calculate_simple_partition(numberSubDomains, [1, 1, 1])
+
             self.decomposeParDict.set(
                 {
                     "method": "simple",
@@ -111,7 +114,7 @@ class OpenFOAMCase(BlockMesh):
                     "coeffs": {"n": coeffs},
                 }
             )
-        self._exec_operation(["decomposePar", "-force"])
+        # self._exec_operation(["decomposePar", "-force"])
 
     def setKeyValuePair(self, args):
         path = Path(args.pop("file"))

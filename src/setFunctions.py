@@ -200,7 +200,13 @@ def set_number_of_subdomains(decomposeParDict, subDomains):
 
 
 def calculate_simple_partition(nSubDomains, decomp):
-    """Calculates a simple domain decomposition based on nSubDomains"""
+    """Calculates a simple domain decomposition based on nSubDomains
+
+    Returns
+    -------
+        number of subdomains
+
+    """
 
     domains = lambda x: x[0] * x[1] * x[2]
     remainder = lambda x: nSubDomains - domains(x)
