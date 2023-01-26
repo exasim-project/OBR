@@ -27,7 +27,14 @@ class TemplatedCaseRunner:
         mem = self.arguments.get("mem")
         case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
-        short_path = str(run_path).replace("base","").replace("/","").replace("matrix_solver","").replace("mpiRank","").replace("mesh","")
+        short_path = (
+            str(run_path)
+            .replace("base", "")
+            .replace("/", "")
+            .replace("matrix_solver", "")
+            .replace("mpiRank", "")
+            .replace("mesh", "")
+        )
         submit_args = {
             "sub_domains": sub_domains,
             "number_nodes": max(int(sub_domains / self.task_per_node), 1),
