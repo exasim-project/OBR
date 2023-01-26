@@ -25,7 +25,7 @@ def dispatch_to_str(item, indent="", nl="\n\n"):
         return OFList().to_str(key, value, indent=indent, nl=nl)
     try:
         return indent + "{}\t{};{}".format(key, str(value), nl)
-    except:
+    except BaseException:
         return ""
 
 
@@ -94,11 +94,12 @@ class FileParser:
     @property
     def dimensionSet(self):
         """Parse OF dimension set eg  [0 2 -1 0 0 0 0]"""
-        return (
-            pp.Suppress("[")
-            + pp.delimitedList(pp.pyparsing_common.number * 7, delim=pp.White())
-            + pp.Suppress("]")
-        ).setParseAction(lambda toks: "[" + " ".join([str(i) for i in toks]) + "]")
+        return (pp.Suppress("[") +
+                pp.delimitedList(pp.pyparsing_common.number *
+                                 7, delim=pp.White()) +
+                pp.Suppress("]")).setParseAction(lambda toks: "[" +
+                                                 " ".join([str(i) for i in toks]) +
+                                                 "]")
 
     @property
     def footer(self):
@@ -147,8 +148,9 @@ class FileParser:
     @property
     def config_parser(self):
         return pp.Group(
-            pp.ZeroOrMore(self.single_line_comment) ^ pp.ZeroOrMore(self.key_value_pair)
-        )
+            pp.ZeroOrMore(
+                self.single_line_comment) ^ pp.ZeroOrMore(
+                self.key_value_pair))
 
     def key_value_to_dict(self, parse_result):
         """converts a ParseResult of a list of  key_value_pair to a python dict"""
@@ -169,7 +171,8 @@ class FileParser:
                     # if res.get("of_dict"):
                     #     ret.update({key: self.key_value_to_dict(res.get("of_dict"))})
                     if res.get("key_value_pair"):
-                        d = {key: self.key_value_to_dict([v for v in res.value])}
+                        d = {key: self.key_value_to_dict(
+                            [v for v in res.value])}
                         ret.update(d)
                     elif res.get("of_list"):
                         ret.update({key: res.get("of_list").as_list()})
@@ -188,7 +191,8 @@ class FileParser:
         self.text = "\n".join(list_text[15:])
         self.parse = self.config_parser.search_string(self.text)
         # if len(self.parse) is bigger than one the parse function
-        # did not consume the file entirely and something went most likely wrong
+        # did not consume the file entirely and something went most likely
+        # wrong
         self._dict = self.key_value_to_dict(self.parse[0][0])
         return self._dict
 

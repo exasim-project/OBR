@@ -76,8 +76,9 @@ def submit(ctx, **kwargs):
     )
     project._entrypoint = {"executable": "", "path": "obr"}
     # OpenFOAMProject().main()
-    #print(dir(project.operations["runParallelSolver"]))
-    print(project.submit(names=[kwargs.get("operation")], **{"partition": "cpuonly", "pretend": kwargs["pretend"]}))
+    # print(dir(project.operations["runParallelSolver"]))
+    print(project.submit(names=[kwargs.get("operation")], **
+                         {"partition": "cpuonly", "pretend": kwargs["pretend"]}))
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
@@ -134,7 +135,7 @@ def create(ctx, **kwargs):
     config_file = kwargs["parameters"]
 
     def parse_variables(in_str, args, domain):
-        ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+        ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
         for inst in ocurrances:
             in_str = in_str.replace(
                 "${{" + domain + "." + inst + "}}", args.get(inst, "")
@@ -142,7 +143,7 @@ def create(ctx, **kwargs):
         expr = re.findall(r"\${{([ 0-9()*+]*)}}", in_str)
         for inst in expr:
             in_str = in_str.replace(
-               "${{" + inst + "}}", str(eval(inst))
+                "${{" + inst + "}}", str(eval(inst))
             )
         return in_str
 
@@ -192,7 +193,8 @@ def find(ctx, **kwargs):
             get_operation = kwargs.get("operation")
             if get_operation:
                 if operation == get_operation:
-                    print(f"job {job.path} {job.sp} operation {operation}{os.linesep}")
+                    print(
+                        f"job {job.path} {job.sp} operation {operation}{os.linesep}")
                     if detailed:
                         print(f"{data['log']}")
             # using the job.id we can find jobs which have this job as child

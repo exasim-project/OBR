@@ -23,7 +23,8 @@ generate = OpenFOAMProject.make_group(
     name="generate"
 )  # , group_aggregator=flow.aggregator())
 
-simulate = OpenFOAMProject.make_group("execute")  # , group_aggregator=aggregator())
+# , group_aggregator=aggregator())
+simulate = OpenFOAMProject.make_group("execute")
 
 
 def is_case(job):
@@ -85,7 +86,9 @@ def needs_init_dependent(job):
     """
     if job.doc.get("base_id"):
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
-        base_path = Path(project.open_job(id=job.doc.get("base_id")).path) / "case"
+        base_path = Path(
+            project.open_job(
+                id=job.doc.get("base_id")).path) / "case"
         dst_path = Path(job.path) / "case"
         # base path might not be ready atm
         for root, folder, files in os.walk(Path(base_path)):
@@ -106,14 +109,13 @@ def needs_init_dependent(job):
                 src = Path(root) / fn
                 dst = Path(dst_path) / relative_path / fn
                 if not dst.exists():
-                    check_output(
-                        [
-                            "ln",
-                            "-s",
-                            str(os.path.relpath(src, dst_path / relative_path)),
-                        ],
-                        cwd=dst_path / relative_path,
-                    )
+                    check_output(["ln",
+                                  "-s",
+                                  str(os.path.relpath(src,
+                                                      dst_path / relative_path)),
+                                  ],
+                                 cwd=dst_path / relative_path,
+                                 )
         return True
     else:
         return False
@@ -270,14 +272,18 @@ def checkMesh(job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
+
 def get_number_of_procs(job):
     print("foo")
-    return int(OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get("numberOfSubdomains"))
+    return int(OpenFOAMCase(str(job.path) + "/case",
+                            job).decomposeParDict.get("numberOfSubdomains"))
 
 
 @simulate
 @OpenFOAMProject.pre(final)
-@OpenFOAMProject.operation(cmd=True,directives={"np":lambda job: get_number_of_procs(job)})  # (aggregator=flow.aggregator.groupsof(2)))
+# (aggregator=flow.aggregator.groupsof(2)))
+@OpenFOAMProject.operation(cmd=True,
+                           directives={"np": lambda job: get_number_of_procs(job)})
 def runParallelSolver(job, args={}):
     args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)

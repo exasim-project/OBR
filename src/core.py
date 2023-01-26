@@ -10,9 +10,13 @@ from functools import wraps
 
 
 def parse_variables_impl(in_str, args, domain):
-    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
-        in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
+        in_str = in_str.replace(
+            "${{" + domain + "." + inst + "}}",
+            args.get(
+                inst,
+                ""))
     return in_str
 
 
@@ -31,7 +35,10 @@ def logged_execute(cmd, path, doc):
     cmd_str = " ".join(cmd)
     # print("execute shell command: ", cmd)
     try:
-        ret = check_output(cmd, cwd=path, stderr=subprocess.STDOUT).decode("utf-8")
+        ret = check_output(
+            cmd,
+            cwd=path,
+            stderr=subprocess.STDOUT).decode("utf-8")
         cmd_str = cmd_str.replace(".", "_dot_")
         res[cmd_str] = {"log": ret, "state": "success"}
     except subprocess.SubprocessError as e:

@@ -32,7 +32,8 @@ def clean_block_from_file(fn, block_starts, block_end, replace, excludes=None):
             if "}" in line:
                 num_open_brackets -= 1
             if excludes:
-                is_excluded_block = any([exclude in line for exclude in excludes])
+                is_excluded_block = any(
+                    [exclude in line for exclude in excludes])
             if any(is_start) and not is_excluded_block:
                 skip = True
             if not skip:
@@ -63,7 +64,8 @@ def set_block(fn, block_start, block_end, replace, excludes=None):
         for line in lines:
             is_start = block_start in line
             if excludes:
-                is_excluded_block = any([exclude in line for exclude in excludes])
+                is_excluded_block = any(
+                    [exclude in line for exclude in excludes])
             if is_start and not is_excluded_block:
                 skip = True
             if not skip:
@@ -208,8 +210,8 @@ def calculate_simple_partition(nSubDomains, decomp):
 
     """
 
-    domains = lambda x: x[0] * x[1] * x[2]
-    remainder = lambda x: nSubDomains - domains(x)
+    def domains(x): return x[0] * x[1] * x[2]
+    def remainder(x): return nSubDomains - domains(x)
 
     def next_position(x):
         if x[0] == x[1]:
@@ -311,10 +313,16 @@ def set_deltaT(controlDict, deltaT):
 
 @deprecated
 def set_writeInterval(controlDict, writeInterval):
-    sed(controlDict, "writeInterval[ ]*[0-9.]*", "writeInterval " + str(writeInterval))
+    sed(controlDict, "writeInterval[ ]*[0-9.]*",
+        "writeInterval " + str(writeInterval))
 
 
-def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
+def add_or_set_solver_settings(
+        fvSolution,
+        field,
+        keyword,
+        value,
+        exclude=None):
     # TODO check if keyword is already present
     keyword = keyword if isinstance(keyword, str) else keyword["name"]
     start = ['"' + field + '.*"', field + "\n", field + "{\n"]
@@ -333,7 +341,8 @@ def add_or_set_solver_settings(fvSolution, field, keyword, value, exclude=None):
 
     block.insert(new_key_pos, "{} {};\n".format(keyword, value))
     print(block)
-    clean_block_from_file(fvSolution, start, "}\n", "".join(block[:-1]), exclude)
+    clean_block_from_file(fvSolution, start, "}\n",
+                          "".join(block[:-1]), exclude)
 
 
 def clear_solver_settings(fvSolution, field):

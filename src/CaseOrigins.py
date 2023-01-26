@@ -73,10 +73,8 @@ class GitRepo(CaseOrigin):
             execute(["cp -r repo/{} case".format(self.folder)], cwd=job.path)
 
         if self.commit:
-            execute(
-                ["git checkout {}".format(self.commit)], cwd=Path(job.path) / "case"
-            )
+            execute(["git checkout {}".format(self.commit)],
+                    cwd=Path(job.path) / "case")
         if self.branch:
-            execute(
-                ["git checkout {}".format(self.branch)], cwd=Path(job.path) / "case"
-            )
+            execute(["git checkout {}".format(self.branch)],
+                    cwd=Path(job.path) / "case")

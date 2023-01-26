@@ -27,7 +27,17 @@ class TemplatedCaseRunner:
         mem = self.arguments.get("mem")
         case = OpenFOAMCase(run_path)
         sub_domains = sf.get_number_of_subDomains(case.path)
-        short_path = str(run_path).replace("base","").replace("/","").replace("matrix_solver","").replace("mpiRank","").replace("mesh","")
+        short_path = str(run_path).replace(
+            "base",
+            "").replace(
+            "/",
+            "").replace(
+            "matrix_solver",
+            "").replace(
+                "mpiRank",
+                "").replace(
+                    "mesh",
+            "")
         submit_args = {
             "sub_domains": sub_domains,
             "number_nodes": max(int(sub_domains / self.task_per_node), 1),
@@ -36,9 +46,8 @@ class TemplatedCaseRunner:
             "short_path": short_path,
         }
 
-        run_env = (
-            "SlurmRunTemplateGPU" if self.p == "accelerated" else "SlurmRunTemplateCPU"
-        )
+        run_env = ("SlurmRunTemplateGPU" if self.p ==
+                   "accelerated" else "SlurmRunTemplateCPU")
 
         submit_env = (
             "SlurmSubmitTemplateGPU"
@@ -52,7 +61,9 @@ class TemplatedCaseRunner:
         print("[OBR] writing run.sh to", run_path)
         with open(run_path / "run.sh", "w+") as fh:
             fh.write("#!/bin/bash\n")
-            fh.write(run_template.format(executable=execution_parameter["exec"][0]))
+            fh.write(
+                run_template.format(
+                    executable=execution_parameter["exec"][0]))
 
         sbatch_cmd = submit_template.format(**submit_args).split(" ")
 
@@ -94,7 +105,7 @@ class ResultsCollector:
             log_lines = log_lines[: -i - 1]
             log_lines += log_end
             return "\n".join(log_lines)
-        except:
+        except BaseException:
             print("Failed to sanitize log")
             return ""
 
@@ -130,7 +141,8 @@ class ResultsCollector:
         with open(log_file, "r", encoding="utf-8") as fh:
             ret = fh.read()
         print("[OBR] hashing ", log_file)
-        log_hash = self.hash_and_store_log(ret, case.path, self.results.log_fold)
+        log_hash = self.hash_and_store_log(
+            ret, case.path, self.results.log_fold)
 
         self.results.set_case(case, execution_parameter, case_parameter)
 
@@ -209,7 +221,8 @@ class LocalCaseRunner:
             number_of_runs += 1
             try:
                 start = datetime.datetime.now()
-                ret = check_output(app_cmd, cwd=case.path, timeout=time_out * 60)
+                ret = check_output(
+                    app_cmd, cwd=case.path, timeout=time_out * 60)
                 end = datetime.datetime.now()
                 run_time = (end - start).total_seconds()  # - self.init_time
                 accumulated_time += run_time
@@ -222,7 +235,8 @@ class LocalCaseRunner:
                     sys.exit(1)
                 break
 
-            log_hash = self.hash_and_store_log(ret, case.path, self.results.log_fold)
+            log_hash = self.hash_and_store_log(
+                ret, case.path, self.results.log_fold)
 
             self.results.add(
                 timestamp=str(datetime.datetime.utcnow()),

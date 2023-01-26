@@ -65,7 +65,8 @@ def obr_create_tree(project, config, arguments):
             sub_variation = operation.get("variation")
             key = operation.get("key", None)
             parent = operation.get("parent", {})
-            # Filter out variations that have not the specified parent statepoint
+            # Filter out variations that have not the specified parent
+            # statepoint
             if parent:
                 intersect_keys = parent.keys() & parent_job.sp.keys()
                 intersect_dict = {

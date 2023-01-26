@@ -56,9 +56,18 @@ class OpenFOAMCase(BlockMesh):
     def __init__(self, path, job):
         self.path_ = Path(path)
         self.job = job
-        self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
-        self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
-        self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
+        self.controlDict = File(
+            folder=self.system_folder,
+            file="controlDict",
+            job=job)
+        self.fvSolution = File(
+            folder=self.system_folder,
+            file="fvSolution",
+            job=job)
+        self.fvSchemes = File(
+            folder=self.system_folder,
+            file="fvSchemes",
+            job=job)
         self.decomposeParDict = File(
             folder=self.system_folder, file="decomposeParDict", job=job
         )
@@ -105,7 +114,8 @@ class OpenFOAMCase(BlockMesh):
                 numberSubDomains = args["simple"]["numberSubDomains"]
                 coeffs = args["simple"].get("coeffs", None)
                 if not coeffs:
-                    coeffs = sf.calculate_simple_partition(numberSubDomains, [1, 1, 1])
+                    coeffs = sf.calculate_simple_partition(
+                        numberSubDomains, [1, 1, 1])
 
             self.decomposeParDict.set(
                 {
@@ -118,9 +128,8 @@ class OpenFOAMCase(BlockMesh):
 
     def setKeyValuePair(self, args):
         path = Path(args.pop("file"))
-        file_handle = File(
-            folder=self.path_ / path.parents[0], file=path.parts[-1], job=self.job
-        )
+        file_handle = File(folder=self.path_ /
+                           path.parents[0], file=path.parts[-1], job=self.job)
         file_handle.set_key_value_pairs(args)
 
     def run(self, args):
