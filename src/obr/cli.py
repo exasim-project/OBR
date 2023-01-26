@@ -76,8 +76,13 @@ def submit(ctx, **kwargs):
     )
     project._entrypoint = {"executable": "", "path": "obr"}
     # OpenFOAMProject().main()
-    #print(dir(project.operations["runParallelSolver"]))
-    print(project.submit(names=[kwargs.get("operation")], **{"partition": "cpuonly", "pretend": kwargs["pretend"]}))
+    # print(dir(project.operations["runParallelSolver"]))
+    print(
+        project.submit(
+            names=[kwargs.get("operation")],
+            **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
+        )
+    )
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
@@ -141,9 +146,7 @@ def create(ctx, **kwargs):
             )
         expr = re.findall(r"\${{([ 0-9()*+]*)}}", in_str)
         for inst in expr:
-            in_str = in_str.replace(
-               "${{" + inst + "}}", str(eval(inst))
-            )
+            in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
         return in_str
 
     with open(config_file, "r") as config_handle:
