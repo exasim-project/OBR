@@ -25,7 +25,8 @@ def dispatch_to_str(item, indent="", nl="\n\n"):
         return OFList().to_str(key, value, indent=indent, nl=nl)
     try:
         return indent + "{}\t{};{}".format(key, str(value), nl)
-    except:
+    except Exception as e:
+        # print(e, item)
         return ""
 
 
