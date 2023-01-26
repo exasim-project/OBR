@@ -18,6 +18,7 @@ import click
 import yaml
 import os
 import re
+import time
 
 import flow
 import signac
@@ -64,7 +65,8 @@ def decompose(ctx, **kwargs):
 # @click.option("--partition")
 @click.option("--pretend", default=False)
 @click.option("--operation")
-# @click.option("--ntasks_per_node")
+@click.option("--bundling", default=None)
+@click.option("--bundling_match", default=True)
 @click.pass_context
 def submit(ctx, **kwargs):
     from flow.environment import TestEnvironment
@@ -77,12 +79,50 @@ def submit(ctx, **kwargs):
     project._entrypoint = {"executable": "", "path": "obr"}
     # OpenFOAMProject().main()
     # print(dir(project.operations["runParallelSolver"]))
-    print(
-        project.submit(
-            names=[kwargs.get("operation")],
-            **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
+    # TODO find a signac way to do that
+    bundling_key = kwargs["bundling"]
+    if bundling_key:
+        non_matching_jobs = [
+            j for j in project if not bundling_key in list(j.sp.keys())
+        ]
+        bundling_set_vals = set(
+            [j.sp[bundling_key] for j in project if bundling_key in list(j.sp.keys())]
         )
-    )
+
+        if not kwargs["bundling_match"]:
+            print("submit non matching jobs", non_matching_jobs)
+            print(
+                project.submit(
+                    jobs=non_matching_jobs,
+                    bundle_size=len(non_matching_jobs),
+                    names=[kwargs.get("operation")],
+                    **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
+                )
+            )
+
+        if kwargs["bundling_match"]:
+            print("submit matching jobs", non_matching_jobs)
+            for bundle in bundling_set_vals:
+                jobs = [j for j in project if bundle in list(j.sp.values())]
+                print(len(jobs))
+
+                print(
+                    project.submit(
+                        jobs=jobs,
+                        bundle_size=len(jobs),
+                        names=[kwargs.get("operation")],
+                        **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
+                    )
+                )
+                time.sleep(15)
+    else:
+        print("submit all jobs")
+        print(
+            project.submit(
+                names=[kwargs.get("operation")],
+                **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
+            )
+        )
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
