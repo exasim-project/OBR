@@ -43,32 +43,32 @@ variation:
             solver: PCG
             preconditioner: none
             executor: CPU
-        # variation:
-        #   - operation: decomposePar
-        #     schema: "decomposition_GPU/{simple/numberSubDomains}"
-        #     values:
-        #       # TODO introduce some kind of generator
-        #       # eg
-        #       # [4, 8, 16]
-        #       # parameters:
-        #       #   simple:
-        #       #     numberSubDomains: value
-        #       - simple:
-        #           numberSubDomains: 4
-        #       - simple:
-        #           numberSubDomains: 8
-        #       - simple:
-        #           numberSubDomains: 16
-        #     parent:
-        #       solver: GKOCG
-        #   - operation: decomposePar
-        #     schema: "decomposition_CPU/{simple/numberSubDomains}"
-        #     values:
-        #       - simple:
-        #           numberSubDomains: 40
-        #       - simple:
-        #           numberSubDomains: 80
-        #       - simple:
-        #           numberSubDomains: 160
-        #     parent:
-        #       solver: PCG
+        variation:
+          - operation: decomposePar
+            schema: "decomposition_GPU/{simple/numberSubDomains}"
+            values:
+              # TODO introduce some kind of generator
+              # eg
+              # [4, 8, 16]
+              # parameters:
+              #   simple:
+              #     numberSubDomains: value
+              - simple:
+                  numberSubDomains: 4
+              - simple:
+                  numberSubDomains: 8
+              - simple:
+                  numberSubDomains: 16
+            parent:
+              solver: GKOCG
+          - operation: decomposePar
+            schema: "decomposition_CPU/{simple/numberSubDomains}"
+            values:
+              - simple:
+                  numberSubDomains: ${{ 1 * ${{env.NCPUS}} }}
+              - simple:
+                  numberSubDomains: ${{ 2 * ${{env.NCPUS}} }}
+              - simple:
+                  numberSubDomains: ${{ 3 * ${{env.NCPUS}} }}
+            parent:
+              solver: PCG

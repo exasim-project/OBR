@@ -62,7 +62,7 @@ def decompose(ctx, **kwargs):
 # @click.option("--mpi_flags", default="logs")
 # @click.option("--runner", default="LocalCaseRunner")
 # @click.option("--partition")
-@click.option("--pretend")
+@click.option("--pretend", default=False)
 @click.option("--operation")
 # @click.option("--ntasks_per_node")
 @click.pass_context
@@ -71,13 +71,15 @@ def submit(ctx, **kwargs):
     from flow.scheduling.fake_scheduler import FakeScheduler
     from flow.scheduling.slurm import SlurmScheduler
 
-    project = OpenFOAMProject(environment=TestEnvironment).init_project(
+    project = OpenFOAMProject().init_project(
         root=kwargs["folder"],
     )
-    OpenFOAMProject(environment=TestEnvironment).main()
-    # print(project.submit(names=["runSolver"]))
+    project._entrypoint = {"executable": "", "path": "obr"}
+    # OpenFOAMProject().main()
+    #print(dir(project.operations["runParallelSolver"]))
+    print(project.submit(names=[kwargs.get("operation")], **{"partition": "cpuonly", "pretend": kwargs["pretend"]}))
 
-    # # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
+    # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
 
 
@@ -90,7 +92,7 @@ def submit(ctx, **kwargs):
 @click.option("-a", "--aggregate", default=False)
 @click.pass_context
 def run(ctx, **kwargs):
-    project = OpenFOAMProject.init_project(root=kwargs["folder"])
+    project = OpenFOAMProject().init_project(root=kwargs["folder"])
     # print(generate)
     jobs = (
         [j for j in project if kwargs.get("job") == j.id]
@@ -136,6 +138,11 @@ def create(ctx, **kwargs):
         for inst in ocurrances:
             in_str = in_str.replace(
                 "${{" + domain + "." + inst + "}}", args.get(inst, "")
+            )
+        expr = re.findall(r"\${{([ 0-9()*+]*)}}", in_str)
+        for inst in expr:
+            in_str = in_str.replace(
+               "${{" + inst + "}}", str(eval(inst))
             )
         return in_str
 
