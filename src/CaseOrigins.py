@@ -48,7 +48,7 @@ class CaseOnDisk(CaseOrigin):
         self.path = raw_path.resolve()
 
     def init(self, job):
-        execute(["cp -r {} case".format(self.path)], job.path)
+        check_output(f"cp -r {self.path} {job.path}/case".split())
 
 
 class GitRepo(CaseOrigin):
