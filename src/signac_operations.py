@@ -272,6 +272,9 @@ def checkMesh(job, args={}):
 
 
 def get_number_of_procs(job):
+    np = job.sp.get("numberOfSubdomains")
+    if np:
+        return np
     return int(
         OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get(
             "numberOfSubdomains"
@@ -283,12 +286,13 @@ def get_number_of_procs(job):
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.operation(
     cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
-)  # (aggregator=flow.aggregator.groupsof(2)))
+)
 def runParallelSolver(job, args={}):
     args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
-    return f"mpirun --map-by core --bind-to core {solver} -parallel -case {job.path}/case > {job.path}/case/log 2>&1"
+    mpiargs = "--map-by core --bind-to core"
+    return f"mpirun {mpiargs} {solver} -parallel -case {job.path}/case > {job.path}/case/log 2>&1"
 
 
 def func(x):

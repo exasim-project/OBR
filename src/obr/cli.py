@@ -37,18 +37,6 @@ def cli(ctx, debug):
 
 
 @cli.command()
-@click.option("--folder")
-@click.option("--filter", default=None)
-@click.option("--select", default=None)
-@click.option("--force", default=False)
-@click.pass_context
-def decompose(ctx, **kwargs):
-    import obr_decompose_tree
-
-    obr_decompose_tree.decompose_tree(kwargs)
-
-
-@cli.command()
 @click.option("--folder", default="cases")
 # @click.option("--results_folder", default="results", help="folder to store results")
 # @click.option("--report", default="report.csv")
