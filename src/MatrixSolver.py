@@ -2,7 +2,6 @@
 
 from Setter import Setter
 from EnviromentSetters import PrepareOMPMaxThreads
-from pathlib import Path
 import setFunctions as sf
 
 

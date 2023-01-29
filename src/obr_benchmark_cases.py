@@ -9,7 +9,6 @@ from pathlib import Path
 import os
 import json
 import datetime
-from subprocess import check_output
 
 
 def benchmark_cases(arguments):

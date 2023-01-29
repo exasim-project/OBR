@@ -15,13 +15,9 @@
 """
 
 from docopt import docopt
-import json
 import os
-import shutil
-import re
 import sys
 from collections.abc import MutableMapping
-from copy import deepcopy
 
 from pathlib import Path
 import CaseOrigins as co

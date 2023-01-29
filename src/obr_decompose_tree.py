@@ -2,12 +2,10 @@ import setFunctions as sf
 import CaseRunner as cr
 import ResultsAggregator as ra
 import os
-import json
 import datetime
 from metadata import versions
 from OpenFOAMCase import OpenFOAMCase
 from pathlib import Path
-from subprocess import check_output
 
 
 def can_be_symlinked(path):

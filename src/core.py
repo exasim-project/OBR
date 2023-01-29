@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 import os
-import sys
 import subprocess
 import re
-import json
 from pathlib import Path
-from subprocess import check_output, STDOUT
+from subprocess import check_output
 from functools import wraps
 
 
