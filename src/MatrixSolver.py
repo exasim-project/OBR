@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from Setter import Setter
-from EnviromentSetters import PrepareOMPMaxThreads
 import setFunctions as sf
 
 

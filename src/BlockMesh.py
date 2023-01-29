@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import setFunctions as sf
-from core import modifies_file, writes_files
+from core import modifies_file
 
 
 # TODO use FileParse as a base for modifying the blockMeshDict
@@ -63,5 +63,5 @@ class BlockMesh:
 
     def checkMesh(self, args={}):
         # TODO replace this with writes_file and clean polyMesh folder
-        cli_args = args.get("cli_args")
+        args.get("cli_args")
         self._exec_operation(["checkMesh"])

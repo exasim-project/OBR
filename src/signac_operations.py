@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 import flow
-import signac
 from signac_labels import *
 
-import signac_wrapper
-from core import execute, modifies_file
+from core import execute
 from OpenFOAMCase import OpenFOAMCase
 
 import os
@@ -65,7 +63,7 @@ def base_case_is_ready(job):
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
         parent_job = project.open_job(id=job.doc.get("base_id"))
         base_path = Path(project.open_job(id=job.doc.get("base_id")).path)
-        dst_path = Path(job.path) / "case"
+        Path(job.path) / "case"
         if "not_case" in list(project.labels(parent_job)):
             # print("base_case_ready", list(project.labels(parent_job)))
             # print(job.doc)

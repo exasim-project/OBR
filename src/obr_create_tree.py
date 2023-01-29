@@ -14,16 +14,11 @@
         --init=<ts>         Run the base case for ts timesteps [default: 100].
 """
 
-from docopt import docopt
 import os
 import sys
 from collections.abc import MutableMapping
 
 from pathlib import Path
-import CaseOrigins as co
-import setFunctions as sf
-from OpenFOAMCase import OpenFOAMCase
-from metadata import versions
 from subprocess import check_output
 
 

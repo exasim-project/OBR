@@ -25,7 +25,7 @@ def dispatch_to_str(item, indent="", nl="\n\n"):
         return OFList().to_str(key, value, indent=indent, nl=nl)
     try:
         return indent + "{}\t{};{}".format(key, str(value), nl)
-    except Exception as e:
+    except Exception:
         # print(e, item)
         return ""
 
@@ -67,7 +67,7 @@ class OFVariable:
 class OFFunctions:
     def to_str(self, *args, **kwargs):
         """Convert a python list to a str with OF syntax"""
-        key = args[0]
+        args[0]
         value = args[1]
         indent = kwargs.get("indent", "")
         ret = "functions {\n"
