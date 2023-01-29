@@ -16,7 +16,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install autoflake pytest
       - name: autoflake
-        run: autoflake -r src
+        run: autoflake -r --in-place src
       - name: Create Pull Request
         if: steps.action_black.outputs.is_formatted == 'true'
         uses: peter-evans/create-pull-request@v3
