@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-import subprocess
 import sys
 from subprocess import check_output
-import math
 
 
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):

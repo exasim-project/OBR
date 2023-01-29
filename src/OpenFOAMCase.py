@@ -3,7 +3,6 @@
 from pathlib import Path
 import setFunctions as sf
 
-from subprocess import check_output
 from core import (
     logged_execute,
     logged_func,
