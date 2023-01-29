@@ -20,8 +20,6 @@ import os
 import re
 import time
 
-import flow
-import signac
 from signac_labels import *
 from signac_operations import *
 
@@ -57,9 +55,7 @@ def cli(ctx, debug):
 @click.option("--bundling_match", default=True)
 @click.pass_context
 def submit(ctx, **kwargs):
-    from flow.environment import TestEnvironment
-    from flow.scheduling.fake_scheduler import FakeScheduler
-    from flow.scheduling.slurm import SlurmScheduler
+    pass
 
     project = OpenFOAMProject().init_project(
         root=kwargs["folder"],
@@ -190,7 +186,7 @@ def create(ctx, **kwargs):
 @click.option("--detailed", default=False)
 @click.pass_context
 def status(ctx, **kwargs):
-    import obr_create_tree
+    pass
 
     project = OpenFOAMProject.get_project(root=kwargs["folder"])
     project.print_status(detailed=kwargs["detailed"], pretty=True)
@@ -204,7 +200,7 @@ def status(ctx, **kwargs):
 @click.option("--operation")
 @click.pass_context
 def find(ctx, **kwargs):
-    import obr_create_tree
+    pass
 
     project = OpenFOAMProject.get_project(root=kwargs["folder"])
     detailed = kwargs.get("detailed")

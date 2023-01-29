@@ -7,7 +7,6 @@ from core import (
     logged_execute,
     logged_func,
     modifies_file,
-    writes_files,
 )
 
 from FileParser import FileParser

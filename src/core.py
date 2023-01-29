@@ -116,7 +116,7 @@ def writes_files(fns):
 
     def unlink(fn):
         if Path(fn).is_symlink():
-            src = fn.resolve()
+            fn.resolve()
             check_output(["rm", fn])
 
     if isinstance(fns, list):
