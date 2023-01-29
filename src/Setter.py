@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from OpenFOAMCase import OpenFOAMCase
-from pathlib import Path
 
 
 class Setter(OpenFOAMCase):
