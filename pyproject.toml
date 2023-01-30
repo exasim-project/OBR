@@ -1,6 +1,6 @@
 [tool.black]
-preview-string-processing = true
+preview = true
 
-[flake8]
+[tool.flake8]
 max-line-length = 88
 extend-ignore = E203
