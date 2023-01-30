@@ -4,3 +4,8 @@ preview = true
 [tool.flake8]
 max-line-length = 88
 extend-ignore = ["E203"]
+
+[project.optional-dependencies]
+doc = [
+    "sphinx~=4.2.0",
+]
