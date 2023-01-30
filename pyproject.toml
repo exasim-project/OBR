@@ -5,6 +5,11 @@ preview = true
 max-line-length = 88
 extend-ignore = ["E203"]
 
+[project]
+name = "obr"
+authors = [{name = "greole", email = "go@hpsim.de"}]
+dynamic = ["version", "description"]
+
 [project.optional-dependencies]
 doc = [
     "sphinx~=4.2.0",
