@@ -212,7 +212,8 @@ def find(ctx, **kwargs):
             if state:
                 if data["state"] == state:
                     print(
-                        f"operation {operation} state is {state} for job {job.path} with {job.sp}{os.linesep}"
+                        f"operation {operation} state is {state} for job"
+                        f" {job.path} with {job.sp}{os.linesep}"
                     )
                     if detailed:
                         print(f"{data['log']}")

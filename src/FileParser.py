@@ -45,7 +45,9 @@ class OFList:
         """Convert a python list to a str with OF syntax"""
         key = args[0]
         values = args[1]
-        return f'{kwargs.get("indent", "")}{key} ({" ".join(map(str,values))});{kwargs.get("nl",os.linesep)}'
+        return (
+            f'{kwargs.get("indent", "")}{key} ({" ".join(map(str,values))});{kwargs.get("nl",os.linesep)}'
+        )
 
 
 class OFVariable:
@@ -86,7 +88,8 @@ class OFInclude:
 
 
 class FileParser:
-    """Abstraction of OpenFOAMs config files which contain key value pairs or key block pairs"""
+    """Abstraction of OpenFOAMs config files which contain key value pairs or key block pairs
+    """
 
     def __init__(self, **kwargs):
         pass
