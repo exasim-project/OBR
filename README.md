@@ -31,7 +31,7 @@ A typical yaml file is shown next
        variation:
             a nested block starting a new variation
 
-Here `operation` can be either a simple key value manipulation of OpenFOAM dictionaries were like 'setKeyValuePair' which parses 'file' and sets `key` to `value`. Besides 'setKeyValuePair' several convinience wrapper like 'controlDict', 'fvSolution' etc exist.
+Here `operation` can be either a simple key value manipulation of OpenFOAM dictionaries were like `setKeyValuePair` which parses `file` and sets `key` to `value`. Besides 'setKeyValuePair' several convinience wrapper like `controlDict`, 'fvSolution' etc exist.
 
 ## Usage
 
