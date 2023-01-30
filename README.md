@@ -45,7 +45,7 @@ The benchmark runnner is split into several layers:
 To create a tree of case variation run
 
 
-   obr create --execute False --folder lidDrivenCavity3D --parameters assets/lidDrivenCavity.yaml
+    obr create --execute False --folder lidDrivenCavity3D --parameters assets/lidDrivenCavity.yaml
 
 ### 2. Running a tree
 
