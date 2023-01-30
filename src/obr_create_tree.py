@@ -23,7 +23,6 @@ from subprocess import check_output
 
 
 def obr_create_tree(project, config, arguments):
-
     if not os.environ.get("FOAM_ETC"):
         print("[OBR] Error OpenFOAM not sourced")
         sys.exit(-1)

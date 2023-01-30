@@ -43,7 +43,6 @@ class Results:
 
     def write_to_disk(self):
         with open(self.fn, "w") as report_handle:
-
             default_header = [
                 "backend",
                 "executor_p",
