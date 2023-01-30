@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
 from Setter import Setter
-from EnviromentSetters import PrepareOMPMaxThreads
-from pathlib import Path
 import setFunctions as sf
 
 
 class SolverSetter(Setter):
     def __init__(self, backend, path, fields, defaults):
-
         super().__init__(
             path=path,
         )

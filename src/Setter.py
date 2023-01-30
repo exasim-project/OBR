@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
 from OpenFOAMCase import OpenFOAMCase
-from pathlib import Path
 
 
 class Setter(OpenFOAMCase):
     """base class to set case properties"""
 
     def __init__(self, path):
-
         super().__init__(path=path)
 
     def set_enviroment_setter(self, enviroment_setter):

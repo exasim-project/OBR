@@ -1,0 +1,74 @@
+case:
+    type: OpenFOAMTutorialCase
+    solver: pisoFoam
+    case: RAS/cavity
+    origin: incompressible
+    post_build:
+      # - controlDict:
+      #     endTime: 1.0
+      #     deltaT: 1.0
+      #     writeFormat: binary
+      #     libs: "(libOGL.so)"
+      - shell: cp -r 0.orig 0
+      # - setKeyValuePair:
+      #     file: constant/transportProperties
+      #     nu: 2e-05
+variation:
+  - operation: blockMesh
+    schema: "mesh/{modifyBlock}"
+    values:
+      - modifyBlock: "(20 20 1)->(100 100 1)"
+        controlDict:
+          deltaT: 0.01
+          endTime: 0.1
+      - modifyBlock: "(20 20 1)->(200 200 1)"
+        controlDict:
+          deltaT: 0.01
+          endTime: 0.1
+      - modifyBlock: "(20 20 1)->(500 500 1)"
+        controlDict:
+          deltaT: 0.01
+          endTime: 0.1
+    variation:
+      - operation: fvSolution
+        schema: "linear_solver/{solver}{preconditioner}{executor}"
+        values:
+          - clear: True
+            set: solvers/p
+            solver: GKOCG
+            preconditioner: none
+            executor: ${{env.GINKGO_EXECUTOR}}
+          - clear: True
+            set: solvers/p
+            solver: PCG
+            preconditioner: none
+            executor: CPU
+        variation:
+          - operation: decomposePar
+            schema: "decomposition_GPU/{simple/numberSubDomains}"
+            values:
+              # TODO introduce some kind of generator
+              # eg
+              # [4, 8, 16]
+              # parameters:
+              #   simple:
+              #     numberSubDomains: value
+              - simple:
+                  numberSubDomains: 4
+              - simple:
+                  numberSubDomains: 8
+              - simple:
+                  numberSubDomains: 16
+            parent:
+              solver: GKOCG
+          - operation: decomposePar
+            schema: "decomposition_CPU/{simple/numberSubDomains}"
+            values:
+              - simple:
+                  numberSubDomains: ${{ 1 * ${{env.NCPUS}} }}
+              - simple:
+                  numberSubDomains: ${{ 2 * ${{env.NCPUS}} }}
+              - simple:
+                  numberSubDomains: ${{ 3 * ${{env.NCPUS}} }}
+            parent:
+              solver: PCG
