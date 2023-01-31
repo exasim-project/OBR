@@ -229,7 +229,7 @@ def has_mesh(job):
     if not fn.exists():
         return False
     for f in ["boundary", "faces", "neighbour", "owner", "points"]:
-        if not (fn / f).exits():
+        if not (fn / f).exists():
             return False
     return True
 
