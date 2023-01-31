@@ -35,9 +35,9 @@ def cli(ctx, debug):
 
 
 @cli.command()
-@click.option("--folder", default="cases")
-@click.option("--pretend", default=False)
-@click.option("--operation")
+@click.option("-f", "--folder", default="cases")
+@click.option("-p", "--pretend", default=False)
+@click.option("-o", "--operation")
 @click.option("--bundling", default=None)
 @click.option("--bundling_match", default=True)
 @click.pass_context
@@ -99,11 +99,11 @@ def submit(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("--folder", default=".")
+@click.option("-f", "--folder", default=".")
 @click.option("-o", "--operations", default="")
 @click.option("-j", "--job")
 @click.option("--args", default="")
-@click.option("--tasks", default=-1)
+@click.option("-t", "--tasks", default=-1)
 @click.option("-a", "--aggregate", default=False)
 @click.pass_context
 def run(ctx, **kwargs):
@@ -141,10 +141,10 @@ def run(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("--folder", default="cases")
-@click.option("--execute", default=True)
-@click.option("--parameters", default="base")
-@click.option("--tasks", default=-1)
+@click.option("-f", "--folder", default="cases")
+@click.option("-e", "--execute", default=True)
+@click.option("-p", "--parameters", default="base")
+@click.option("-t", "--tasks", default=-1)
 @click.pass_context
 def create(ctx, **kwargs):
     import obr_create_tree
@@ -171,8 +171,8 @@ def create(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("--folder", default="cases")
-@click.option("--detailed", default=False)
+@click.option("-f", "--folder", default="cases")
+@click.option("-d", "--detailed", default=False)
 @click.pass_context
 def status(ctx, **kwargs):
     if kwargs.get("folder"):
@@ -183,11 +183,11 @@ def status(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("--folder", default="cases")
-@click.option("--detailed", default=False)
-@click.option("--state")
-@click.option("--groups")
-@click.option("--operation")
+@click.option("-f", "--folder", default="cases")
+@click.option("-d", "--detailed", default=False)
+@click.option("-s", "--state")
+@click.option("-g", "--groups")
+@click.option("-o", "--operation")
 @click.pass_context
 def find(ctx, **kwargs):
     if kwargs.get("folder"):
