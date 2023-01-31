@@ -17,11 +17,9 @@ class OpenFOAMProject(flow.FlowProject):
     pass
 
 
-generate = OpenFOAMProject.make_group(
-    name="generate"
-)  # , group_aggregator=flow.aggregator())
+generate = OpenFOAMProject.make_group(name="generate")
 
-simulate = OpenFOAMProject.make_group("execute")  # , group_aggregator=aggregator())
+simulate = OpenFOAMProject.make_group("execute")
 
 
 def is_case(job):
@@ -223,11 +221,25 @@ def setKeyValuePair(job, args={}):
     pass
 
 
+def has_mesh(job):
+    """Check whether all mesh files are files (owning) or symlinks (non-owning)
+
+    TODO check also for .obr files for state of operation"""
+    fn = Path(job.path) / "case/constant/polyMesh"
+    if not fn.exists():
+        return False
+    for f in ["boundary", "faces", "neighbour", "owner", "points"]:
+        if not (fn / f).exits():
+            return False
+    return True
+
+
 @generate
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "decomposePar"))
+@OpenFOAMProject.pre(has_mesh)
 @OpenFOAMProject.operation
 def decomposePar(job, args={}):
     args = get_args(job, args)
@@ -253,6 +265,7 @@ def fetch_case(job):
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "RefineMesh"))
+@OpenFOAMProject.pre(has_mesh)
 @OpenFOAMProject.post(lambda job: operation_complete(job, "RefineMesh"))
 @OpenFOAMProject.operation
 def RefineMesh(job):
@@ -300,12 +313,3 @@ def runParallelSolver(job, args={}):
 def func(x):
     # print(f"called {__name__}", type(x), len(x), x)
     return [True, True]
-
-
-# @OpenFOAMProject.pre(lambda *x: func(x))
-@generate
-# @OpenFOAMProject.pre(lambda *x: True)
-@OpenFOAMProject.operation
-def update(jobs):
-    print("foo")
-    print("call update_case_matrix jobs", jobs)
