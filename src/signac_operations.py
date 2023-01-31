@@ -30,8 +30,7 @@ def is_case(job):
 
 
 def operation_complete(job, operation):
-    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success
-    """
+    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
     if job.doc.get("obr"):
         state = job.doc.get("obr").get(operation)
         if not state:

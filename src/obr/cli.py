@@ -200,9 +200,11 @@ def status(ctx, **kwargs):
 @click.option("--operation")
 @click.pass_context
 def find(ctx, **kwargs):
-    pass
 
-    project = OpenFOAMProject.get_project(root=kwargs["folder"])
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+
+    project = OpenFOAMProject.get_project()
     detailed = kwargs.get("detailed")
     for job in project:
         if not job.doc.get("obr"):
