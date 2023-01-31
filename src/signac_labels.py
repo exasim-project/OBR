@@ -15,7 +15,7 @@ def owns_mesh(job):
 
     TODO check also for .obr files for state of operation"""
     fn = Path(job.path) / "case/constant/polyMesh/points"
-    return not fn.is_symlink()
+    return fn.exists() and not fn.is_symlink()
 
 
 @FlowProject.label
