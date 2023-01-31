@@ -24,42 +24,18 @@ from signac_labels import *
 from signac_operations import *
 
 
-@click.group()
-@click.option("--debug/--no-debug", default=False)
-@click.pass_context
-def cli(ctx, debug):
-    # ensure that ctx.obj exists and is a dict (in case `cli()` is called
-    # by means other than the `if` block below)
-    ctx.ensure_object(dict)
-    ctx.obj["DEBUG"] = debug
-
-
 @cli.command()
 @click.option("--folder", default="cases")
-# @click.option("--results_folder", default="results", help="folder to store results")
-# @click.option("--report", default="report.csv")
-# @click.option("--filter", default=None)
-# @click.option("--select", default=None)
-# @click.option("--continue_on_failure", default=True)
-# @click.option("--time_runs", default=3600)
-# @click.option("--min_runs", default=1)
-# @click.option("--single_run", default=True)
-# @click.option("--fail_on_error", default=False)
-# @click.option("--log_name", default="logs")
-# @click.option("--mpi_flags", default="logs")
-# @click.option("--runner", default="LocalCaseRunner")
-# @click.option("--partition")
 @click.option("--pretend", default=False)
 @click.option("--operation")
 @click.option("--bundling", default=None)
 @click.option("--bundling_match", default=True)
 @click.pass_context
 def submit(ctx, **kwargs):
-    pass
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
 
-    project = OpenFOAMProject().init_project(
-        root=kwargs["folder"],
-    )
+    project = OpenFOAMProject().init_project()
     project._entrypoint = {"executable": "", "path": "obr"}
     # OpenFOAMProject().main()
     # print(dir(project.operations["runParallelSolver"]))
@@ -121,7 +97,10 @@ def submit(ctx, **kwargs):
 @click.option("-a", "--aggregate", default=False)
 @click.pass_context
 def run(ctx, **kwargs):
-    project = OpenFOAMProject().init_project(root=kwargs["folder"])
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+
+    project = OpenFOAMProject().init_project()
     # print(generate)
     jobs = (
         [j for j in project if kwargs.get("job") == j.id]
@@ -186,9 +165,10 @@ def create(ctx, **kwargs):
 @click.option("--detailed", default=False)
 @click.pass_context
 def status(ctx, **kwargs):
-    pass
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
 
-    project = OpenFOAMProject.get_project(root=kwargs["folder"])
+    project = OpenFOAMProject.get_project()
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
 
@@ -200,7 +180,6 @@ def status(ctx, **kwargs):
 @click.option("--operation")
 @click.pass_context
 def find(ctx, **kwargs):
-
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
