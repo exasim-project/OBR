@@ -11,7 +11,7 @@ jobs:
         id: action_black
         with:
           black_args: "."
-      - name: Install dependencies for demo Python project  
+      - name: Install dependencies for demo Python project
         run: |
           python -m pip install --upgrade pip
           pip install autoflake pytest
