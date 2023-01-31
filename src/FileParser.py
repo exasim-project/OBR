@@ -88,7 +88,8 @@ class OFInclude:
 
 
 class FileParser:
-    """Abstraction of OpenFOAMs config files which contain key value pairs or key block pairs"""
+    """Abstraction of OpenFOAMs config files which contain key value pairs or key block pairs
+    """
 
     def __init__(self, **kwargs):
         pass
