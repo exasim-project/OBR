@@ -27,4 +27,4 @@ html_theme = "alabaster"
 html_static_path = ["_static"]
 
 
-autoapi_dirs = ["../src"]
+autoapi_dirs = ["../../src"]
