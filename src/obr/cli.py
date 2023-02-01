@@ -195,6 +195,7 @@ def status(ctx, **kwargs):
 @click.option("-o", "--operation")
 @click.pass_context
 def find(ctx, **kwargs):
+    # TODO refactor
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
@@ -206,19 +207,20 @@ def find(ctx, **kwargs):
         for operation, data in job.doc.obr.items():
             state = kwargs.get("state")
             if state:
-                if data["state"] == state:
+                # TODO Make history available
+                if data["state"][-1] == state:
                     print(
                         f"operation {operation} state is {state} for job"
                         f" {job.path} with {job.sp}{os.linesep}"
                     )
                     if detailed:
-                        print(f"{data['log']}")
+                        print(f"{data[-1]['log']}")
             get_operation = kwargs.get("operation")
             if get_operation:
                 if operation == get_operation:
                     print(f"job {job.path} {job.sp} operation {operation}{os.linesep}")
                     if detailed:
-                        print(f"{data['log']}")
+                        print(f"{data[-1]['log']}")
             # using the job.id we can find jobs which have this job as child
             # print(job.doc, list(job.doc.obr.keys()), job.sp)
 
