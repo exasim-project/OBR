@@ -66,6 +66,7 @@ def logged_execute(cmd, path, doc):
 
     res.append(
         {
+            "type": "shell",
             "log": log,
             "state": state,
             "flags": flags,
@@ -82,15 +83,28 @@ def logged_func(func, doc, **kwargs):
     If cmd is a string, it will be interpreted as shell cmd
     otherwise a callable function is expected
     """
-    res = doc.get("obr", {})
-    # print("execute obr function: ", func.__name__, kwargs)
+    from datetime import datetime
+
+    d = doc.get("obr", {})
+    cmd_str = func.__name__
     try:
         func(**kwargs)
-        res[func.__name__] = {"args": str(kwargs), "state": "success"}
+        state = "success"
     except Exception as e:
         print("Failure", __file__, __name__, func.__name__, kwargs, e)
-        res[func.__name__] = {"args": str(kwargs), "state": "failed"}
-    doc["obr"] = res
+        state = "failure"
+
+    res = d.get(cmd_str, [])
+    res.append(
+        {
+            "args": str(kwargs),
+            "state": state,
+            "type": "obr",
+            "timestamp": str(datetime.now()),
+        }
+    )
+    d[cmd_str] = res
+    doc["obr"] = d
 
 
 def execute(steps, job):
