@@ -30,7 +30,12 @@ def logged_execute(cmd, path, doc):
     try:
         ret = check_output(cmd, cwd=path, stderr=subprocess.STDOUT).decode("utf-8")
         cmd_str = cmd_str.replace(".", "_dot_")
-        res[cmd_str] = {"log": ret, "state": "success"}
+        cmd_str = cmd_str.split()
+        if len(cmd_str) > 1:
+            flags = cmd_str[-1]
+        else:
+            flags = []
+        res[cmd_str[0]] = {"log": ret, "state": "success", "flags": flags}
     except subprocess.SubprocessError as e:
         print(
             "SubprocessError:",

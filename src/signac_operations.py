@@ -241,7 +241,7 @@ def has_mesh(job):
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "decomposePar"))
 @OpenFOAMProject.pre(has_mesh)
-@OpenFOAMProject.post(lambda job: operation_complete(job, "decomposePar -force"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "decomposePar"))
 @OpenFOAMProject.operation
 def decomposePar(job, args={}):
     args = get_args(job, args)
