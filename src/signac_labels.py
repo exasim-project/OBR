@@ -49,7 +49,7 @@ def failed_op(job):
         return False
 
     for operation, data in job.doc.obr.items():
-        if data["state"] == "failure":
+        if data[-1]["state"] == "failure":
             return True
 
     return False
