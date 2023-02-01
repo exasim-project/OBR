@@ -37,7 +37,10 @@ def not_case(job):
 def final(job):
     """jobs that dont have children/variations are considered to be final and
     are thus eligable for execution"""
-    return not job.sp.get("has_child")
+    if not not_case(job):
+        return not job.sp.get("has_child")
+    else:
+        return False
 
 
 @FlowProject.label
