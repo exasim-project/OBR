@@ -67,7 +67,7 @@ def logged_execute(cmd, path, doc):
         h.update(log.encode())
         hash_ = h.hexdigest()
         fn = f"{cmd_str}_{timestamp}.log"
-        with open(fn, "w") as fh:
+        with open(path / fn, "w") as fh:
             fh.write(log)
         log = fn
 
