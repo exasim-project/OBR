@@ -2,6 +2,7 @@
 import os
 import subprocess
 import re
+import hashlib
 from pathlib import Path
 from subprocess import check_output
 from functools import wraps
