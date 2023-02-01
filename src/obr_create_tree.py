@@ -90,8 +90,6 @@ def obr_create_tree(project, config, arguments):
                 )
                 h = hashlib.new("md5")
                 h.update((str(operation) + str(value)).encode())
-                print(operation)
-                print(h.hexdigest())
                 job = project.open_job(base_dict)
                 job.doc["operation_hash"] = h.hexdigest()
                 job.doc["base_id"] = base

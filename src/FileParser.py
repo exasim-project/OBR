@@ -63,9 +63,8 @@ class OFVariable:
 
     def to_str(self, *args, **kwargs):
         """Convert a python list to a str with OF syntax"""
-        key = args[0]
         value = args[1]
-        return f'{kwargs.get("indent", "")}{key}{value};{kwargs.get("nl",os.linesep)}'
+        return f'{kwargs.get("indent", "")}${value};{kwargs.get("nl",os.linesep)}'
 
 
 class OFFunctions:
@@ -121,17 +120,19 @@ class FileParser:
         of_dict = pp.Forward()
         key_val_pair = (
             pp.Group(
-                pp.Word(pp.alphanums + '"#(),|*').set_results_name("key")
-                + (
-                    of_dict
-                    ^ pp.OneOrMore(
-                        pp.Word(pp.alphanums + '".-') + pp.Suppress(";")
-                    )  # all kinds of values delimeted by ;
-                    ^ pp.Word(
-                        pp.alphanums + '".-/'
-                    )  # for includes which are single strings can contain /
-                    ^ OFList.parse() + pp.Suppress(";")
-                ).set_results_name("value")
+                (
+                    pp.Word(pp.alphanums + '"#(),|*').set_results_name("key")
+                    + (
+                        of_dict
+                        ^ pp.OneOrMore(
+                            pp.Word(pp.alphanums + '".-') + pp.Suppress(";")
+                        )  # all kinds of values delimeted by ;
+                        ^ pp.Word(
+                            pp.alphanums + '".-/'
+                        )  # for includes which are single strings can contain /
+                        ^ OFList.parse() + pp.Suppress(";")
+                    ).set_results_name("value")
+                )
                 # a variable
                 ^ OFVariable.parse()
             )
@@ -168,7 +169,7 @@ class FileParser:
                     # them in the return dictionary
                     if key.startswith("#"):
                         key = res[0] + "_" + res[1]
-                    if key.startswith("$"):
+                    if res[0].startswith("$"):
                         key = res[0] + "_" + res[1]
 
                     # TODO use of_dict over kvp if it works
@@ -181,8 +182,9 @@ class FileParser:
                         ret.update({key: res.get("of_list").as_list()})
                     elif res.get("value"):
                         ret.update({key: res.get("value")[0]})
+                    elif res.get("of_variable"):
+                        ret.update({key: res[1]})
             else:
-                print(res, type(res))
                 return res
         return ret
 
