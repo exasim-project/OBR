@@ -12,6 +12,8 @@ def dispatch_to_str(item, indent="", nl="\n\n"):
     key, value = item
     if isinstance(key, str) and key.startswith("#"):
         return OFInclude().to_str(key, value, indent=indent, nl=nl)
+    if isinstance(key, str) and key.startswith("$"):
+        return OFVariable().to_str(key, value, indent=indent, nl=nl)
     if key == "functions":
         return OFFunctions().to_str(key, value, indent=indent, nl=nl)
     if isinstance(value, dict):
