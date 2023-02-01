@@ -140,31 +140,36 @@ def run(ctx, **kwargs):
         )
 
 
+def parse_variables(in_str, args, domain):
+    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    for inst in ocurrances:
+        in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
+    expr = re.findall(r"\${{([ 0-9()*+]*)}}", in_str)
+    for inst in expr:
+        in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
+    return in_str
+
+
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-e", "--execute", default=False)
 @click.option("-c", "--config")
 @click.option("-t", "--tasks", default=-1)
+@click.option("-u", "--url", default=None)
 @click.pass_context
 def init(ctx, **kwargs):
     import obr_create_tree
+    import urllib.request
 
-    config_file = kwargs["config"]
+    if kwargs.get("url"):
+        with urllib.request.urlopen(kwargs["url"]) as f:
+            config_str = f.read().decode("utf-8")
+    else:
+        config_file = kwargs["config"]
+        with open(config_file, "r") as config_handle:
+            config_str = config_handle.read()
 
-    def parse_variables(in_str, args, domain):
-        ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
-        for inst in ocurrances:
-            in_str = in_str.replace(
-                "${{" + domain + "." + inst + "}}", args.get(inst, "")
-            )
-        expr = re.findall(r"\${{([ 0-9()*+]*)}}", in_str)
-        for inst in expr:
-            in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
-        return in_str
-
-    with open(config_file, "r") as config_handle:
-        f = config_handle.read()
-        config = yaml.safe_load(parse_variables(f, os.environ, "env"))
+    config = yaml.safe_load(parse_variables(config_str, os.environ, "env"))
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     obr_create_tree.obr_create_tree(project, config, kwargs)
