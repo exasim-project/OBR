@@ -59,8 +59,12 @@ def logged_execute(cmd, path, doc):
         print("General Execption", __file__, __name__, e, e.output)
         log = ret
         state = "failure"
+
+    timestamp = str(datetime.now())
     if log and len(log) > 1000:
-        print("long log", log)
+        h = hashlib.new("md5")
+        h.update(log.encode())
+        hash_ = h.hexdigest()
 
     res = d.get(cmd_str, [])
 
@@ -70,7 +74,7 @@ def logged_execute(cmd, path, doc):
             "log": log,
             "state": state,
             "flags": flags,
-            "timestamp": str(datetime.now()),
+            "timestamp": timestamp,
         }
     )
     d[cmd_str] = res
