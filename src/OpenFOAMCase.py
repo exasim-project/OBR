@@ -96,6 +96,8 @@ class OpenFOAMCase(BlockMesh):
         logged_execute(operation, self.path, self.job.doc)
 
     def decomposePar(self, args={}):
+        """Sets decomposeParDict and calls decomposePar"""
+        # TODO call write_files
         if args.get("simple"):
             if not args["simple"].get("numberSubDomains"):
                 coeffs = [i for i in args["simple"]["coeffs"]]
