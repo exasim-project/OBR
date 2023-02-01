@@ -5,8 +5,9 @@ from flow import FlowProject
 
 
 @FlowProject.label
-def decomposed(job):
-    return job.isfile("run/01_decomposePar.log")
+def owns_procs(job):
+    fn = Path(job.path) / "case/processor0"
+    return fn.exists() and not fn.is_symlink()
 
 
 @FlowProject.label
