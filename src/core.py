@@ -25,17 +25,21 @@ def logged_execute(cmd, path, doc):
     If cmd is a string, it will be interpreted as shell cmd
     otherwise a callable function is expected
     """
-    res = doc.get("obr", {})
+    from datetime import datetime
+
+    check_output(["mkdir", "-p", ".obr_store"], cwd=path)
+    d = doc.get("obr", {})
     cmd_str = " ".join(cmd)
+    cmd_str = cmd_str.replace(".", "_dot_").split()
+    if len(cmd_str) > 1:
+        flags = cmd_str[1:]
+    else:
+        flags = []
+    cmd_str = cmd_str[0]
     try:
         ret = check_output(cmd, cwd=path, stderr=subprocess.STDOUT).decode("utf-8")
-        cmd_str = cmd_str.replace(".", "_dot_")
-        cmd_str = cmd_str.split()
-        if len(cmd_str) > 1:
-            flags = cmd_str[-1]
-        else:
-            flags = []
-        res[cmd_str[0]] = {"log": ret, "state": "success", "flags": flags}
+        log = ret
+        state = "success"
     except subprocess.SubprocessError as e:
         print(
             "SubprocessError:",
@@ -45,17 +49,31 @@ def logged_execute(cmd, path, doc):
             " check: 'obr find --state failure' for more info",
         )
         log = e.output.decode("utf-8")
-        res[cmd_str] = {"log": log, "state": "failure"}
+        state = "failure"
     except FileNotFoundError as e:
         print(__file__, __name__, e)
         log = cmd + " not found"
-        res[cmd_str] = {"log": log, "state": "failure"}
+        state = "failure"
     except Exception as e:
         print(__file__, __name__, e)
         print("General Execption", __file__, __name__, e, e.output)
         log = ret
-        res[cmd_str] = {"log": log, "state": "failure"}
-    doc["obr"] = res
+        state = "failure"
+    if log and len(log) > 1000:
+        print("long log", log)
+
+    res = d.get(cmd_str, [])
+
+    res.append(
+        {
+            "log": log,
+            "state": state,
+            "flags": flags,
+            "timestamp": str(datetime.now()),
+        }
+    )
+    d[cmd_str] = res
+    doc["obr"] = d
 
 
 def logged_func(func, doc, **kwargs):
