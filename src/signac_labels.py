@@ -28,7 +28,7 @@ def check_mesh(job):
 
 
 @FlowProject.label
-def not_case(job):
+def unitialised(job):
     has_ctrlDict = job.isfile("case/system/controlDict")
     return not has_ctrlDict
 
@@ -37,7 +37,7 @@ def not_case(job):
 def final(job):
     """jobs that dont have children/variations are considered to be final and
     are thus eligable for execution"""
-    if not not_case(job):
+    if not unitialised(job):
         return not job.sp.get("has_child")
     else:
         return False

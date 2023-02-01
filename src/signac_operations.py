@@ -30,6 +30,7 @@ def is_case(job):
 def operation_complete(job, operation):
     """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success
     """
+    # TODO check hash
     if job.doc.get("obr"):
         state = job.doc.get("obr").get(operation)
         if not state:
@@ -63,7 +64,7 @@ def base_case_is_ready(job):
         parent_job = project.open_job(id=job.doc.get("base_id"))
         base_path = Path(project.open_job(id=job.doc.get("base_id")).path)
         Path(job.path) / "case"
-        if "not_case" in list(project.labels(parent_job)):
+        if "unitialised" in list(project.labels(parent_job)):
             # print("base_case_ready", list(project.labels(parent_job)))
             # print(job.doc)
             if parent_job.sp.get("operation"):
