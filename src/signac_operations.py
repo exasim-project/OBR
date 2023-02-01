@@ -255,7 +255,7 @@ def decomposePar(job, args={}):
 @OpenFOAMProject.pre(lambda job: job.doc.get("is_base", False))
 @OpenFOAMProject.post(is_case)
 @OpenFOAMProject.operation
-def fetch_case(job):
+def fetchCase(job):
     import CaseOrigins
 
     case_type = job.sp["case"]
@@ -271,7 +271,7 @@ def fetch_case(job):
 @OpenFOAMProject.pre(has_mesh)
 @OpenFOAMProject.post(lambda job: operation_complete(job, "RefineMesh"))
 @OpenFOAMProject.operation
-def RefineMesh(job):
+def refineMesh(job):
     value = job.sp["value"]
     parameters = job.doc["parameters"]
     for _ in range(value):
