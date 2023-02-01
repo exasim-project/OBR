@@ -310,9 +310,21 @@ def runParallelSolver(job, args={}):
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
     mpiargs = "--map-by core --bind-to core"
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    res = job.doc["obr"].get("solver", [])
+    res.append(
+        {
+            "type": "shell",
+            "log": f"{solver}_{timestamp}.log",
+            "state": "started",
+            "timestamp": timestamp,
+        }
+    )
+    job.doc["obr"][solver] = res
+
     return (
         f"mpirun {mpiargs} {solver} -parallel -case {job.path}/case >"
-        f" {job.path}/case/log 2>&1"
+        f" {job.path}/case/{solver}_{timestamp}.log 2>&1"
     )
 
 
