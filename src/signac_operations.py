@@ -82,6 +82,8 @@ def needs_init_dependent(job):
     the modifying operations are responsible for unlinking and copying
     """
     if job.doc.get("base_id"):
+        if job.doc.get("init_depentent"):
+            return True
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
         base_path = Path(project.open_job(id=job.doc.get("base_id")).path) / "case"
         dst_path = Path(job.path) / "case"
@@ -112,6 +114,7 @@ def needs_init_dependent(job):
                         ],
                         cwd=dst_path / relative_path,
                     )
+        job.doc["init_dependent"] = True
         return True
     else:
         return False
