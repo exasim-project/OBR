@@ -37,7 +37,7 @@ def operation_complete(job, operation):
             return False
         args_in = get_args(job, False)
         prev_args = {key: job.sp[key] for key in job.doc.get("keys", [])}
-        return (state["state"] == "success") and (args_in == prev_args)
+        return (state[-1]["state"] == "success") and (args_in == prev_args)
     else:
         return False
 
