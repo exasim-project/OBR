@@ -20,6 +20,7 @@ from collections.abc import MutableMapping
 
 from pathlib import Path
 from subprocess import check_output
+import hashlib
 
 
 def obr_create_tree(project, config, arguments):
@@ -87,7 +88,12 @@ def obr_create_tree(project, config, arguments):
                         **args,
                     }
                 )
+                h = hashlib.new("md5")
+                h.update((str(operation) + str(value)).encode())
+                print(operation)
+                print(h.hexdigest())
                 job = project.open_job(base_dict)
+                job.doc["operation_hash"] = h.hexdigest()
                 job.doc["base_id"] = base
                 job.doc["keys"] = keys
                 job.doc["parameters"] = operation.get("parameters", [])

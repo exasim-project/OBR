@@ -201,6 +201,7 @@ def blockMesh(job, args={}):
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "fvSolution"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "fvSolution"))
 @OpenFOAMProject.operation
 def fvSolution(job, args={}):
     args = get_args(job, args)
@@ -240,6 +241,7 @@ def has_mesh(job):
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "decomposePar"))
 @OpenFOAMProject.pre(has_mesh)
+@OpenFOAMProject.post(lambda job: operation_complete(job, "decomposePar -force"))
 @OpenFOAMProject.operation
 def decomposePar(job, args={}):
     args = get_args(job, args)
