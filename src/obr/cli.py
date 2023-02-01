@@ -208,7 +208,7 @@ def find(ctx, **kwargs):
             state = kwargs.get("state")
             if state:
                 # TODO Make history available
-                if data["state"][-1] == state:
+                if data[-1]["state"] == state:
                     print(
                         f"operation {operation} state is {state} for job"
                         f" {job.path} with {job.sp}{os.linesep}"
