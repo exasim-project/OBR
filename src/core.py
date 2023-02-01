@@ -60,11 +60,15 @@ def logged_execute(cmd, path, doc):
         log = ret
         state = "failure"
 
-    timestamp = str(datetime.now())
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     if log and len(log) > 1000:
         h = hashlib.new("md5")
         h.update(log.encode())
         hash_ = h.hexdigest()
+        fn = f"{cmd_str}_{timestamp}.log"
+        with open(fn, "w") as fh:
+            fh.write(fh)
+        log = fn
 
     res = d.get(cmd_str, [])
 
