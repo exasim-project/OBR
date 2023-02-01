@@ -306,6 +306,8 @@ def get_number_of_procs(job):
     cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
 )
 def runParallelSolver(job, args={}):
+    from datetime import datetime
+
     args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
