@@ -35,7 +35,7 @@ def cli(ctx, debug):
 
 
 @cli.command()
-@click.option("-f", "--folder", default="cases")
+@click.option("-f", "--folder", default=".")
 @click.option("-p", "--pretend", default=False)
 @click.option("-o", "--operation")
 @click.option("--bundling", default=None)
@@ -141,15 +141,15 @@ def run(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("-f", "--folder", default="cases")
-@click.option("-e", "--execute", default=True)
-@click.option("-p", "--parameters", default="base")
+@click.option("-f", "--folder", default=".")
+@click.option("-e", "--execute", default=False)
+@click.option("-c", "--config")
 @click.option("-t", "--tasks", default=-1)
 @click.pass_context
-def create(ctx, **kwargs):
+def init(ctx, **kwargs):
     import obr_create_tree
 
-    config_file = kwargs["parameters"]
+    config_file = kwargs["config"]
 
     def parse_variables(in_str, args, domain):
         ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
@@ -171,7 +171,7 @@ def create(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("-f", "--folder", default="cases")
+@click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", default=False)
 @click.pass_context
 def status(ctx, **kwargs):
@@ -183,7 +183,7 @@ def status(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("-f", "--folder", default="cases")
+@click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", default=False)
 @click.option("-s", "--state")
 @click.option("-g", "--groups")
