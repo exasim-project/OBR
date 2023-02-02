@@ -57,6 +57,7 @@ def obr_create_tree(project, config, arguments):
             key = operation.get("key", None)
             parent = operation.get("parent", {})
             # Filter out variations that have not the specified parent statepoint
+            # TODO make consistent with filter in cli.py
             if parent:
                 intersect_keys = parent.keys() & parent_job.sp.keys()
                 intersect_dict = {

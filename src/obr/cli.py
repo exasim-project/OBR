@@ -96,6 +96,25 @@ def submit(ctx, **kwargs):
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
+    #
+
+
+def filter_jobs(job, jid: str = None, filter: str = None) -> bool:
+    import yaml
+
+    if jid:
+        return job.id == jid
+    if filter:
+        negate = filter.startswith("!")
+        if negate:
+            filter = filter.replace("!", "")
+
+        d = yaml.safe_load(filter.replace(", ", "\n"))
+
+        intersect_keys = d.keys() & job.sp.keys()
+        intersect_dict = {k: d[k] for k in intersect_keys if d[k] == job.sp[k]}
+        return len(intersect_dict) == len(intersect_keys)
+    return True
 
 
 @cli.command()
@@ -105,19 +124,18 @@ def submit(ctx, **kwargs):
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
 @click.option("-a", "--aggregate", default=False)
+@click.option("--filter", default=None)
 @click.pass_context
 def run(ctx, **kwargs):
+    """Run specified operations"""
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
-    # print(generate)
-    jobs = (
-        [j for j in project if kwargs.get("job") == j.id]
-        if kwargs.get("job")
-        # else project
-        else [j for j in project]
-    )
+    jobs = [
+        j for j in project if filter_jobs(j, kwargs.get("job"), kwargs.get("filter"))
+    ]
+
     # project._reregister_aggregates()
     # print(project.groups)
     # val = list(project._groups.values())[0]
