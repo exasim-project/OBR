@@ -39,8 +39,9 @@ class OFList:
         # TODO make it recursive
         return (
             pp.Suppress("(")
-            + pp.delimitedList(pp.OneOrMore(pp.alphanums), delim=" ")
+            + pp.delimitedList(pp.Word(pp.alphanums + '_-."/'), delim=" ")
             + pp.Suppress(")")
+            + pp.Suppress(";")
         ).set_results_name("of_list")
 
     def to_str(self, *args, **kwargs):
@@ -124,13 +125,13 @@ class FileParser:
                     pp.Word(pp.alphanums + '"#(),|*').set_results_name("key")
                     + (
                         of_dict
+                        ^ OFList.parse()
                         ^ pp.OneOrMore(
                             pp.Word(pp.alphanums + '".-') + pp.Suppress(";")
                         )  # all kinds of values delimeted by ;
                         ^ pp.Word(
                             pp.alphanums + '".-/'
                         )  # for includes which are single strings can contain /
-                        ^ OFList.parse() + pp.Suppress(";")
                     ).set_results_name("value")
                 )
                 # a variable
