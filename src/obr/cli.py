@@ -110,10 +110,10 @@ def filter_jobs(job, jid: str = None, filter: str = None) -> bool:
             filter = filter.replace("!", "")
 
         d = yaml.safe_load(filter.replace(", ", "\n"))
+        if negate:
+            return not all([f"{k}: {v}" in str(job.sp) for k, v in d.items()])
+        return all([f"'{k}': {v}" in str(job.sp) for k, v in d.items()])
 
-        intersect_keys = d.keys() & job.sp.keys()
-        intersect_dict = {k: d[k] for k in intersect_keys if d[k] == job.sp[k]}
-        return len(intersect_dict) == len(intersect_keys)
     return True
 
 
