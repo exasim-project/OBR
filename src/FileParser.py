@@ -69,7 +69,7 @@ class OFVariable:
 
 
 class OFFunctions:
-    def to_str(self, *args, **kwargs):
+    def to_str(self, *args, **kwargs) -> str:
         """Convert a python list to a str with OF syntax"""
         args[0]
         value = args[1]
@@ -82,11 +82,27 @@ class OFFunctions:
 
 
 class OFInclude:
-    def to_str(self, *args, **kwargs):
+    def to_str(self, *args, **kwargs) -> str:
         """Convert a python list to a str with OF syntax"""
         key = args[0].split("_")[0]
         value = args[1]
         return f'{kwargs.get("indent", "")}{key}{value};{kwargs.get("nl",os.linesep)}'
+
+
+class OFDimensionSet:
+    @property
+    def parse():
+        """Parse OF dimension set eg  [0 2 -1 0 0 0 0]"""
+        return (
+            pp.Suppress("[")
+            + pp.delimitedList(pp.pyparsing_common.number * 7, delim=pp.White())
+            + pp.Suppress("]")
+            + pp.Word(pp.alphanums + '_-."/')
+            + pp.Suppress(";")
+        ).set_results_name("of_dimension_set")
+
+    def to_str(self):
+        pass
 
 
 class FileParser:
@@ -95,16 +111,6 @@ class FileParser:
 
     def __init__(self, **kwargs):
         pass
-
-    # TODO move to separate file for the grammar
-    @property
-    def dimensionSet(self):
-        """Parse OF dimension set eg  [0 2 -1 0 0 0 0]"""
-        return (
-            pp.Suppress("[")
-            + pp.delimitedList(pp.pyparsing_common.number * 7, delim=pp.White())
-            + pp.Suppress("]")
-        ).setParseAction(lambda toks: "[" + " ".join([str(i) for i in toks]) + "]")
 
     @property
     def footer(self):
@@ -125,6 +131,7 @@ class FileParser:
                     pp.Word(pp.alphanums + '"#(),|*').set_results_name("key")
                     + (
                         of_dict
+                        ^ OFDimensionSet.parse()
                         ^ OFList.parse()
                         ^ pp.OneOrMore(
                             pp.Word(pp.alphanums + '".-') + pp.Suppress(";")
@@ -184,6 +191,8 @@ class FileParser:
                     elif res.get("value"):
                         ret.update({key: res.get("value")[0]})
                     elif res.get("of_variable"):
+                        ret.update({key: res[1]})
+                    elif res.get("of_dimension_set"):
                         ret.update({key: res[1]})
             else:
                 return res
