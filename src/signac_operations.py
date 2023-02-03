@@ -320,12 +320,16 @@ def runParallelSolver(job, args={}):
             "log": f"{solver}_{timestamp}.log",
             "state": "started",
             "timestamp": timestamp,
-            "np": get_number_of_procs(job),
         }
     )
     job.doc["obr"][solver] = res
 
-    cli_args = {"solver": solver, "path": job.path, "timestamp": timestamp}
+    cli_args = {
+        "solver": solver,
+        "path": job.path,
+        "timestamp": timestamp,
+        "np": get_number_of_procs(job),
+    }
     return os.environ.get("OBR_RUN_CMD").format(**cli_args)
 
     # return (
