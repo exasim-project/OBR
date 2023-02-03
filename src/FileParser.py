@@ -90,7 +90,7 @@ class OFInclude:
 
 
 class OFDimensionSet:
-    @property
+    @staticmethod
     def parse():
         """Parse OF dimension set eg  [0 2 -1 0 0 0 0]"""
         return (
