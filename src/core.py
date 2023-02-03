@@ -65,7 +65,7 @@ def logged_execute(cmd, path, doc):
     if log and len(log) > 1000:
         h = hashlib.new("md5")
         h.update(log.encode())
-        hash_ = h.hexdigest()
+        h.hexdigest()
         fn = f"{cmd_str}_{timestamp}.log"
         with open(path / fn, "w") as fh:
             fh.write(log)

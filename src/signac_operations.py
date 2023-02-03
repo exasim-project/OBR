@@ -28,8 +28,7 @@ def is_case(job):
 
 
 def operation_complete(job, operation):
-    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success
-    """
+    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
     # TODO check hash
     if job.doc.get("obr"):
         state = job.doc.get("obr").get(operation)
@@ -309,7 +308,6 @@ def runParallelSolver(job, args={}):
     args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
-    mpiargs = "--map-by core --bind-to core"
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     res = job.doc["obr"].get("solver", [])
     res.append(
