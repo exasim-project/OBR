@@ -220,7 +220,6 @@ def fvSolution(job, args={}):
 @OpenFOAMProject.operation
 def setKeyValuePair(job, args={}):
     # FIXME
-    modifies_file([Path(job.path) / fn for fn in args["file"]])
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).setKeyValuePair(args)
 
