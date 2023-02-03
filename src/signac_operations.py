@@ -320,14 +320,18 @@ def runParallelSolver(job, args={}):
             "log": f"{solver}_{timestamp}.log",
             "state": "started",
             "timestamp": timestamp,
+            "np": get_number_of_procs(job),
         }
     )
     job.doc["obr"][solver] = res
 
-    return (
-        f"mpirun {mpiargs} {solver} -parallel -case {job.path}/case >"
-        f" {job.path}/case/{solver}_{timestamp}.log 2>&1"
-    )
+    cli_args = {"solver": solver, "path": job.path, "timestamp": timestamp}
+    return os.environ.get("OBR_RUN_CMD").format(**cli_args)
+
+    # return (
+    #     f"mpirun {mpiargs} {solver} -parallel -case {job.path}/case >"
+    #     f" {job.path}/case/{solver}_{timestamp}.log 2>&1"
+    # )
 
 
 def func(x):
