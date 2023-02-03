@@ -217,9 +217,10 @@ def fvSolution(job, args={}):
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(is_case)
+@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "setKeyValuePair"))
 @OpenFOAMProject.operation
 def setKeyValuePair(job, args={}):
-    # FIXME
+    modifies_file([Path(job.path) / fn for fn in args["file"]])
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).setKeyValuePair(args)
 
