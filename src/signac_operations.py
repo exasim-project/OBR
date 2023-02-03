@@ -290,12 +290,12 @@ def checkMesh(job, args={}):
 
 
 def get_number_of_procs(job):
-    np = job.sp.get("numberOfSubdomains")
+    np = job.sp.get("numberSubDomains")
     if np:
         return np
     return int(
         OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get(
-            "numberOfSubdomains"
+            "numberSubDomains"
         )
     )
 
