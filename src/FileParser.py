@@ -25,6 +25,8 @@ def dispatch_to_str(item, indent="", nl="\n\n"):
         return s
     elif isinstance(value, list):
         return OFList().to_str(key, value, indent=indent, nl=nl)
+    elif isinstance(value, tuple):
+        return OFDimensionSet().to_str(key, value, indent=indent, nl=nl)
     try:
         return indent + "{}\t{};{}".format(key, str(value), nl)
     except Exception:
@@ -71,7 +73,6 @@ class OFVariable:
 class OFFunctions:
     def to_str(self, *args, **kwargs) -> str:
         """Convert a python list to a str with OF syntax"""
-        args[0]
         value = args[1]
         indent = kwargs.get("indent", "")
         ret = "functions {\n"
@@ -101,8 +102,14 @@ class OFDimensionSet:
             + pp.Suppress(";")
         ).set_results_name("of_dimension_set")
 
-    def to_str(self):
-        pass
+    def to_str(self, *args, **kwargs) -> str:
+        key = args[0]
+        value = args[1][-1]
+        dimensions = " ".join(map(str, args[1][0:-1]))
+        return (
+            f'{kwargs.get("indent", "")}{key} [{dimensions}]'
+            f' {value};{kwargs.get("nl",os.linesep)}'
+        )
 
 
 class FileParser:
@@ -130,8 +137,8 @@ class FileParser:
                 (
                     pp.Word(pp.alphanums + '"#(),|*').set_results_name("key")
                     + (
-                        of_dict
-                        ^ OFDimensionSet.parse()
+                        OFDimensionSet.parse()
+                        ^ of_dict
                         ^ OFList.parse()
                         ^ pp.OneOrMore(
                             pp.Word(pp.alphanums + '".-') + pp.Suppress(";")
@@ -188,12 +195,12 @@ class FileParser:
                         ret.update(d)
                     elif res.get("of_list"):
                         ret.update({key: res.get("of_list").as_list()})
-                    elif res.get("value"):
-                        ret.update({key: res.get("value")[0]})
                     elif res.get("of_variable"):
                         ret.update({key: res[1]})
                     elif res.get("of_dimension_set"):
-                        ret.update({key: res[1]})
+                        ret.update({key: tuple(res[1:])})
+                    elif res.get("value"):
+                        ret.update({key: res.get("value")[0]})
             else:
                 return res
         return ret
@@ -225,6 +232,9 @@ class FileParser:
                 fh.write(line)
             for line in self.of_header:
                 fh.write(line)
+            fh.write("\n")
+            fh.write(self.separator)
+            fh.write("\n")
             fh.write("\n")
             for key, value in dictionary.items():
                 fh.write(dispatch_to_str((key, value)))
