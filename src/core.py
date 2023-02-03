@@ -2,6 +2,7 @@
 import os
 import subprocess
 import re
+import hashlib
 from pathlib import Path
 from subprocess import check_output
 from functools import wraps
@@ -25,27 +26,64 @@ def logged_execute(cmd, path, doc):
     If cmd is a string, it will be interpreted as shell cmd
     otherwise a callable function is expected
     """
-    res = doc.get("obr", {})
+    from datetime import datetime
+
+    check_output(["mkdir", "-p", ".obr_store"], cwd=path)
+    d = doc.get("obr", {})
     cmd_str = " ".join(cmd)
-    # print("execute shell command: ", cmd)
+    cmd_str = cmd_str.replace(".", "_dot_").split()
+    if len(cmd_str) > 1:
+        flags = cmd_str[1:]
+    else:
+        flags = []
+    cmd_str = cmd_str[0]
     try:
         ret = check_output(cmd, cwd=path, stderr=subprocess.STDOUT).decode("utf-8")
-        cmd_str = cmd_str.replace(".", "_dot_")
-        res[cmd_str] = {"log": ret, "state": "success"}
+        log = ret
+        state = "success"
     except subprocess.SubprocessError as e:
-        print("SubprocessError:", __file__, __name__, e, e.output, e.stderr)
+        print(
+            "SubprocessError:",
+            __file__,
+            __name__,
+            e,
+            " check: 'obr find --state failure' for more info",
+        )
         log = e.output.decode("utf-8")
-        res[cmd_str] = {"log": log, "state": "failure"}
+        state = "failure"
     except FileNotFoundError as e:
         print(__file__, __name__, e)
         log = cmd + " not found"
-        res[cmd_str] = {"log": log, "state": "failure"}
+        state = "failure"
     except Exception as e:
         print(__file__, __name__, e)
         print("General Execption", __file__, __name__, e, e.output)
         log = ret
-        res[cmd_str] = {"log": log, "state": "failure"}
-    doc["obr"] = res
+        state = "failure"
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    if log and len(log) > 1000:
+        h = hashlib.new("md5")
+        h.update(log.encode())
+        hash_ = h.hexdigest()
+        fn = f"{cmd_str}_{timestamp}.log"
+        with open(path / fn, "w") as fh:
+            fh.write(log)
+        log = fn
+
+    res = d.get(cmd_str, [])
+
+    res.append(
+        {
+            "type": "shell",
+            "log": log,
+            "state": state,
+            "flags": flags,
+            "timestamp": timestamp,
+        }
+    )
+    d[cmd_str] = res
+    doc["obr"] = d
 
 
 def logged_func(func, doc, **kwargs):
@@ -54,15 +92,28 @@ def logged_func(func, doc, **kwargs):
     If cmd is a string, it will be interpreted as shell cmd
     otherwise a callable function is expected
     """
-    res = doc.get("obr", {})
-    # print("execute obr function: ", func.__name__, kwargs)
+    from datetime import datetime
+
+    d = doc.get("obr", {})
+    cmd_str = func.__name__
     try:
         func(**kwargs)
-        res[func.__name__] = {"args": str(kwargs), "state": "success"}
+        state = "success"
     except Exception as e:
         print("Failure", __file__, __name__, func.__name__, kwargs, e)
-        res[func.__name__] = {"args": str(kwargs), "state": "failed"}
-    doc["obr"] = res
+        state = "failure"
+
+    res = d.get(cmd_str, [])
+    res.append(
+        {
+            "args": str(kwargs),
+            "state": state,
+            "type": "obr",
+            "timestamp": str(datetime.now()),
+        }
+    )
+    d[cmd_str] = res
+    doc["obr"] = d
 
 
 def execute(steps, job):

@@ -5,8 +5,9 @@ from flow import FlowProject
 
 
 @FlowProject.label
-def decomposed(job):
-    return job.isfile("run/01_decomposePar.log")
+def owns_procs(job):
+    fn = Path(job.path) / "case/processor0"
+    return fn.exists() and not fn.is_symlink()
 
 
 @FlowProject.label
@@ -15,7 +16,7 @@ def owns_mesh(job):
 
     TODO check also for .obr files for state of operation"""
     fn = Path(job.path) / "case/constant/polyMesh/points"
-    return not fn.is_symlink()
+    return fn.exists() and not fn.is_symlink()
 
 
 @FlowProject.label
@@ -27,7 +28,7 @@ def check_mesh(job):
 
 
 @FlowProject.label
-def not_case(job):
+def unitialised(job):
     has_ctrlDict = job.isfile("case/system/controlDict")
     return not has_ctrlDict
 
@@ -36,7 +37,10 @@ def not_case(job):
 def final(job):
     """jobs that dont have children/variations are considered to be final and
     are thus eligable for execution"""
-    return not job.sp.get("has_child")
+    if not unitialised(job):
+        return not job.sp.get("has_child")
+    else:
+        return False
 
 
 @FlowProject.label
@@ -45,7 +49,7 @@ def failed_op(job):
         return False
 
     for operation, data in job.doc.obr.items():
-        if data["state"] == "failure":
+        if data[-1]["state"] == "failure":
             return True
 
     return False

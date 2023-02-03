@@ -20,6 +20,7 @@ from collections.abc import MutableMapping
 
 from pathlib import Path
 from subprocess import check_output
+import hashlib
 
 
 def obr_create_tree(project, config, arguments):
@@ -56,6 +57,7 @@ def obr_create_tree(project, config, arguments):
             key = operation.get("key", None)
             parent = operation.get("parent", {})
             # Filter out variations that have not the specified parent statepoint
+            # TODO make consistent with filter in cli.py
             if parent:
                 intersect_keys = parent.keys() & parent_job.sp.keys()
                 intersect_dict = {
@@ -87,7 +89,10 @@ def obr_create_tree(project, config, arguments):
                         **args,
                     }
                 )
+                h = hashlib.new("md5")
+                h.update((str(operation) + str(value)).encode())
                 job = project.open_job(base_dict)
+                job.doc["operation_hash"] = h.hexdigest()
                 job.doc["base_id"] = base
                 job.doc["keys"] = keys
                 job.doc["parameters"] = operation.get("parameters", [])

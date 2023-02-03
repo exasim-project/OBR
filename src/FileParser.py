@@ -12,6 +12,8 @@ def dispatch_to_str(item, indent="", nl="\n\n"):
     key, value = item
     if isinstance(key, str) and key.startswith("#"):
         return OFInclude().to_str(key, value, indent=indent, nl=nl)
+    if isinstance(key, str) and key.startswith("$"):
+        return OFVariable().to_str(key, value, indent=indent, nl=nl)
     if key == "functions":
         return OFFunctions().to_str(key, value, indent=indent, nl=nl)
     if isinstance(value, dict):
@@ -23,6 +25,8 @@ def dispatch_to_str(item, indent="", nl="\n\n"):
         return s
     elif isinstance(value, list):
         return OFList().to_str(key, value, indent=indent, nl=nl)
+    elif isinstance(value, tuple):
+        return OFDimensionSet().to_str(key, value, indent=indent, nl=nl)
     try:
         return indent + "{}\t{};{}".format(key, str(value), nl)
     except Exception:
@@ -37,8 +41,9 @@ class OFList:
         # TODO make it recursive
         return (
             pp.Suppress("(")
-            + pp.delimitedList(pp.OneOrMore(pp.alphanums), delim=" ")
+            + pp.delimitedList(pp.Word(pp.alphanums + '_-."/'), delim=" ")
             + pp.Suppress(")")
+            + pp.Suppress(";")
         ).set_results_name("of_list")
 
     def to_str(self, *args, **kwargs):
@@ -61,15 +66,13 @@ class OFVariable:
 
     def to_str(self, *args, **kwargs):
         """Convert a python list to a str with OF syntax"""
-        key = args[0]
         value = args[1]
-        return f'{kwargs.get("indent", "")}{key}{value};{kwargs.get("nl",os.linesep)}'
+        return f'{kwargs.get("indent", "")}${value};{kwargs.get("nl",os.linesep)}'
 
 
 class OFFunctions:
-    def to_str(self, *args, **kwargs):
+    def to_str(self, *args, **kwargs) -> str:
         """Convert a python list to a str with OF syntax"""
-        args[0]
         value = args[1]
         indent = kwargs.get("indent", "")
         ret = "functions {\n"
@@ -80,11 +83,33 @@ class OFFunctions:
 
 
 class OFInclude:
-    def to_str(self, *args, **kwargs):
+    def to_str(self, *args, **kwargs) -> str:
         """Convert a python list to a str with OF syntax"""
         key = args[0].split("_")[0]
         value = args[1]
         return f'{kwargs.get("indent", "")}{key}{value};{kwargs.get("nl",os.linesep)}'
+
+
+class OFDimensionSet:
+    @staticmethod
+    def parse():
+        """Parse OF dimension set eg  [0 2 -1 0 0 0 0]"""
+        return (
+            pp.Suppress("[")
+            + pp.delimitedList(pp.pyparsing_common.number * 7, delim=pp.White())
+            + pp.Suppress("]")
+            + pp.Word(pp.alphanums + '_-."/')
+            + pp.Suppress(";")
+        ).set_results_name("of_dimension_set")
+
+    def to_str(self, *args, **kwargs) -> str:
+        key = args[0]
+        value = args[1][-1]
+        dimensions = " ".join(map(str, args[1][0:-1]))
+        return (
+            f'{kwargs.get("indent", "")}{key} [{dimensions}]'
+            f' {value};{kwargs.get("nl",os.linesep)}'
+        )
 
 
 class FileParser:
@@ -93,16 +118,6 @@ class FileParser:
 
     def __init__(self, **kwargs):
         pass
-
-    # TODO move to separate file for the grammar
-    @property
-    def dimensionSet(self):
-        """Parse OF dimension set eg  [0 2 -1 0 0 0 0]"""
-        return (
-            pp.Suppress("[")
-            + pp.delimitedList(pp.pyparsing_common.number * 7, delim=pp.White())
-            + pp.Suppress("]")
-        ).setParseAction(lambda toks: "[" + " ".join([str(i) for i in toks]) + "]")
 
     @property
     def footer(self):
@@ -119,17 +134,20 @@ class FileParser:
         of_dict = pp.Forward()
         key_val_pair = (
             pp.Group(
-                pp.Word(pp.alphanums + '"#(),|*').set_results_name("key")
-                + (
-                    of_dict
-                    ^ pp.OneOrMore(
-                        pp.Word(pp.alphanums + '".-') + pp.Suppress(";")
-                    )  # all kinds of values delimeted by ;
-                    ^ pp.Word(
-                        pp.alphanums + '".-/'
-                    )  # for includes which are single strings can contain /
-                    ^ OFList.parse() + pp.Suppress(";")
-                ).set_results_name("value")
+                (
+                    pp.Word(pp.alphanums + '"#(),|*').set_results_name("key")
+                    + (
+                        OFDimensionSet.parse()
+                        ^ of_dict
+                        ^ OFList.parse()
+                        ^ pp.OneOrMore(
+                            pp.Word(pp.alphanums + '".-') + pp.Suppress(";")
+                        )  # all kinds of values delimeted by ;
+                        ^ pp.Word(
+                            pp.alphanums + '".-/'
+                        )  # for includes which are single strings can contain /
+                    ).set_results_name("value")
+                )
                 # a variable
                 ^ OFVariable.parse()
             )
@@ -166,7 +184,7 @@ class FileParser:
                     # them in the return dictionary
                     if key.startswith("#"):
                         key = res[0] + "_" + res[1]
-                    if key.startswith("$"):
+                    if res[0].startswith("$"):
                         key = res[0] + "_" + res[1]
 
                     # TODO use of_dict over kvp if it works
@@ -177,10 +195,13 @@ class FileParser:
                         ret.update(d)
                     elif res.get("of_list"):
                         ret.update({key: res.get("of_list").as_list()})
+                    elif res.get("of_variable"):
+                        ret.update({key: res[1]})
+                    elif res.get("of_dimension_set"):
+                        ret.update({key: tuple(res[1:])})
                     elif res.get("value"):
                         ret.update({key: res.get("value")[0]})
             else:
-                print(res, type(res))
                 return res
         return ret
 
@@ -211,6 +232,9 @@ class FileParser:
                 fh.write(line)
             for line in self.of_header:
                 fh.write(line)
+            fh.write("\n")
+            fh.write(self.separator)
+            fh.write("\n")
             fh.write("\n")
             for key, value in dictionary.items():
                 fh.write(dispatch_to_str((key, value)))

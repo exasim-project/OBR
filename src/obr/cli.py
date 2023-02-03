@@ -35,7 +35,7 @@ def cli(ctx, debug):
 
 
 @cli.command()
-@click.option("-f", "--folder", default="cases")
+@click.option("-f", "--folder", default=".")
 @click.option("-p", "--pretend", default=False)
 @click.option("-o", "--operation")
 @click.option("--bundling", default=None)
@@ -96,6 +96,25 @@ def submit(ctx, **kwargs):
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
+    #
+
+
+def filter_jobs(job, jid: str = None, filter: str = None) -> bool:
+    import yaml
+
+    if jid:
+        return job.id == jid
+    if filter:
+        negate = filter.startswith("!")
+        if negate:
+            filter = filter.replace("!", "")
+
+        d = yaml.safe_load(filter.replace(", ", "\n"))
+        if negate:
+            return not all([f"{k}: {v}" in str(job.sp) for k, v in d.items()])
+        return all([f"'{k}': {v}" in str(job.sp) for k, v in d.items()])
+
+    return True
 
 
 @cli.command()
@@ -105,19 +124,18 @@ def submit(ctx, **kwargs):
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
 @click.option("-a", "--aggregate", default=False)
+@click.option("--filter", default=None)
 @click.pass_context
 def run(ctx, **kwargs):
+    """Run specified operations"""
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
-    # print(generate)
-    jobs = (
-        [j for j in project if kwargs.get("job") == j.id]
-        if kwargs.get("job")
-        # else project
-        else [j for j in project]
-    )
+    jobs = [
+        j for j in project if filter_jobs(j, kwargs.get("job"), kwargs.get("filter"))
+    ]
+
     # project._reregister_aggregates()
     # print(project.groups)
     # val = list(project._groups.values())[0]
@@ -140,38 +158,43 @@ def run(ctx, **kwargs):
         )
 
 
+def parse_variables(in_str, args, domain):
+    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    for inst in ocurrances:
+        in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
+    expr = re.findall(r"\${{([ 0-9()*+]*)}}", in_str)
+    for inst in expr:
+        in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
+    return in_str
+
+
 @cli.command()
-@click.option("-f", "--folder", default="cases")
-@click.option("-e", "--execute", default=True)
-@click.option("-p", "--parameters", default="base")
+@click.option("-f", "--folder", default=".")
+@click.option("-e", "--execute", default=False)
+@click.option("-c", "--config")
 @click.option("-t", "--tasks", default=-1)
+@click.option("-u", "--url", default=None)
 @click.pass_context
-def create(ctx, **kwargs):
+def init(ctx, **kwargs):
     import obr_create_tree
+    import urllib.request
 
-    config_file = kwargs["parameters"]
+    if kwargs.get("url"):
+        with urllib.request.urlopen(kwargs["url"]) as f:
+            config_str = f.read().decode("utf-8")
+    else:
+        config_file = kwargs["config"]
+        with open(config_file, "r") as config_handle:
+            config_str = config_handle.read()
 
-    def parse_variables(in_str, args, domain):
-        ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
-        for inst in ocurrances:
-            in_str = in_str.replace(
-                "${{" + domain + "." + inst + "}}", args.get(inst, "")
-            )
-        expr = re.findall(r"\${{([ 0-9()*+]*)}}", in_str)
-        for inst in expr:
-            in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
-        return in_str
-
-    with open(config_file, "r") as config_handle:
-        f = config_handle.read()
-        config = yaml.safe_load(parse_variables(f, os.environ, "env"))
+    config = yaml.safe_load(parse_variables(config_str, os.environ, "env"))
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     obr_create_tree.obr_create_tree(project, config, kwargs)
 
 
 @cli.command()
-@click.option("-f", "--folder", default="cases")
+@click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", default=False)
 @click.pass_context
 def status(ctx, **kwargs):
@@ -183,13 +206,14 @@ def status(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("-f", "--folder", default="cases")
+@click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", default=False)
 @click.option("-s", "--state")
 @click.option("-g", "--groups")
 @click.option("-o", "--operation")
 @click.pass_context
 def find(ctx, **kwargs):
+    # TODO refactor
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
@@ -201,19 +225,20 @@ def find(ctx, **kwargs):
         for operation, data in job.doc.obr.items():
             state = kwargs.get("state")
             if state:
-                if data["state"] == state:
+                # TODO Make history available
+                if data[-1]["state"] == state:
                     print(
                         f"operation {operation} state is {state} for job"
                         f" {job.path} with {job.sp}{os.linesep}"
                     )
                     if detailed:
-                        print(f"{data['log']}")
+                        print(f"{data[-1]['log']}")
             get_operation = kwargs.get("operation")
             if get_operation:
                 if operation == get_operation:
                     print(f"job {job.path} {job.sp} operation {operation}{os.linesep}")
                     if detailed:
-                        print(f"{data['log']}")
+                        print(f"{data[-1]['log']}")
             # using the job.id we can find jobs which have this job as child
             # print(job.doc, list(job.doc.obr.keys()), job.sp)
 
