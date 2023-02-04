@@ -12,7 +12,8 @@ dynamic = ["version", "description"]
 
 dependencies = [
 	"signac==1.8.0",
-	"signac-flow==0.23.0"
+	"signac-flow==0.23.0",
+    Owls = { git = "https://github.com/greole/Owls.git", branch = "parser" }
 ]
 
 [project.optional-dependencies]

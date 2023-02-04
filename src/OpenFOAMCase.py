@@ -9,8 +9,9 @@ from core import (
     modifies_file,
 )
 
-from FileParser import FileParser
 from BlockMesh import BlockMesh
+
+from Owls.Parsing import FileParser
 
 
 class File(FileParser):
