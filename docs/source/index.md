@@ -14,7 +14,7 @@
 This library is currently under heavy development. Things might change frequently.
 ```
 ## Workflow specification
-A typical yaml file is shown next
+Workflows are specified via yaml files, for which a  typical yaml file is shown next
 
     case:
         type: CaseOnDisk
@@ -37,11 +37,13 @@ A typical yaml file is shown next
 
 Here `operation` can be either a simple key value manipulation of OpenFOAM dictionaries were like `setKeyValuePair` which parses `file` and sets `key` to `value`. Besides 'setKeyValuePair' several convinience wrapper like `controlDict`, 'fvSolution' etc exist.
 
+## Available Operations
+
 ## Usage
 
 The benchmark runnner is split into several layers:
     1. case generation
-    2. case run/submig
+    2. case run/submit
     3. case postprocessing
 
 ### 1. Creating a tree
@@ -49,7 +51,7 @@ The benchmark runnner is split into several layers:
 To create a tree of case variation run
 
 
-    obr create --execute False --folder lidDrivenCavity3D --parameters assets/lidDrivenCavity.yaml
+    obr init --folder [path] --config assets/lidDrivenCavity.yaml
 
 ### 2. Running a tree
 
