@@ -60,6 +60,8 @@ def obr_create_operation(job, operation):
 def base_case_is_ready(job):
     """Checks whether the parent of the given job is ready"""
     if job.doc.get("base_id"):
+        if job.doc.get("base_case_is_ready"):
+            return True
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
         parent_job = project.open_job(id=job.doc.get("base_id"))
         base_path = Path(project.open_job(id=job.doc.get("base_id")).path)
@@ -72,6 +74,7 @@ def base_case_is_ready(job):
                 pass
             return False
         else:
+            job.doc["base_case_is_ready"] = True
             return True
 
 
@@ -82,7 +85,7 @@ def needs_init_dependent(job):
     the modifying operations are responsible for unlinking and copying
     """
     if job.doc.get("base_id"):
-        if job.doc.get("init_depentent"):
+        if job.doc.get("init_dependent"):
             return True
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
         base_path = Path(project.open_job(id=job.doc.get("base_id")).path) / "case"
@@ -321,6 +324,7 @@ def runParallelSolver(job, args={}):
         }
     )
     job.doc["obr"][solver] = res
+    job.doc["obr"]["solver"] = solver
 
     cli_args = {
         "solver": solver,
@@ -329,11 +333,6 @@ def runParallelSolver(job, args={}):
         "np": get_number_of_procs(job),
     }
     return os.environ.get("OBR_RUN_CMD").format(**cli_args)
-
-    # return (
-    #     f"mpirun {mpiargs} {solver} -parallel -case {job.path}/case >"
-    #     f" {job.path}/case/{solver}_{timestamp}.log 2>&1"
-    # )
 
 
 def func(x):
