@@ -11,7 +11,7 @@ from core import (
 
 from BlockMesh import BlockMesh
 
-from Owls.Parsing import FileParser
+from Owls.FoamDictParser import FileParser
 
 
 class File(FileParser):
