@@ -2,6 +2,7 @@
 import flow
 from signac_labels import *
 
+
 from core import execute
 from OpenFOAMCase import OpenFOAMCase
 
@@ -335,6 +336,14 @@ def runParallelSolver(job, args={}):
     return os.environ.get("OBR_RUN_CMD").format(**cli_args)
 
 
-def func(x):
-    # print(f"called {__name__}", type(x), len(x), x)
-    return [True, True]
+@OpenFOAMProject.operation(aggregator=flow.aggregator(select=lambda job: final(job)))
+def apply(*jobs, args={}):
+    import importlib.util
+    import sys
+
+    fp = Path(os.environ.get("OBR_CALL_ARGS"))
+    spec = importlib.util.spec_from_file_location("apply_func", fp)
+    apply_functor = importlib.util.module_from_spec(spec)
+    # sys.modules["apply_func"] = apply_functor
+    spec.loader.exec_module(apply_functor)
+    apply_functor.call(jobs)
