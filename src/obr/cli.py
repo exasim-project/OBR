@@ -125,6 +125,7 @@ def filter_jobs(job, jid: str = None, filter: str = None) -> bool:
 @click.option("-t", "--tasks", default=-1)
 @click.option("-a", "--aggregate", default=False)
 @click.option("--filter", default=None)
+@click.option("--args", default="")
 @click.pass_context
 def run(ctx, **kwargs):
     """Run specified operations"""
@@ -135,6 +136,9 @@ def run(ctx, **kwargs):
     jobs = [
         j for j in project if filter_jobs(j, kwargs.get("job"), kwargs.get("filter"))
     ]
+
+    if kwargs.get("args"):
+        os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
 
     # project._reregister_aggregates()
     # print(project.groups)
