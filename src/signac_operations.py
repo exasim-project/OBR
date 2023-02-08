@@ -324,7 +324,7 @@ def is_not_locked(job):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
-@OpenFOAMProject.pre(lambda job: basic_eligibile(job, "refineMesh"))
+@OpenFOAMProject.pre(lambda job: basic_eligible(job, "refineMesh"))
 @OpenFOAMProject.pre(has_mesh)
 @OpenFOAMProject.post(lambda job: operation_complete(job, "refineMesh"))
 @OpenFOAMProject.operation
