@@ -268,6 +268,7 @@ def fvSolution(job, args={}):
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "setKeyValuePair"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "setKeyValuePair"))
 @OpenFOAMProject.operation
 def setKeyValuePair(job, args={}):
     args = get_args(job, args)
