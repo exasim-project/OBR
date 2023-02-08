@@ -23,6 +23,21 @@ generate = OpenFOAMProject.make_group(name="generate")
 simulate = OpenFOAMProject.make_group("execute")
 
 
+class JobCache:
+    def __init__(self, jobs):
+        self.d = {j.id: j for j in jobs}
+
+    def search_parent(self, job, key):
+        base_id = job.doc.get("base_id")
+        if not base_id:
+            return
+        base_value = self.d[base_id].doc["obr"].get(key)
+        if base_value:
+            return base_value
+        else:
+            return self.search_parent(self.d[base_id], key)
+
+
 def is_case(job):
     has_ctrlDict = job.isfile("case/system/controlDict")
     return has_ctrlDict
@@ -61,22 +76,12 @@ def obr_create_operation(job, operation):
 def base_case_is_ready(job):
     """Checks whether the parent of the given job is ready"""
     if job.doc.get("base_id"):
-        if job.doc.get("base_case_is_ready"):
-            return True
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
         parent_job = project.open_job(id=job.doc.get("base_id"))
-        base_path = Path(project.open_job(id=job.doc.get("base_id")).path)
-        Path(job.path) / "case"
-        if "unitialised" in list(project.labels(parent_job)):
-            # print("base_case_ready", list(project.labels(parent_job)))
-            # print(job.doc)
-            if parent_job.sp.get("operation"):
-                # print("parent operation", parent_job.sp.get("operation"))
-                pass
-            return False
-        else:
-            job.doc["base_case_is_ready"] = True
-            return True
+        return (
+            parent_job.doc.get("state", "") == "ready"
+            and job.doc.get("state") != "tmp_locked"
+        )
 
 
 def needs_init_dependent(job):
@@ -144,14 +149,17 @@ def execute_operation(job, operation_name, operations):
     if not operations:
         return True
     for operation in operations:
-        if isinstance(operation, str):
-            getattr(sys.modules[__name__], operation)(job)
-        else:
-            if operation.get("shell", None):
-                execute(operation.get("shell"), job)
+        try:
+            if isinstance(operation, str):
+                getattr(sys.modules[__name__], operation)(job)
             else:
-                func = list(operation.keys())[0]
-                getattr(sys.modules[__name__], func)(job, operation.get(func))
+                if operation.get("shell", None):
+                    execute(operation.get("shell"), job)
+                else:
+                    func = list(operation.keys())[0]
+                    getattr(sys.modules[__name__], func)(job, operation.get(func))
+        except:
+            job.doc["state"] == "failure"
     return True
 
 
@@ -175,9 +183,27 @@ def execute_pre_build(operation_name, job):
     execute_operation(job, operation_name, operations)
 
 
+def start_job_state(_, job):
+    current_state = job.doc.get("state")
+    if not current_state:
+        job.doc["state"] = "started"
+        return
+    if current_state == "started":
+        # job has been started but not finished yet
+        job.doc["state"] = "tmp_lock"
+    return True
+
+
+def end_job_state(_, job):
+    job.doc["state"] = "ready"
+    return True
+
+
 @generate
+@OpenFOAMProject.operation_hooks.on_start(start_job_state)
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.operation_hooks.on_success(end_job_state)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "controlDict"))
 @OpenFOAMProject.post.true("set_controlDict")
@@ -193,8 +219,10 @@ def controlDict(job, args={}):
 
 
 @generate
+@OpenFOAMProject.operation_hooks.on_start(start_job_state)
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.operation_hooks.on_success(end_job_state)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "blockMesh"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "blockMesh"))
@@ -203,10 +231,21 @@ def blockMesh(job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
 
+    # get number of cells
+    log = job.doc["obr"]["blockMesh"][-1]["log"]
+    cells = (
+        check_output(["grep", "nCells:", Path(job.path) / "case" / log])
+        .decode("utf-8")
+        .split()[-1]
+    )
+    job.doc["obr"]["nCells"] = int(cells)
+
 
 @generate
+@OpenFOAMProject.operation_hooks.on_start(start_job_state)
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.operation_hooks.on_success(end_job_state)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "fvSolution"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "fvSolution"))
@@ -217,8 +256,10 @@ def fvSolution(job, args={}):
 
 
 @generate
+@OpenFOAMProject.operation_hooks.on_start(start_job_state)
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.operation_hooks.on_success(end_job_state)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(is_case)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "setKeyValuePair"))
@@ -242,8 +283,10 @@ def has_mesh(job):
 
 
 @generate
+@OpenFOAMProject.operation_hooks.on_start(start_job_state)
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.operation_hooks.on_success(end_job_state)
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(lambda job: obr_create_operation(job, "decomposePar"))
 @OpenFOAMProject.pre(has_mesh)
@@ -255,8 +298,10 @@ def decomposePar(job, args={}):
 
 
 @generate
+@OpenFOAMProject.operation_hooks.on_start(start_job_state)
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.operation_hooks.on_success(end_job_state)
 @OpenFOAMProject.pre(lambda job: job.doc.get("is_base", False))
 @OpenFOAMProject.post(is_case)
 @OpenFOAMProject.operation
@@ -268,19 +313,29 @@ def fetchCase(job):
     fetch_case_handler.init(job=job)
 
 
+def is_not_locked(job):
+    """Cases that are already started are set to tmp_lock
+    dont try to execute them
+    """
+    return job.doc.get("state") != "tmp_lock"
+
+
 @generate
+@OpenFOAMProject.operation_hooks.on_start(start_job_state)
 @OpenFOAMProject.operation_hooks.on_start(execute_pre_build)
 @OpenFOAMProject.operation_hooks.on_success(execute_post_build)
+@OpenFOAMProject.operation_hooks.on_success(end_job_state)
+@OpenFOAMProject.pre(is_not_locked)
 @OpenFOAMProject.pre(base_case_is_ready)
-@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "RefineMesh"))
+@OpenFOAMProject.pre(lambda job: obr_create_operation(job, "refineMesh"))
 @OpenFOAMProject.pre(has_mesh)
-@OpenFOAMProject.post(lambda job: operation_complete(job, "RefineMesh"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "refineMesh"))
 @OpenFOAMProject.operation
-def refineMesh(job):
-    value = job.sp["value"]
-    parameters = job.doc["parameters"]
-    for _ in range(value):
-        OpenFOAMCase(str(job.path) + "/case", job).refineMesh(parameters)
+def refineMesh(job, args={}):
+    args = get_args(job, args)
+    print(args)
+    for _ in range(args.get("value")):
+        OpenFOAMCase(str(job.path) + "/case", job).refineMesh(args)
 
 
 @OpenFOAMProject.pre(base_case_is_ready)
@@ -336,7 +391,7 @@ def runParallelSolver(job, args={}):
     return os.environ.get("OBR_RUN_CMD").format(**cli_args)
 
 
-@OpenFOAMProject.operation(aggregator=flow.aggregator(select=lambda job: final(job)))
+@OpenFOAMProject.operation(aggregator=flow.aggregator())
 def apply(*jobs, args={}):
     import importlib.util
     import sys
