@@ -213,7 +213,7 @@ def dispatch_pre_hooks(operation_name, job):
 
 def dispatch_post_hooks(operation_name, job):
     """just forwards to start_job_state and execute_pre_build"""
-    execute_ppost_build(operation_name, job)
+    execute_post_build(operation_name, job)
     end_job_state(operation_name, job)
 
 
