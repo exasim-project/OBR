@@ -31,8 +31,10 @@ class BlockMesh:
         """ """
         modifies_file(self.polyMesh)
         if args.get("adapt_timestep", True):
-            deltaT = self.deltaT
-            self.setControlDict({"deltaT": deltaT / 2})
+            modifies_file(self.controlDict.path)
+            deltaT = float(self.controlDict.get("deltaT"))
+            self.controlDict.set({"deltaT": deltaT / 2.0})
+        self._exec_operation(["refineMesh", "-overwrite"])
 
     def modifyBlockMesh(self, args):
         modifies_file(self.blockMeshDict)
@@ -47,8 +49,6 @@ class BlockMesh:
                 orig_block,
                 target_block,
             )
-
-        self._exec_operation(["blockMesh"])
 
     def blockMesh(self, args={}):
         # TODO replace this with writes_file and clean polyMesh folder
