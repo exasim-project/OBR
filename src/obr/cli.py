@@ -39,7 +39,7 @@ def cli(ctx, debug):
 @click.option("-p", "--pretend", default=False)
 @click.option("-o", "--operation")
 @click.option("--bundling", default=None)
-@click.option("--bundling_match", default=True)
+@click.option("--bundling_match", is_flag=True)
 @click.pass_context
 def submit(ctx, **kwargs):
     if kwargs.get("folder"):
@@ -123,7 +123,7 @@ def filter_jobs(job, jid: str = None, filter: str = None) -> bool:
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
-@click.option("-a", "--aggregate", default=False)
+@click.option("-a", "--aggregate", is_flag=True)
 @click.option("--filter", default=None)
 @click.option("--args", default="")
 @click.pass_context
@@ -199,7 +199,7 @@ def init(ctx, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-d", "--detailed", default=False)
+@click.option("-d", "--detailed", is_flag=True)
 @click.pass_context
 def status(ctx, **kwargs):
     if kwargs.get("folder"):
@@ -211,7 +211,7 @@ def status(ctx, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-d", "--detailed", default=False)
+@click.option("-d", "--detailed", is_flag=True)
 @click.option("-s", "--state")
 @click.option("-g", "--groups")
 @click.option("-o", "--operation")
