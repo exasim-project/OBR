@@ -175,31 +175,3 @@ def writes_files(fns):
             unlink(fn)
     else:
         unlink(fns)
-
-
-def decorator_modifies_file(fns=["path"]):
-    def wrapper(f, *jobsp):
-        @wraps(f)
-        def wrapped(self, *args):
-            print("called wrapped", *args, fn)
-            for fn in fns:
-                print(fn)
-                modifies_file(getattr(self, fn))
-            f(self, *args)
-
-        return wrapped
-
-    return wrapper
-
-
-def decorator_writes_files(fns=["path"]):
-    def wrapper(f):
-        @wraps(f)
-        def wrapped(self, *args):
-            for fn in fns:
-                writes_file(getattr(self, fn))
-            f(self, *args)
-
-        return wrapped
-
-    return wrapper
