@@ -59,6 +59,21 @@ def started(job):
 
 
 @FlowProject.label
+def processing(job):
+    return job.doc["state"] == "started" or job.doc["state"] == "tmp_lock"
+
+
+@FlowProject.label
+def failure(job):
+    return job.doc["state"] == "failure"
+
+
+@FlowProject.label
+def ready(job):
+    return job.doc["state"] == "ready"
+
+
+@FlowProject.label
 def final(job):
     """jobs that dont have children/variations are considered to be final and
     are thus eligable for execution"""
