@@ -31,6 +31,7 @@ def obr_create_tree(project, config, arguments):
     # TODO figure out how operations should be handled for statepoints
     base_case_dict = {"case": config["case"]["type"], "has_child": True}
     of_case = project.open_job(base_case_dict)
+    of_case.doc["state"] = "ready"
     of_case.doc["is_base"] = True
     of_case.doc["parameters"] = config["case"]
     of_case.doc["pre_build"] = config["case"].get("pre_build", [])
@@ -77,6 +78,7 @@ def obr_create_tree(project, config, arguments):
                     args = value
                     keys = list(value.keys())
                 else:
+                    print("create_tree", key, value)
                     args = {key: value}
                     path = "{}/{}/".format(key, value)
                     keys = [key]
@@ -98,6 +100,7 @@ def obr_create_tree(project, config, arguments):
                 job.doc["parameters"] = operation.get("parameters", [])
                 job.doc["pre_build"] = operation.get("pre_build", [])
                 job.doc["post_build"] = operation.get("post_build", [])
+                job.doc["state"] = ""
                 job.init()
                 path = path.replace(" ", "_").replace("(", "").replace(")", "")
                 path = path.split(">")[-1]
@@ -118,6 +121,10 @@ def obr_create_tree(project, config, arguments):
         src = Path(src)
         dst = Path(dst)
         check_output(["ln", "-s", src, dst])
+
+    obr_store = Path(arguments["folder"]) / ".obr_store"
+    if not obr_store.exists():
+        check_output(["mkdir", "-p", obr_store])
 
     if not (Path(arguments["folder"]) / "view").exists():
         # FIXME this copies to views instead of linking
