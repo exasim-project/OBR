@@ -69,9 +69,9 @@ def basic_eligible(job, operation):
     """
     # don't execute operation on cases that dont request them
     if (
-        not is_not_locked(job)
+        is_locked(job)
         or not base_case_is_ready(job)
-        or not operation != job.sp.get("operation")
+        or not operation == job.sp.get("operation")
         or not needs_init_dependent(job)
         or not is_case(job)
     ):
@@ -314,11 +314,11 @@ def fetchCase(job):
     fetch_case_handler.init(job=job)
 
 
-def is_not_locked(job):
+def is_locked(job):
     """Cases that are already started are set to tmp_lock
     dont try to execute them
     """
-    return job.doc.get("state") != "tmp_lock"
+    return job.doc.get("state") == "tmp_lock"
 
 
 @generate
