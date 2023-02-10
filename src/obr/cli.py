@@ -209,6 +209,7 @@ def status(ctx, **kwargs):
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
 
+# TODO find and run
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
