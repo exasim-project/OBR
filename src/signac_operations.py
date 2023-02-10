@@ -12,6 +12,10 @@ from pathlib import Path
 from subprocess import check_output
 
 # TODO operations should get an id/hash so that we can log success
+# TODO add:
+# - reconstructPar
+# - unlockTmpLock
+# - renumberMesh
 
 
 class OpenFOAMProject(flow.FlowProject):
@@ -159,11 +163,8 @@ def execute_operation(job, operation_name, operations):
             if isinstance(operation, str):
                 getattr(sys.modules[__name__], operation)(job)
             else:
-                if operation.get("shell", None):
-                    execute(operation.get("shell"), job)
-                else:
-                    func = list(operation.keys())[0]
-                    getattr(sys.modules[__name__], func)(job, operation.get(func))
+                func = list(operation.keys())[0]
+                getattr(sys.modules[__name__], func)(job, operation.get(func))
         except:
             job.doc["state"] == "failure"
     return True
@@ -251,6 +252,17 @@ def blockMesh(job, args={}):
         .split()[-1]
     )
     job.doc["obr"]["nCells"] = int(cells)
+
+
+@generate
+@OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
+@OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.pre(lambda job: basic_eligible(job, "blockMesh"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "blockMesh"))
+@OpenFOAMProject.operation
+def shell(job, args={}):
+    args = get_args(job, args)
+    print(args)
 
 
 @generate
