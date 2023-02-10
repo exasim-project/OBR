@@ -78,7 +78,6 @@ def obr_create_tree(project, config, arguments):
                     args = value
                     keys = list(value.keys())
                 else:
-                    print("create_tree", key, value)
                     args = {key: value}
                     path = "{}/{}/".format(key, value)
                     keys = [key]
