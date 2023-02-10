@@ -262,7 +262,8 @@ def blockMesh(job, args={}):
 @OpenFOAMProject.operation
 def shell(job, args={}):
     args = get_args(job, args)
-    print(args)
+    steps = [f"{k} {v}" for k, v in args.items()]
+    execute(steps, job)
 
 
 @generate

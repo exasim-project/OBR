@@ -116,7 +116,7 @@ def logged_func(func, doc, **kwargs):
     doc["obr"] = d
 
 
-def execute(steps, job):
+def execute(steps: list[str], job) -> bool:
     path = Path(job.path) / "case"
     if not steps:
         return
