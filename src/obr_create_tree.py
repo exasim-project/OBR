@@ -55,7 +55,7 @@ def obr_create_tree(project, config, arguments):
         base = parent_job.id
         for operation in variation:
             sub_variation = operation.get("variation")
-            key = operation.get("key", None).replace(".", "_dot_")
+            key = operation.get("key", "").replace(".", "_dot_")
             parent = operation.get("parent", {})
             # Filter out variations that have not the specified parent statepoint
             # TODO make consistent with filter in cli.py
