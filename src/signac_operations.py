@@ -218,9 +218,15 @@ def dispatch_post_hooks(operation_name, job):
     end_job_state(operation_name, job)
 
 
+def set_failure(operation_name, job):
+    """just forwards to start_job_state and execute_pre_build"""
+    job.doc["state"] = "failure"
+
+
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "controlDict"))
 @OpenFOAMProject.post.true("set_controlDict")
 @OpenFOAMProject.operation
@@ -237,6 +243,7 @@ def controlDict(job, args={}):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "blockMesh"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "blockMesh"))
 @OpenFOAMProject.operation
@@ -257,6 +264,7 @@ def blockMesh(job, args={}):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "shell"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "shell"))
 @OpenFOAMProject.operation
@@ -269,6 +277,7 @@ def shell(job, args={}):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "fvSolution"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "fvSolution"))
 @OpenFOAMProject.operation
@@ -280,6 +289,7 @@ def fvSolution(job, args={}):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "setKeyValuePair"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "setKeyValuePair"))
 @OpenFOAMProject.operation
@@ -304,6 +314,7 @@ def has_mesh(job):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "decomposePar"))
 @OpenFOAMProject.pre(has_mesh)
 @OpenFOAMProject.post(lambda job: operation_complete(job, "decomposePar"))
@@ -316,6 +327,7 @@ def decomposePar(job, args={}):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: job.doc.get("is_base", False))
 @OpenFOAMProject.post(is_case)
 @OpenFOAMProject.operation
@@ -337,6 +349,7 @@ def is_locked(job):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "refineMesh"))
 @OpenFOAMProject.pre(has_mesh)
 @OpenFOAMProject.post(lambda job: operation_complete(job, "refineMesh"))
