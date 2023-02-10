@@ -262,7 +262,7 @@ def blockMesh(job, args={}):
 @OpenFOAMProject.operation
 def shell(job, args={}):
     args = get_args(job, args)
-    steps = [f"{k} {v}" for k, v in args.items()]
+    steps = [f"{k} {v}".replace("_dot_", ".") for k, v in args.items()]
     execute(steps, job)
 
 
