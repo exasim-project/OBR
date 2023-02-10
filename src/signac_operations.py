@@ -257,8 +257,8 @@ def blockMesh(job, args={}):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
-@OpenFOAMProject.pre(lambda job: basic_eligible(job, "blockMesh"))
-@OpenFOAMProject.post(lambda job: operation_complete(job, "blockMesh"))
+@OpenFOAMProject.pre(lambda job: basic_eligible(job, "shell"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "shell"))
 @OpenFOAMProject.operation
 def shell(job, args={}):
     args = get_args(job, args)
