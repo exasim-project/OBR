@@ -230,8 +230,8 @@ def find(ctx, **kwargs):
         for operation, data in job.doc.obr.items():
             state = kwargs.get("state")
             if state:
-                # TODO Make history available
-                if data[-1]["state"] == state:
+                # TODO separate operation and job states in the document
+                if isinstance(data, list) and data[-1]["state"] == state:
                     print(
                         f"operation {operation} state is {state} for job"
                         f" {job.path} with {job.sp}{os.linesep}"
