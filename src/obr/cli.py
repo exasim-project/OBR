@@ -191,7 +191,13 @@ def init(ctx, **kwargs):
         with open(config_file, "r") as config_handle:
             config_str = config_handle.read()
 
-    config = yaml.safe_load(parse_variables(config_str, os.environ, "env"))
+    config = yaml.safe_load(
+        parse_variables(
+            parse_variables(config_str, os.environ, "env"),
+            {"location": str(Path(config_file).parents[0])},
+            "yaml",
+        )
+    )
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     obr_create_tree.obr_create_tree(project, config, kwargs)

@@ -218,8 +218,9 @@ def dispatch_post_hooks(operation_name, job):
     end_job_state(operation_name, job)
 
 
-def set_failure(operation_name, job):
+def set_failure(operation_name, error, job):
     """just forwards to start_job_state and execute_pre_build"""
+    print(error)
     job.doc["state"] = "failure"
 
 
