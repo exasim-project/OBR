@@ -23,7 +23,7 @@ from subprocess import check_output
 import hashlib
 
 
-def obr_create_tree(project, config, arguments):
+def obr_create_tree(project, config, arguments, config_file):
     if not os.environ.get("FOAM_ETC"):
         print("[OBR] Error OpenFOAM not sourced")
         sys.exit(-1)
@@ -73,13 +73,18 @@ def obr_create_tree(project, config, arguments):
                 #    continue
 
             for value in operation["values"]:
+                # if operation is shell take only script name instead of full path
                 if not key:
                     path = operation["schema"].format(**flatten(value)) + "/"
                     args = value
                     keys = list(value.keys())
                 else:
                     args = {key: value}
-                    path = "{}/{}/".format(key, value)
+                    if operation.get("operation") == "shell":
+                        key_ = str(Path(key.replace("_dot_", ".")).parts[-1])
+                    else:
+                        key_ = key
+                    path = "{}/{}/".format(key_, value)
                     keys = [key]
 
                 base_dict.update(

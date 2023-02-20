@@ -142,12 +142,17 @@ def needs_init_dependent(job):
 def get_args(job, args):
     """operation can get args either via function call or it statepoint
     if no args are passed via function the args from the statepoint are taken
+
+    also args can be just a str in case of shell scripts
     """
-    return (
-        {key: value for key, value in args.items()}
-        if args
-        else {key: job.sp[key] for key in job.doc["keys"]}
-    )
+    if isinstance(args, dict):
+        return (
+            {key: value for key, value in args.items()}
+            if args
+            else {key: job.sp[key] for key in job.doc["keys"]}
+        )
+    else:
+        return args
 
 
 def execute_operation(job, operation_name, operations):
@@ -165,7 +170,7 @@ def execute_operation(job, operation_name, operations):
             else:
                 func = list(operation.keys())[0]
                 getattr(sys.modules[__name__], func)(job, operation.get(func))
-        except:
+        except Exception as e:
             job.doc["state"] == "failure"
     return True
 
@@ -220,7 +225,6 @@ def dispatch_post_hooks(operation_name, job):
 
 def set_failure(operation_name, error, job):
     """just forwards to start_job_state and execute_pre_build"""
-    print(error)
     job.doc["state"] = "failure"
 
 
@@ -271,7 +275,11 @@ def blockMesh(job, args={}):
 @OpenFOAMProject.operation
 def shell(job, args={}):
     args = get_args(job, args)
-    steps = [f"{k} {v}".replace("_dot_", ".") for k, v in args.items()]
+    # if called from post build args are just a string
+    if isinstance(args, dict):
+        steps = [f"{k} {v}".replace("_dot_", ".") for k, v in args.items()]
+    else:
+        steps = [args]
     execute(steps, job)
 
 
@@ -357,7 +365,6 @@ def is_locked(job):
 @OpenFOAMProject.operation
 def refineMesh(job, args={}):
     args = get_args(job, args)
-    print(args)
     for _ in range(args.get("value")):
         OpenFOAMCase(str(job.path) + "/case", job).refineMesh(args)
 
