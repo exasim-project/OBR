@@ -116,9 +116,12 @@ def run(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
-    queries = kwargs.get("query").split(" and ")
-    sel_jobs = query_impl(project, queries, output=False)
-    jobs = [j for j in project if j.id in sel_jobs]
+    queries = kwargs.get("query")
+    if queries:
+        sel_jobs = query_impl(project, queries, output=False)
+        jobs = [j for j in project if j.id in sel_jobs]
+    else:
+        jobs = [j for j in project]
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
@@ -200,6 +203,7 @@ def status(ctx, **kwargs):
 
 def query_impl(project, queries: list[str], output=False) -> list[str]:
     """ """
+    queries = queries.split(" and ")
     docs = {}
     for job in project:
         if not job.doc.get("obr"):
@@ -273,7 +277,7 @@ def query(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
-    queries = kwargs.get("query").split(" and ")
+    queries = kwargs.get("query")
     query_impl(project, queries, output=True)
 
 
