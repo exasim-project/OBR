@@ -228,6 +228,7 @@ def query_impl(project, queries, output=False):
     res = []
     for key, value in docs.items():
         for q in queries:
+            q_success = []
             res_tmp = {}
             if "==" in q:
                 q_key, q_value = q.split("==")
@@ -253,7 +254,7 @@ def query_impl(project, queries, output=False):
                             "op_key": operation_key,
                             "op_val": operation_value,
                         }
-                        q_succes.append(True)
+                        q_success.append(True)
             else:
                 if key == q_key and q_value in str(value):
                     res_tmp[job.id] = {
@@ -261,7 +262,7 @@ def query_impl(project, queries, output=False):
                         "key": key,
                         "op_val": value,
                     }
-                    q_succes.append(True)
+                    q_success.append(True)
 
             # all queries have been found
             if len(q_succes) == len(queries):
