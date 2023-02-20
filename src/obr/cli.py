@@ -215,15 +215,15 @@ def status(ctx, **kwargs):
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
 
-# TODO find and run
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-s", "--state")
 @click.option("-g", "--groups")
 @click.option("-o", "--operation")
+@click.option("-r", "--run")
 @click.pass_context
-def find(ctx, **kwargs):
+def query(ctx, **kwargs):
     # TODO refactor
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])

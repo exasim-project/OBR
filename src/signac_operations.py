@@ -369,6 +369,14 @@ def checkMesh(job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
+    log = job.doc["obr"]["checkMesh"][-1]["log"]
+    cells = (
+        check_output(["grep", "cells:", Path(job.path) / "case" / log])
+        .decode("utf-8")
+        .split()[-1]
+    )
+    job.doc["obr"]["nCells"] = int(cells)
+
 
 def get_number_of_procs(job):
     np = job.sp.get("numberSubDomains")
