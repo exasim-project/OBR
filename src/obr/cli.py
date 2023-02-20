@@ -248,26 +248,24 @@ def query_impl(project, queries, output=False):
                 for operation_key, operation_value in value.items():
                     if operation_key == q_key and q_value in str(operation_value):
                         res_tmp[job.id] = {
-                                    "path":job.path,
-                                    "key": key,
-                                    "op_key": operation_key,
-                                    "op_val": operation_value,
-                                }
-                        )
+                            "path": job.path,
+                            "key": key,
+                            "op_key": operation_key,
+                            "op_val": operation_value,
+                        }
                         q_succes.append(True)
             else:
                 if key == q_key and q_value in str(value):
                     res_tmp[job.id] = {
-                                "path":job.path,
-                                "key": key,
-                                "op_val": value,
-                            }
+                        "path": job.path,
+                        "key": key,
+                        "op_val": value,
+                    }
                     q_succes.append(True)
 
             # all queries have been found
             if len(q_succes) == len(queries):
                 res.append(res_tmp)
-
 
     if output:
         for r in res:
