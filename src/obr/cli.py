@@ -260,7 +260,8 @@ def query(ctx, **kwargs):
                     if key == q_key and q_value in str(value):
                         res.append({job.path: (key, value)})
 
-    print(res)
+    for r in res:
+        print(r)
     #     if state:
     #         # TODO separate operation and job states in the document
     #         if isinstance(data, list) and data[-1]["state"] == state:
