@@ -19,6 +19,7 @@ import yaml
 import os
 import re
 import time
+from collections import defaultdict
 
 from signac_labels import *
 from signac_operations import *
@@ -99,24 +100,6 @@ def submit(ctx, **kwargs):
     #
 
 
-def filter_jobs(job, jid: str = None, filter: str = None) -> bool:
-    import yaml
-
-    if jid:
-        return job.id == jid
-    if filter:
-        negate = filter.startswith("!")
-        if negate:
-            filter = filter.replace("!", "")
-
-        d = yaml.safe_load(filter.replace(", ", "\n"))
-        if negate:
-            return not all([f"{k}: {v}" in str(job.sp) for k, v in d.items()])
-        return all([f"'{k}': {v}" in str(job.sp) for k, v in d.items()])
-
-    return True
-
-
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-o", "--operations", default="")
@@ -124,7 +107,7 @@ def filter_jobs(job, jid: str = None, filter: str = None) -> bool:
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
 @click.option("-a", "--aggregate", is_flag=True)
-@click.option("--filter", default=None)
+@click.option("--query", default="")
 @click.option("--args", default="")
 @click.pass_context
 def run(ctx, **kwargs):
@@ -133,9 +116,9 @@ def run(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
-    jobs = [
-        j for j in project if filter_jobs(j, kwargs.get("job"), kwargs.get("filter"))
-    ]
+    queries = kwargs.get("query").split(" and ")
+    sel_jobs = query_impl(project, queries, output=False)
+    jobs = [j for j in project if j.id in sel_jobs]
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
@@ -215,62 +198,61 @@ def status(ctx, **kwargs):
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
 
-def query_impl(project, queries, output=False):
+def query_impl(project, queries: list[str], output=False) -> list[str]:
     """ """
     docs = {}
     for job in project:
         if not job.doc.get("obr"):
             continue
+        docs[job.id] = {}
         for key, value in job.doc.obr.items():
-            docs.update({key: value})
-        docs.update(job.sp)
+            docs[job.id].update({key: value})
+        docs[job.id].update(job.sp)
 
     res = []
-    for key, value in docs.items():
-        for q in queries:
-            q_success = []
-            res_tmp = {}
-            if "==" in q:
-                q_key, q_value = q.split("==")
-                q_value = q_value.replace(" ", "")
-                q_key = q_key.replace(" ", "")
-            else:
-                q_key = q
-                q_value = ""
+    for job_id, doc in docs.items():
+        q_success = []
+        res_tmp = defaultdict(dict)
+        # all operations and statepoint values of a job
+        for key, value in doc.items():
+            for q in queries:
+                if "==" in q:
+                    q_key, q_value = q.split("==")
+                    q_value = q_value.replace(" ", "")
+                    q_key = q_key.replace(" ", "")
+                else:
+                    q_key = q
+                    q_value = ""
 
-            # is an operation just consider latest
-            # execution for now
-            if isinstance(value, list):
-                value = value[-1]
+                # is an operation just consider latest
+                # execution for now
+                if isinstance(value, list):
+                    value = value[-1]
 
-            # is an operation just consider latest
-            # execution for now
-            if isinstance(value, dict):
-                for operation_key, operation_value in value.items():
-                    if operation_key == q_key and q_value in str(operation_value):
-                        res_tmp[job.id] = {
-                            "path": job.path,
-                            "key": key,
-                            "op_key": operation_key,
-                            "op_val": operation_value,
-                        }
+                # is an operation just consider latest
+                # execution for now
+                if isinstance(value, dict):
+                    for operation_key, operation_value in value.items():
+                        if operation_key == q_key and q_value in str(operation_value):
+                            res_tmp[job_id].update(
+                                {
+                                    key: operation_value,
+                                }
+                            )
+                            q_success.append(True)
+                else:
+                    if key == q_key and q_value in str(value):
+                        res_tmp[job_id].update({key: value})
                         q_success.append(True)
-            else:
-                if key == q_key and q_value in str(value):
-                    res_tmp[job.id] = {
-                        "path": job.path,
-                        "key": key,
-                        "op_val": value,
-                    }
-                    q_success.append(True)
 
-            # all queries have been found
-            if len(q_success) == len(queries):
-                res.append(res_tmp)
+        # all queries have been found
+        if len(q_success) == len(queries):
+            res.append(res_tmp)
 
     if output:
         for r in res:
-            print(r)
+            for k, v in r.items():
+                print(k, v)
 
     query_ids = []
     for id_ in res:
