@@ -265,7 +265,7 @@ def query_impl(project, queries, output=False):
 
     query_ids = []
     for id_ in res:
-        query_ids.append(id_.values()[0][0])
+        query_ids.append(list(id_.values())[0][0])
 
     return query_ids
 
