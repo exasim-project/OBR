@@ -241,6 +241,8 @@ def query(ctx, **kwargs):
             for q in queries:
                 if "==" in q:
                     q_key, q_value = q.split("==")
+                    q_value = q_value.replace(" ", "")
+                    q_key = q_key.replace(" ", "")
                 else:
                     q_key = q
                     q_value = ""
