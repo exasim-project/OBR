@@ -265,7 +265,7 @@ def query_impl(project, queries, output=False):
                     q_success.append(True)
 
             # all queries have been found
-            if len(q_succes) == len(queries):
+            if len(q_success) == len(queries):
                 res.append(res_tmp)
 
     if output:
