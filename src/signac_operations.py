@@ -409,7 +409,7 @@ def runParallelSolver(job, args={}):
     solver = case.controlDict.get("application")
     mpiargs = "--map-by core --bind-to core"
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    res = job.doc["obr"].get("solver", [])
+    res = job.doc["obr"].get(solver, [])
     res.append(
         {
             "type": "shell",
