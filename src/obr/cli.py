@@ -255,7 +255,9 @@ def query(ctx, **kwargs):
                 if isinstance(value, dict):
                     for operation_key, operation_value in value.items():
                         if operation_key == q_key and q_value in str(operation_value):
-                            res.append({job.path: (operation_key, operation_value)})
+                            res.append(
+                                {job.path: (key, operation_key, operation_value)}
+                            )
                 else:
                     if key == q_key and q_value in str(value):
                         res.append({job.path: (key, value)})
