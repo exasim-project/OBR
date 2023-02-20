@@ -228,6 +228,7 @@ def query_impl(project, queries, output=False):
     res = []
     for key, value in docs.items():
         for q in queries:
+            res_tmp = {}
             if "==" in q:
                 q_key, q_value = q.split("==")
                 q_value = q_value.replace(" ", "")
@@ -246,26 +247,35 @@ def query_impl(project, queries, output=False):
             if isinstance(value, dict):
                 for operation_key, operation_value in value.items():
                     if operation_key == q_key and q_value in str(operation_value):
-                        res.append(
-                            {
-                                job.id: (
-                                    job.path,
-                                    key,
-                                    operation_key,
-                                    operation_value,
-                                )
-                            }
+                        res_tmp[job.id] = {
+                                    "path":job.path,
+                                    "key": key,
+                                    "op_key": operation_key,
+                                    "op_val": operation_value,
+                                }
                         )
+                        q_succes.append(True)
             else:
                 if key == q_key and q_value in str(value):
-                    res.append({job.id: (job.path, key, value)})
+                    res_tmp[job.id] = {
+                                "path":job.path,
+                                "key": key,
+                                "op_val": value,
+                            }
+                    q_succes.append(True)
+
+            # all queries have been found
+            if len(q_succes) == len(queries):
+                res.append(res_tmp)
+
+
     if output:
         for r in res:
             print(r)
 
     query_ids = []
     for id_ in res:
-        query_ids.append(list(id_.values())[0][0])
+        query_ids.append(list(id_.keys())[0])
 
     return query_ids
 
