@@ -396,6 +396,75 @@ def get_number_of_procs(job):
     )
 
 
+def query_to_dict(project, queries: list[str], output=False) -> dict:
+    queries = queries.split(" and ")
+    docs = {}
+    for job in project:
+        if not job.doc.get("obr"):
+            continue
+        docs[job.id] = {}
+        for key, value in job.doc.obr.items():
+            docs[job.id].update({key: value})
+        docs[job.id].update(job.sp)
+
+    res = []
+    for job_id, doc in docs.items():
+        q_success = []
+        res_tmp = defaultdict(dict)
+        # all operations and statepoint values of a job
+        for key, value in doc.items():
+            for q in queries:
+                if "==" in q:
+                    q_key, q_value = q.split("==")
+                    q_value = q_value.replace(" ", "")
+                    q_key = q_key.replace(" ", "")
+                else:
+                    q_key = q
+                    q_value = ""
+
+                # is an operation just consider latest
+                # execution for now
+                if isinstance(value, list):
+                    value = value[-1]
+
+                # is an operation just consider latest
+                # execution for now
+                if isinstance(value, dict):
+                    for operation_key, operation_value in value.items():
+                        if operation_key == q_key and q_value in str(operation_value):
+                            res_tmp[job_id].update(
+                                {
+                                    key: operation_value,
+                                }
+                            )
+                            q_success.append(True)
+                else:
+                    if key == q_key and q_value in str(value):
+                        res_tmp[job_id].update({key: value})
+                        q_success.append(True)
+
+        # all queries have been found
+        if len(q_success) == len(queries):
+            res.append(res_tmp)
+
+        return res
+
+
+def query_impl(project, queries: list[str], output=False) -> list[str]:
+    """ """
+    res = query_to_dict(project, queries, output)
+    if output:
+        for r in res:
+            for k, v in r.items():
+                print(k, v)
+
+    query_ids = []
+    for id_ in res:
+        query_ids.append(list(id_.keys())[0])
+
+    return query_ids
+
+
 @simulate
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.operation(
