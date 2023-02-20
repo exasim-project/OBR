@@ -260,23 +260,24 @@ def query(ctx, **kwargs):
                     if key == q_key and q_value in str(value):
                         res.append({job.path: (key, value)})
 
-        #     if state:
-        #         # TODO separate operation and job states in the document
-        #         if isinstance(data, list) and data[-1]["state"] == state:
-        #             print(
-        #                 f"operation {operation} state is {state} for job"
-        #                 f" {job.path} with {job.sp}{os.linesep}"
-        #             )
-        #             if detailed:
-        #                 print(f"{data[-1]['log']}")
-        #     get_operation = kwargs.get("operation")
-        #     if get_operation:
-        #         if operation == get_operation:
-        #             print(f"job {job.path} {job.sp} operation {operation}{os.linesep}")
-        #             if detailed:
-        #                 print(f"{data[-1]['log']}")
-        #     # using the job.id we can find jobs which have this job as child
-        #     # print(job.doc, list(job.doc.obr.keys()), job.sp)
+    print(res)
+    #     if state:
+    #         # TODO separate operation and job states in the document
+    #         if isinstance(data, list) and data[-1]["state"] == state:
+    #             print(
+    #                 f"operation {operation} state is {state} for job"
+    #                 f" {job.path} with {job.sp}{os.linesep}"
+    #             )
+    #             if detailed:
+    #                 print(f"{data[-1]['log']}")
+    #     get_operation = kwargs.get("operation")
+    #     if get_operation:
+    #         if operation == get_operation:
+    #             print(f"job {job.path} {job.sp} operation {operation}{os.linesep}")
+    #             if detailed:
+    #                 print(f"{data[-1]['log']}")
+    #     # using the job.id we can find jobs which have this job as child
+    #     # print(job.doc, list(job.doc.obr.keys()), job.sp)
 
 
 def main():
