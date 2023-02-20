@@ -225,6 +225,7 @@ def query_impl(project, queries, output=False):
             docs.update({key: value})
         docs.update(job.sp)
 
+    res = []
     for key, value in docs.items():
         for q in queries:
             if "==" in q:
