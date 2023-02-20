@@ -215,7 +215,7 @@ def status(ctx, **kwargs):
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
 
-def query_impl(jobs, queries, output=False):
+def query_impl(project, queries, output=False):
     """ """
     docs = {}
     for job in project:
@@ -281,12 +281,8 @@ def query(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
-    detailed = kwargs.get("detailed")
-
-    res = []
-
     queries = kwargs.get("query").split(" and ")
-    query_impl(jobs, queries, output=True)
+    query_impl(project, queries, output=True)
 
 
 def main():
