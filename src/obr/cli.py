@@ -215,6 +215,60 @@ def status(ctx, **kwargs):
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
 
+def query_impl(jobs, queries, output=False):
+    """ """
+    docs = {}
+    for job in project:
+        if not job.doc.get("obr"):
+            continue
+        for key, value in job.doc.obr.items():
+            docs.update({key: value})
+        docs.update(job.sp)
+
+    for key, value in docs.items():
+        for q in queries:
+            if "==" in q:
+                q_key, q_value = q.split("==")
+                q_value = q_value.replace(" ", "")
+                q_key = q_key.replace(" ", "")
+            else:
+                q_key = q
+                q_value = ""
+
+            # is an operation just consider latest
+            # execution for now
+            if isinstance(value, list):
+                value = value[-1]
+
+            # is an operation just consider latest
+            # execution for now
+            if isinstance(value, dict):
+                for operation_key, operation_value in value.items():
+                    if operation_key == q_key and q_value in str(operation_value):
+                        res.append(
+                            {
+                                job.id: (
+                                    job.path,
+                                    key,
+                                    operation_key,
+                                    operation_value,
+                                )
+                            }
+                        )
+            else:
+                if key == q_key and q_value in str(value):
+                    res.append({job.id: (job.path, key, value)})
+    if output:
+        for r in res:
+            print(r)
+
+    query_ids = []
+    for id_ in res:
+        query_ids.append(id_.values[0][0])
+
+    return query_ids
+
+
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
@@ -232,57 +286,7 @@ def query(ctx, **kwargs):
     res = []
 
     queries = kwargs.get("query").split(" and ")
-
-    for job in project:
-        if not job.doc.get("obr"):
-            continue
-
-        for key, value in job.doc.obr.items():
-            for q in queries:
-                if "==" in q:
-                    q_key, q_value = q.split("==")
-                    q_value = q_value.replace(" ", "")
-                    q_key = q_key.replace(" ", "")
-                else:
-                    q_key = q
-                    q_value = ""
-
-                # is an operation just consider latest
-                # execution for now
-                if isinstance(value, list):
-                    value = value[-1]
-
-                # is an operation just consider latest
-                # execution for now
-                if isinstance(value, dict):
-                    for operation_key, operation_value in value.items():
-                        if operation_key == q_key and q_value in str(operation_value):
-                            res.append(
-                                {job.path: (key, operation_key, operation_value)}
-                            )
-                else:
-                    if key == q_key and q_value in str(value):
-                        res.append({job.path: (key, value)})
-
-    for r in res:
-        print(r)
-    #     if state:
-    #         # TODO separate operation and job states in the document
-    #         if isinstance(data, list) and data[-1]["state"] == state:
-    #             print(
-    #                 f"operation {operation} state is {state} for job"
-    #                 f" {job.path} with {job.sp}{os.linesep}"
-    #             )
-    #             if detailed:
-    #                 print(f"{data[-1]['log']}")
-    #     get_operation = kwargs.get("operation")
-    #     if get_operation:
-    #         if operation == get_operation:
-    #             print(f"job {job.path} {job.sp} operation {operation}{os.linesep}")
-    #             if detailed:
-    #                 print(f"{data[-1]['log']}")
-    #     # using the job.id we can find jobs which have this job as child
-    #     # print(job.doc, list(job.doc.obr.keys()), job.sp)
+    query_impl(jobs, queries, output=True)
 
 
 def main():
