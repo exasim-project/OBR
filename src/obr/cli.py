@@ -218,10 +218,8 @@ def status(ctx, **kwargs):
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
-@click.option("-s", "--state")
-@click.option("-g", "--groups")
-@click.option("-o", "--operation")
-@click.option("-r", "--run")
+@click.option("-a", "--all", is_flag=True)
+@click.option("-q", "--query")
 @click.pass_context
 def query(ctx, **kwargs):
     # TODO refactor
@@ -230,28 +228,55 @@ def query(ctx, **kwargs):
 
     project = OpenFOAMProject.get_project()
     detailed = kwargs.get("detailed")
+
+    res = []
+
+    queries = kwargs.get("query").split(" and ")
+
     for job in project:
         if not job.doc.get("obr"):
             continue
-        for operation, data in job.doc.obr.items():
-            state = kwargs.get("state")
-            if state:
-                # TODO separate operation and job states in the document
-                if isinstance(data, list) and data[-1]["state"] == state:
-                    print(
-                        f"operation {operation} state is {state} for job"
-                        f" {job.path} with {job.sp}{os.linesep}"
-                    )
-                    if detailed:
-                        print(f"{data[-1]['log']}")
-            get_operation = kwargs.get("operation")
-            if get_operation:
-                if operation == get_operation:
-                    print(f"job {job.path} {job.sp} operation {operation}{os.linesep}")
-                    if detailed:
-                        print(f"{data[-1]['log']}")
-            # using the job.id we can find jobs which have this job as child
-            # print(job.doc, list(job.doc.obr.keys()), job.sp)
+
+        for key, value in job.doc.obr.items():
+            for q in queries:
+                if "==" in q:
+                    q_key, q_value = q.split("==")
+                else:
+                    q_key = q
+                    q_value = ""
+
+                # is an operation just consider latest
+                # execution for now
+                if isinstance(value, list):
+                    value = value[-1]
+
+                # is an operation just consider latest
+                # execution for now
+                if isinstance(value, dict):
+                    for operation_key, operation_value in value.items():
+                        if operation_key == q_key and q_value in str(operation_value):
+                            res.append({job.path: (operation_key, operation_value)})
+                else:
+                    if key == q_key and q_value in str(value):
+                        res.append({job.path: (key, value)})
+
+        #     if state:
+        #         # TODO separate operation and job states in the document
+        #         if isinstance(data, list) and data[-1]["state"] == state:
+        #             print(
+        #                 f"operation {operation} state is {state} for job"
+        #                 f" {job.path} with {job.sp}{os.linesep}"
+        #             )
+        #             if detailed:
+        #                 print(f"{data[-1]['log']}")
+        #     get_operation = kwargs.get("operation")
+        #     if get_operation:
+        #         if operation == get_operation:
+        #             print(f"job {job.path} {job.sp} operation {operation}{os.linesep}")
+        #             if detailed:
+        #                 print(f"{data[-1]['log']}")
+        #     # using the job.id we can find jobs which have this job as child
+        #     # print(job.doc, list(job.doc.obr.keys()), job.sp)
 
 
 def main():
