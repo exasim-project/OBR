@@ -19,7 +19,6 @@ import yaml
 import os
 import re
 import time
-from collections import defaultdict
 
 from signac_labels import *
 from signac_operations import *

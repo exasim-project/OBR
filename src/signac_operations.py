@@ -10,6 +10,7 @@ import os
 import sys
 from pathlib import Path
 from subprocess import check_output
+from collections import defaultdict
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -100,6 +101,12 @@ def needs_init_dependent(job):
     The default strategy is to link all files. If a file is modified
     the modifying operations are responsible for unlinking and copying
     """
+    # shell scripts might change files as side effect
+    # hence we copy all files instead of linking to avoid
+    # side effects
+    # in future it might make sense to specify the files which are modified
+    # in the yaml file
+    copy_instead_link = job.sp.get("operation") == "shell"
     if job.doc.get("base_id"):
         if job.doc.get("init_dependent"):
             return True
@@ -125,14 +132,25 @@ def needs_init_dependent(job):
                 src = Path(root) / fn
                 dst = Path(dst_path) / relative_path / fn
                 if not dst.exists():
-                    check_output(
-                        [
-                            "ln",
-                            "-s",
-                            str(os.path.relpath(src, dst_path / relative_path)),
-                        ],
-                        cwd=dst_path / relative_path,
-                    )
+                    if copy_instead_link:
+                        check_output(
+                            [
+                                "cp",
+                                str(os.path.relpath(src, dst_path / relative_path)),
+                                ".",
+                            ],
+                            cwd=dst_path / relative_path,
+                        )
+
+                    else:
+                        check_output(
+                            [
+                                "ln",
+                                "-s",
+                                str(os.path.relpath(src, dst_path / relative_path)),
+                            ],
+                            cwd=dst_path / relative_path,
+                        )
         job.doc["init_dependent"] = True
         return True
     else:
@@ -281,6 +299,7 @@ def shell(job, args={}):
     else:
         steps = [args]
     execute(steps, job)
+    # TODO do deduplication once done
 
 
 @generate
@@ -373,6 +392,7 @@ def refineMesh(job, args={}):
 @OpenFOAMProject.pre(owns_mesh)
 @OpenFOAMProject.operation
 def checkMesh(job, args={}):
+    print("checkMesh")
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
@@ -396,7 +416,7 @@ def get_number_of_procs(job):
     )
 
 
-def query_to_dict(project, queries: list[str], output=False) -> dict:
+def query_to_dict(project, queries: str, output=False) -> dict:
     queries = queries.split(" and ")
     docs = {}
     for job in project:
@@ -447,10 +467,10 @@ def query_to_dict(project, queries: list[str], output=False) -> dict:
         if len(q_success) == len(queries):
             res.append(res_tmp)
 
-        return res
+    return res
 
 
-def query_impl(project, queries: list[str], output=False) -> list[str]:
+def query_impl(project, queries: str, output=False) -> list[str]:
     """ """
     res = query_to_dict(project, queries, output)
     if output:
