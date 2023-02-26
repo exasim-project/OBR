@@ -151,18 +151,20 @@ def parse_variables(in_str, args, domain):
     ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
     for inst in ocurrances:
         in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
-    expr = re.findall(r"\${{([ 0-9()*+]*)}}", in_str)
+    expr = re.findall(r"\${{([ 0.-9()*+]*)}}", in_str)
     for inst in expr:
         in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
     return in_str
 
 
 @cli.command()
-@click.option("-f", "--folder", default=".")
+@click.option(
+    "-f", "--folder", default=".", help="Where to create the worspace and view"
+)
 @click.option("-e", "--execute", default=False)
-@click.option("-c", "--config")
-@click.option("-t", "--tasks", default=-1)
-@click.option("-u", "--url", default=None)
+@click.option("-c", "--config", help="Path to configuration file.")
+@click.option("-t", "--tasks", default=-1, help="Number of tasks to run concurrently.")
+@click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.pass_context
 def init(ctx, **kwargs):
     import obr_create_tree
@@ -173,16 +175,31 @@ def init(ctx, **kwargs):
             config_str = f.read().decode("utf-8")
     else:
         config_file = kwargs["config"]
+        yaml_location = (Path(os.getcwd()) / config_file).parents[0]
+
+        # load base yaml file
         with open(config_file, "r") as config_handle:
             config_str = config_handle.read()
+
+        # search for includes
+        includes = re.findall("[  ]*\${{include.[\w.]*}}", config_str)
+        for include in includes:
+            ws = " ".join(include.split(" ")[:-1])
+            fn = ".".join(include.split(".")[1:]).replace("}", "")
+            with open(yaml_location / fn, "r") as include_handle:
+                include_str = ws + ws.join(include_handle.readlines())
+            config_str = config_str.replace(include, include_str)
+        print(config_str)
 
     config = yaml.safe_load(
         parse_variables(
             parse_variables(config_str, os.environ, "env"),
-            {"location": str((Path(os.getcwd()) / config_file).parents[0])},
+            {"location": str(yaml_location)},
             "yaml",
         )
     )
+
+    print(config)
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     obr_create_tree.obr_create_tree(project, config, kwargs, config_file)
