@@ -117,6 +117,12 @@ class OpenFOAMCase(BlockMesh):
                     "coeffs": {"n": coeffs},
                 }
             )
+        # TODO make this generic
+        fvSolutionArgs = args.pop("fvSolution", False)
+        if fvSolutionArgs:
+            modifies_file(self.fvSolution.path)
+            self.fvSolution.set(fvSolutionArgs)
+
         self._exec_operation(["decomposePar", "-force"])
 
     def setKeyValuePair(self, args):
