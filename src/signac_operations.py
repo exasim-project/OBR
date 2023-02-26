@@ -416,7 +416,7 @@ def get_number_of_procs(job):
     )
 
 
-def query_to_dict(project, queries: str, output=False) -> dict:
+def query_to_dict(project, queries: str, output=False, latest_only=True) -> dict:
     queries = queries.split(" and ")
     docs = {}
     for job in project:
@@ -444,7 +444,7 @@ def query_to_dict(project, queries: str, output=False) -> dict:
 
                 # is an operation just consider latest
                 # execution for now
-                if isinstance(value, list):
+                if isinstance(value, list) and latest_only:
                     value = value[-1]
 
                 # is an operation just consider latest
@@ -470,9 +470,9 @@ def query_to_dict(project, queries: str, output=False) -> dict:
     return res
 
 
-def query_impl(project, queries: str, output=False) -> list[str]:
-    """ """
-    res = query_to_dict(project, queries, output)
+def query_impl(project, queries: str, output=False, latest_only=True) -> list[str]:
+    """Performs a query and returns corresponding job.ids"""
+    res = query_to_dict(project, queries, output, latest_only)
     if output:
         for r in res:
             for k, v in r.items():
