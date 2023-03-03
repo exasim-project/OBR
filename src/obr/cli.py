@@ -189,7 +189,6 @@ def init(ctx, **kwargs):
             with open(yaml_location / fn, "r") as include_handle:
                 include_str = ws + ws.join(include_handle.readlines())
             config_str = config_str.replace(include, include_str)
-        print(config_str)
 
     config = yaml.safe_load(
         parse_variables(
@@ -198,8 +197,6 @@ def init(ctx, **kwargs):
             "yaml",
         )
     )
-
-    print(config)
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     obr_create_tree.obr_create_tree(project, config, kwargs, config_file)

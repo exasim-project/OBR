@@ -73,6 +73,10 @@ def obr_create_tree(project, config, arguments, config_file):
                 #    continue
 
             for value in operation["values"]:
+                # support if statetment for key value pairs
+                if not key and not value.get("if", True):
+                    continue
+
                 # if operation is shell take only script name instead of full path
                 if not key:
                     path = operation["schema"].format(**flatten(value)) + "/"

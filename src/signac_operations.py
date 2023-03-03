@@ -189,6 +189,7 @@ def execute_operation(job, operation_name, operations):
                 func = list(operation.keys())[0]
                 getattr(sys.modules[__name__], func)(job, operation.get(func))
         except Exception as e:
+            print(e)
             job.doc["state"] == "failure"
     return True
 
@@ -392,7 +393,6 @@ def refineMesh(job, args={}):
 @OpenFOAMProject.pre(owns_mesh)
 @OpenFOAMProject.operation
 def checkMesh(job, args={}):
-    print("checkMesh")
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
