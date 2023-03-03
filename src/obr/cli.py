@@ -150,8 +150,13 @@ def run(ctx, **kwargs):
 def parse_variables(in_str, args, domain):
     ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
     for inst in ocurrances:
-        in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
-    expr = re.findall(r"\${{([ 0.-9()*+]*)}}", in_str)
+        if not args.get(inst, ""):
+            print(f"warning {inst} not defined")
+        in_str = in_str.replace(
+            "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
+        )
+    expr = re.findall(r"\${{([\'\"\= 0.-9()*+A-Za-z_>!]*)}}", in_str)
+    print("expr", expr, in_str)
     for inst in expr:
         in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
     return in_str
@@ -197,6 +202,10 @@ def init(ctx, **kwargs):
             "yaml",
         )
     )
+
+    # TODO add an option to write out parsed file
+    # for debuging
+    print(config)
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     obr_create_tree.obr_create_tree(project, config, kwargs, config_file)
