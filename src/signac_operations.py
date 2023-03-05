@@ -519,6 +519,19 @@ def runParallelSolver(job, args={}):
     return os.environ.get("OBR_RUN_CMD").format(**cli_args)
 
 
+@OpenFOAMProject.operation
+def archive(job, args={}):
+    root, _, files = next(os.walk(Path(job.path) / "case"))
+    fp = os.environ.get("OBR_CALL_ARGS")
+    for fn in files:
+        if fp not in fn:
+            continue
+        if (Path(root) / fn).is_symlink():
+            continue
+        check_output(["cp", "-r", f"{job.path}/case/{fn}", f"obr_store/{job.id}_{fn}"])
+    return True
+
+
 @OpenFOAMProject.operation(aggregator=flow.aggregator())
 def apply(*jobs, args={}):
     import importlib.util
