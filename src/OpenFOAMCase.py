@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import setFunctions as sf
+from copy import deepcopy
 
 from core import (
     logged_execute,
@@ -98,14 +99,13 @@ class OpenFOAMCase(BlockMesh):
 
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar"""
-        # TODO call write_files
         method = args["method"]
         if method == "simple":
             if not args.get("numberSubDomains"):
-                coeffs = [i for i in args["coeffs"]]
+                coeffs = [int(i) for i in args["coeffs"]]
                 numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
             else:
-                numberSubDomains = args["numberSubDomains"]
+                numberSubDomains = int(args["numberSubDomains"])
                 coeffs = args.get("coeffs", None)
                 if not coeffs:
                     coeffs = sf.calculate_simple_partition(numberSubDomains, [1, 1, 1])
@@ -117,13 +117,10 @@ class OpenFOAMCase(BlockMesh):
                     "coeffs": {"n": coeffs},
                 }
             )
-        # TODO make this generic
-        fvSolutionArgs = args.pop("fvSolution", False)
-        if fvSolutionArgs:
-            modifies_file(self.fvSolution.path)
-            self.fvSolution.set(fvSolutionArgs)
-
         self._exec_operation(["decomposePar", "-force"])
+        fvSolutionArgs = args.get("fvSolution", False)
+        if fvSolutionArgs:
+            self.fvSolution.set(fvSolutionArgs)
 
     def setKeyValuePair(self, args):
         path = Path(args.pop("file"))
