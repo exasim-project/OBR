@@ -516,7 +516,7 @@ def runParallelSolver(job, args={}):
         "timestamp": timestamp,
         "np": get_number_of_procs(job),
     }
-    return os.environ.get("OBR_RUN_CMD").format(**cli_args)
+    return os.environ.get("OBR_RUN_CMD").format(**cli_args) + "|| true"
 
 
 @OpenFOAMProject.operation
