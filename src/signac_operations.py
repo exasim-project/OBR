@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 from subprocess import check_output
 from collections import defaultdict
+from dataclasses import dataclass
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -416,7 +417,25 @@ def get_number_of_procs(job) -> int:
     )
 
 
-def query_to_dict(project, queries: str, output=False, latest_only=True) -> dict:
+@dataclass
+class query_result:
+    id: str = field()
+    result: dict = field(default_factory=dict)
+
+
+# TODO implement to clean up query_to_dict
+# @dataclass
+# class query:
+#     key
+#     value
+#     must_match: bool = True
+#     predicate = equal
+
+
+def query_to_dict(
+    project: list, queries: str, output=False, latest_only=True
+) -> list[query_result]:
+    """Given a list jobs find all jobs for which a query matches"""
     queries = queries.split(" and ")
     docs = {}
     for job in project:
@@ -430,8 +449,11 @@ def query_to_dict(project, queries: str, output=False, latest_only=True) -> dict
     res = []
     for job_id, doc in docs.items():
         q_success = []
-        res_tmp = defaultdict(dict)
-        # all operations and statepoint values of a job
+        res_tmp = query_result(job.id)
+
+        # scan through all operations and statepoint values of a job
+        # look for keys and values
+        # and append if all queries have been matched
         for key, value in doc.items():
             for q in queries:
                 if "==" in q:
@@ -452,7 +474,7 @@ def query_to_dict(project, queries: str, output=False, latest_only=True) -> dict
                 if isinstance(value, dict):
                     for operation_key, operation_value in value.items():
                         if operation_key == q_key and q_value in str(operation_value):
-                            res_tmp[job_id].update(
+                            res_tmp.result.update(
                                 {
                                     key: operation_value,
                                 }
@@ -460,10 +482,11 @@ def query_to_dict(project, queries: str, output=False, latest_only=True) -> dict
                             q_success.append(True)
                 else:
                     if key == q_key and q_value in str(value):
-                        res_tmp[job_id].update({key: value})
+                        res_tmp.result.update({key: value})
                         q_success.append(True)
 
         # all queries have been found
+        # TODO queries without predicate should be optional
         if len(q_success) == len(queries):
             res.append(res_tmp)
 
@@ -480,7 +503,7 @@ def query_impl(project, queries: str, output=False, latest_only=True) -> list[st
 
     query_ids = []
     for id_ in res:
-        query_ids.append(list(id_.keys())[0])
+        query_ids.append(id_.id)
 
     return query_ids
 
