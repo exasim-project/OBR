@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 from subprocess import check_output
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
