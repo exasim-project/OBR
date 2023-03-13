@@ -417,27 +417,47 @@ def get_number_of_procs(job) -> int:
     )
 
 
+def equal(a, b):
+    return a == b
+
+
+def not_equal(a, b):
+    return a != b
+
+
 @dataclass
 class query_result:
     id: str = field()
-    result: dict = field(default_factory=dict)
+    result: list = field(default_factory=list)
 
 
 # TODO implement to clean up query_to_dict
-# @dataclass
-# class query:
-#     key
-#     value
-#     must_match: bool = True
-#     predicate = equal
+@dataclass
+class query:
+    key
+    value
+    state: bool = False
+    predicate = equal
+
+    def execute(self, key, value):
+        if self.value:
+            if self.predicate({self.key: self.value}, {key: value}) and not self.state:
+                self.state = {key: value}
+        else:
+            if self.predicate(self.key, key) and not self.state:
+                self.state = key
+
+    def match(self):
+        return self.state
 
 
 def query_to_dict(
-    project: list, queries: str, output=False, latest_only=True
+    project: list, queries: list[query], output=False, latest_only=True
 ) -> list[query_result]:
     """Given a list jobs find all jobs for which a query matches"""
-    queries = queries.split(" and ")
     docs = {}
+
+    # merge job docs and statepoints
     for job in project:
         if not job.doc.get("obr"):
             continue
@@ -447,48 +467,31 @@ def query_to_dict(
         docs[job.id].update(job.sp)
 
     res = []
+
+    def execute_query(query, key, value) -> query:
+        if isinstance(value, list) and latest_only:
+            value = value[-1]
+        # descent one level down
+        # statepoints and job documents might contain subdicts which we want to descent
+        # into
+        if isinstance(value, dict):
+            for operation_key, operation_value in value.items():
+                return execute_query(query, key, value)
+        query.execute(key, value)
+        return query
+
     for job_id, doc in docs.items():
-        q_success = []
         res_tmp = query_result(job.id)
 
-        # scan through all operations and statepoint values of a job
+        # scan through merged operations and statepoint values of a job
         # look for keys and values
         # and append if all queries have been matched
         for key, value in doc.items():
             for q in queries:
-                if "==" in q:
-                    q_key, q_value = q.split("==")
-                    q_value = q_value.replace(" ", "")
-                    q_key = q_key.replace(" ", "")
-                else:
-                    q_key = q
-                    q_value = ""
-
-                # is an operation just consider latest
-                # execution for now
-                if isinstance(value, list) and latest_only:
-                    value = value[-1]
-
-                # is an operation just consider latest
-                # execution for now
-                if isinstance(value, dict):
-                    for operation_key, operation_value in value.items():
-                        if operation_key == q_key and q_value in str(operation_value):
-                            res_tmp.result.update(
-                                {
-                                    key: operation_value,
-                                }
-                            )
-                            q_success.append(True)
-                else:
-                    if key == q_key and q_value in str(value):
-                        res_tmp.result.update({key: value})
-                        q_success.append(True)
-
-        # all queries have been found
-        # TODO queries without predicate should be optional
-        if len(q_success) == len(queries):
-            res.append(res_tmp)
+                res = execute_query(q, key, value)
+                if res.state:
+                    res_tmp.result.append(res.state)
+        res.append(res_tmp)
 
     return res
 
