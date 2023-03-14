@@ -235,7 +235,8 @@ def query(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
-    queries = kwargs.get("query")
+    queries_str = kwargs.get("query")
+    queries = input_to_queries(queries_str)
     query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
 
 

@@ -90,8 +90,7 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def is_decomposed(self):
-        """TODO check if number of processor folder is consitent with decomposeParDict
-        """
+        """TODO check if number of processor folder is consitent with decomposeParDict"""
         return self.obr_operation_was_sucessful("decomposePar")
 
     def _exec_operation(self, operation):

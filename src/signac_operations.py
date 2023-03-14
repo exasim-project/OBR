@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 import flow
 from signac_labels import *
-
+from typing import Callable, Any
 
 from core import execute
 from OpenFOAMCase import OpenFOAMCase
+from copy import deepcopy
 
 import os
 import sys
+import re
 from pathlib import Path
 from subprocess import check_output
 from collections import defaultdict
@@ -50,8 +52,7 @@ def is_case(job):
 
 
 def operation_complete(job, operation):
-    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success
-    """
+    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
     if job.doc.get("obr"):
         state = job.doc.get("obr").get(operation)
         if not state:
@@ -434,28 +435,42 @@ class query_result:
 # TODO implement to clean up query_to_dict
 @dataclass
 class query:
-    key
-    value
+    key: str
+    value: Any = ""
     state: bool = False
-    predicate = equal
+    predicate: Callable = equal
 
     def execute(self, key, value):
         if self.value:
             if self.predicate({self.key: self.value}, {key: value}) and not self.state:
                 self.state = {key: value}
         else:
+            # print(key, value)
             if self.predicate(self.key, key) and not self.state:
-                self.state = key
+                self.state = {key: value}
 
     def match(self):
         return self.state
 
 
+def input_to_query(inp: str) -> query:
+    """ """
+    inp = inp.replace("key", '"key"').replace("value", '"value"')
+    return query(**eval(inp))
+
+
+def input_to_queries(inp: str) -> list[query]:
+    """Convert a json string to list of queries"""
+
+    inp_lst = re.findall("{[\w:\"'0-9,. ]*}", inp)
+    return [input_to_query(x) for x in inp_lst]
+
+
 def query_to_dict(
-    project: list, queries: list[query], output=False, latest_only=True
+    project: list, queries: list[query], output=False, latest_only=True, strict=False
 ) -> list[query_result]:
     """Given a list jobs find all jobs for which a query matches"""
-    docs = {}
+    docs: dict = {}
 
     # merge job docs and statepoints
     for job in project:
@@ -466,34 +481,69 @@ def query_to_dict(
             docs[job.id].update({key: value})
         docs[job.id].update(job.sp)
 
-    res = []
+    ret = []
 
     def execute_query(query, key, value) -> query:
-        if isinstance(value, list) and latest_only:
+        if isinstance(value, list) and latest_only and value:
             value = value[-1]
         # descent one level down
         # statepoints and job documents might contain subdicts which we want to descent
         # into
-        if isinstance(value, dict):
-            for operation_key, operation_value in value.items():
-                return execute_query(query, key, value)
+        signac_attr_dict_str = "JSONAttrDict"
+        if isinstance(value, dict) or type(value).__name__ == signac_attr_dict_str:
+            sub_results = list(
+                filter(
+                    lambda x: x.state,
+                    [
+                        execute_query(deepcopy(query), sub_key, sub_value)
+                        for sub_key, sub_value in value.items()
+                    ],
+                )
+            )
+            if len(sub_results) > 0:
+                return sub_results[0]
         query.execute(key, value)
         return query
 
     for job_id, doc in docs.items():
-        res_tmp = query_result(job.id)
-
         # scan through merged operations and statepoint values of a job
         # look for keys and values
         # and append if all queries have been matched
-        for key, value in doc.items():
-            for q in queries:
-                res = execute_query(q, key, value)
+        tmp_qs = []
+        all_required = True
+        for q in queries:
+            res_cache = False
+            for key, value in doc.items():
+                q_tmp = deepcopy(q)
+                res = execute_query(q_tmp, key, value)
                 if res.state:
-                    res_tmp.result.append(res.state)
-        res.append(res_tmp)
+                    res_cache = res.state
+                    tmp_qs.append(res)
 
-    return res
+            # res.state could be from any key before
+            if q.value and not res_cache:
+                all_required = False
+
+        # append if all required results are present
+        res_tmp = query_result(job_id)
+        for q in tmp_qs:
+            # requests a value but not a state
+            # is currently considered to be failed
+            res_tmp.result.append(q.state)
+
+        # in strict mode all queries need to have some result
+        if strict:
+            all_required = len(res_tmp.result) == len(queries)
+
+        # merge all results to a single dictionary
+        res_tmp_dict = {}
+        for d in res_tmp.result:
+            res_tmp_dict.update(d)
+        res_tmp.result = res_tmp_dict
+
+        if all_required:
+            ret.append(deepcopy(res_tmp))
+    return ret
 
 
 def query_impl(project, queries: str, output=False, latest_only=True) -> list[str]:
@@ -501,8 +551,7 @@ def query_impl(project, queries: str, output=False, latest_only=True) -> list[st
     res = query_to_dict(project, queries, output, latest_only)
     if output:
         for r in res:
-            for k, v in r.items():
-                print(k, v)
+            print(r)
 
     query_ids = []
     for id_ in res:
