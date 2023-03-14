@@ -408,7 +408,7 @@ def checkMesh(job, args={}):
 
 
 def get_number_of_procs(job) -> int:
-    np = int(job.sp.get("numberSubDomains"))
+    np = int(job.sp.get("numberSubDomains"), 0)
     if np:
         return np
     return int(
