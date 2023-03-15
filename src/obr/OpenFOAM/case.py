@@ -46,7 +46,7 @@ class File(FileParser):
             except:
                 return self._parsed_file.get(name)
         else:
-            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filename)
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.path)
 
     # @decorator_modifies_file
     def set(self, args):
