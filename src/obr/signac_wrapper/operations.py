@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 import flow
-from .labels import *
-from typing import Callable, Any
-
-from core import execute
-from OpenFOAMCase import OpenFOAMCase
-from copy import deepcopy
-
 import os
 import sys
 import re
+
+from typing import Callable, Any
+from core import execute
+from copy import deepcopy
 from pathlib import Path
 from subprocess import check_output
 from collections import defaultdict
 from dataclasses import dataclass, field
+
+from .labels import *
+from OpenFOAMCase import OpenFOAMCase
+
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
