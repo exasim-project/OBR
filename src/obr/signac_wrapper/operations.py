@@ -13,7 +13,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from .labels import *
-from OpenFOAMCase import OpenFOAMCase
+from OpenFOAM.case import OpenFOAMCase
 
 
 # TODO operations should get an id/hash so that we can log success
@@ -28,7 +28,6 @@ class OpenFOAMProject(flow.FlowProject):
 
 
 generate = OpenFOAMProject.make_group(name="generate")
-
 simulate = OpenFOAMProject.make_group("execute")
 
 
