@@ -10,7 +10,7 @@ from core import (
     modifies_file,
 )
 
-from BlockMesh import BlockMesh
+from .BlockMesh import BlockMesh
 
 from Owls.FoamDictParser import FileParser
 
@@ -32,7 +32,12 @@ class File(FileParser):
         return self._folder / self._file
 
     def get(self, name):
-        return self._parsed_file.get(name)
+        # TODO replace with a safer option
+        # also consider moving that to Owls
+        try:
+            return eval(self._parsed_file.get(name))
+        except:
+            return self._parsed_file.get(name)
 
     # @decorator_modifies_file
     def set(self, args):
