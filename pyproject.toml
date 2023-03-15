@@ -1,19 +1,13 @@
-[tool.black]
-preview = true
-
-[tool.flake8]
-max-line-length = 88
-extend-ignore = ["E203"]
-
-dependencies = [
-	"signac==1.8.0",
-	"signac-flow==0.23.0",
-        "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
-]
-
 [project]
 name = "obr"
 version = "0.1.0"
+
+dependencies = [
+    "click",
+	"signac==1.8.0",
+	"signac-flow==0.23.0",
+    "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
+]
 
 [project.optional-dependencies]
 doc = [
@@ -22,3 +16,10 @@ doc = [
     "myst_parser",
     "pytest",
 ]
+
+[tool.black]
+preview = true
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203"]
