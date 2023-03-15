@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
 import setFunctions as sf
+import errno
+import os
 from copy import deepcopy
+from pathlib import Path
 
 from core import (
     logged_execute,
@@ -23,9 +25,13 @@ class File(FileParser):
         self._folder = kwargs["folder"]
         self.job = kwargs["job"]
         self._parse_file()
+        self._optional = kwargs.get("optional", False)
 
     def _parse_file(self):
-        self._parsed_file = self.parse_file_to_dict()
+        if self.path.exists():
+            self._parsed_file = self.parse_file_to_dict()
+        else:
+            self._parsed_file = {}
 
     @property
     def path(self):
@@ -34,10 +40,13 @@ class File(FileParser):
     def get(self, name):
         # TODO replace with a safer option
         # also consider moving that to Owls
-        try:
-            return eval(self._parsed_file.get(name))
-        except:
-            return self._parsed_file.get(name)
+        if self.path.exists():
+            try:
+                return eval(self._parsed_file.get(name))
+            except:
+                return self._parsed_file.get(name)
+        else:
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filename)
 
     # @decorator_modifies_file
     def set(self, args):
@@ -65,7 +74,7 @@ class OpenFOAMCase(BlockMesh):
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
         self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
         self.decomposeParDict = File(
-            folder=self.system_folder, file="decomposeParDict", job=job
+            folder=self.system_folder, file="decomposeParDict", job=job, optional=True
         )
 
     @property
