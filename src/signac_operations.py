@@ -437,7 +437,7 @@ class query_result:
 class Query:
     key: str
     value: Any = ""
-    state: dict = {}
+    state: dict = field(default_factory=dict)
     predicate: Callable = equal
 
     def execute(self, key, value):
