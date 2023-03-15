@@ -408,7 +408,7 @@ def checkMesh(job, args={}):
 
 
 def get_number_of_procs(job) -> int:
-    np = int(job.sp.get("numberSubDomains",0))
+    np = int(job.sp.get("numberSubDomains", 0))
     if np:
         return np
     return int(
@@ -429,15 +429,15 @@ def not_equal(a, b):
 @dataclass
 class query_result:
     id: str = field()
-    result: list = field(default_factory=list)
+    result: list[dict] = field(default_factory=list[dict])
 
 
 # TODO implement to clean up query_to_dict
 @dataclass
-class query:
+class Query:
     key: str
     value: Any = ""
-    state: bool = False
+    state: dict = {}
     predicate: Callable = equal
 
     def execute(self, key, value):
@@ -453,13 +453,13 @@ class query:
         return self.state
 
 
-def input_to_query(inp: str) -> query:
+def input_to_query(inp: str) -> Query:
     """ """
     inp = inp.replace("key", '"key"').replace("value", '"value"')
-    return query(**eval(inp))
+    return Query(**eval(inp))
 
 
-def input_to_queries(inp: str) -> list[query]:
+def input_to_queries(inp: str) -> list[Query]:
     """Convert a json string to list of queries"""
 
     inp_lst = re.findall("{[\w:\"'0-9,. ]*}", inp)
@@ -467,7 +467,7 @@ def input_to_queries(inp: str) -> list[query]:
 
 
 def query_to_dict(
-    project: list, queries: list[query], output=False, latest_only=True, strict=False
+    project: list, queries: list[Query], output=False, latest_only=True, strict=False
 ) -> list[query_result]:
     """Given a list jobs find all jobs for which a query matches"""
     docs: dict = {}
@@ -483,7 +483,7 @@ def query_to_dict(
 
     ret = []
 
-    def execute_query(query, key, value) -> query:
+    def execute_query(query, key, value) -> Query:
         if isinstance(value, list) and latest_only and value:
             value = value[-1]
         # descent one level down
@@ -509,10 +509,10 @@ def query_to_dict(
         # scan through merged operations and statepoint values of a job
         # look for keys and values
         # and append if all queries have been matched
-        tmp_qs = []
+        tmp_qs: list[Query] = []
         all_required = True
         for q in queries:
-            res_cache = False
+            res_cache = {}
             for key, value in doc.items():
                 q_tmp = deepcopy(q)
                 res = execute_query(q_tmp, key, value)
@@ -539,14 +539,16 @@ def query_to_dict(
         res_tmp_dict = {}
         for d in res_tmp.result:
             res_tmp_dict.update(d)
-        res_tmp.result = res_tmp_dict
+        res_tmp.result = [res_tmp_dict]
 
         if all_required:
             ret.append(deepcopy(res_tmp))
     return ret
 
 
-def query_impl(project, queries: str, output=False, latest_only=True) -> list[str]:
+def query_impl(
+    project, queries: list[Query], output=False, latest_only=True
+) -> list[str]:
     """Performs a query and returns corresponding job.ids"""
     res = query_to_dict(project, queries, output, latest_only)
     if output:

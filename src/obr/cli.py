@@ -15,7 +15,7 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 import click
-import yaml
+import yaml  # type: ignore[import]
 import os
 import re
 import time
@@ -115,7 +115,8 @@ def run(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
-    queries = kwargs.get("query")
+    queries_str = kwargs.get("query")
+    queries = input_to_queries(queries_str)
     if queries:
         sel_jobs = query_impl(project, queries, output=False)
         jobs = [j for j in project if j.id in sel_jobs]
