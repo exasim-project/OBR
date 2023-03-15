@@ -454,7 +454,7 @@ class Query:
 
 
 def input_to_query(inp: str) -> Query:
-    """ """
+    """converts cli input  str to a Query object"""
     inp = inp.replace("key", '"key"').replace("value", '"value"')
     return Query(**eval(inp))
 
