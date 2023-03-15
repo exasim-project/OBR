@@ -2,6 +2,7 @@
 
 import setFunctions as sf
 from core import modifies_file
+from case import OpenFOAMCase
 
 
 # TODO use FileParse as a base for modifying the blockMeshDict
@@ -13,12 +14,17 @@ class BlockMesh:
         super().__init__(**kwargs)
 
     @property
-    def blockMeshDict(self):
-        # TODO also check in constant folder
-        return self.system_folder / "blockMeshDict"
+    def blockMeshDict(self: OpenFOAMCase):
+        sys_block_mesh = self.system_folder / "blockMeshDict"
+        if sys_block_mesh.exists():
+            return sys_block_mesh
+        const_block_mesh = self.constant_folder / "blockMeshDict"
+        if const_block_mesh.exists():
+            return const_block_mesh
+        return None
 
     @property
-    def polyMesh(self):
+    def polyMesh(self: OpenFOAMCase) -> list:
         return [
             self.constant_folder / "polyMesh" / "points",
             self.constant_folder / "polyMesh" / "boundary",
@@ -27,7 +33,7 @@ class BlockMesh:
             self.constant_folder / "polyMesh" / "neighbour",
         ]
 
-    def refineMesh(self, args):
+    def refineMesh(self: OpenFOAMCase, args: dict):
         """ """
         modifies_file(self.polyMesh)
         if args.get("adapt_timestep", True):
@@ -36,7 +42,7 @@ class BlockMesh:
             self.controlDict.set({"deltaT": deltaT / 2.0})
         self._exec_operation(["refineMesh", "-overwrite"])
 
-    def modifyBlockMesh(self, args):
+    def modifyBlockMesh(self: OpenFOAMCase, args: dict):
         modifies_file(self.blockMeshDict)
         blocks = args["modifyBlock"]
         if isinstance(blocks, str):
@@ -50,7 +56,7 @@ class BlockMesh:
                 target_block,
             )
 
-    def blockMesh(self, args={}):
+    def blockMesh(self: OpenFOAMCase, args: dict = {}):
         # TODO replace this with writes_file and clean polyMesh folder
         modifies_file(self.polyMesh)
         controlDictArgs = args.pop("controlDict", False)
@@ -61,7 +67,7 @@ class BlockMesh:
             self.modifyBlockMesh(args)
         self._exec_operation(["blockMesh"])
 
-    def checkMesh(self, args={}):
+    def checkMesh(self: OpenFOAMCase, args: dict = {}):
         # TODO replace this with writes_file and clean polyMesh folder
         args.get("cli_args")
         self._exec_operation(["checkMesh"])

@@ -109,8 +109,10 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def is_decomposed(self):
-        """TODO check if number of processor folder is consitent with decomposeParDict"""
-        return self.obr_operation_was_sucessful("decomposePar")
+        proc_zero = self.path / "processor0"
+        if not proc_zero.exists():
+            return False
+        return True
 
     def _exec_operation(self, operation):
         logged_execute(operation, self.path, self.job.doc)
@@ -140,13 +142,13 @@ class OpenFOAMCase(BlockMesh):
         if fvSolutionArgs:
             self.fvSolution.set(fvSolutionArgs)
 
-    def setKeyValuePair(self, args):
+    def setKeyValuePair(self, args: dict):
         path = Path(args.pop("file"))
         file_handle = File(
             folder=self.path_ / path.parents[0], file=path.parts[-1], job=self.job
         )
         file_handle.set_key_value_pairs(args)
 
-    def run(self, args):
+    def run(self, args: dict):
         solver = self.controlDict.get("application")
         self._exec_operation([solver])
