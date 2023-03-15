@@ -37,7 +37,7 @@ class File(FileParser):
     def path(self):
         return self._folder / self._file
 
-    def get(self, name):
+    def get(self, name: str):
         # TODO replace with a safer option
         # also consider moving that to Owls
         if self.path.exists():
@@ -49,7 +49,7 @@ class File(FileParser):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.path)
 
     # @decorator_modifies_file
-    def set(self, args):
+    def set(self, args: dict):
         """modifies the current controlDict by the given dictionary
 
         if the key exists in the controlDict the values are replaced

@@ -3,6 +3,7 @@ from obr.OpenFOAM.case import OpenFOAMCase
 import os
 import pytest
 from pathlib import Path
+import shutil
 from subprocess import check_output
 
 
@@ -13,7 +14,11 @@ def set_up_of_case(tmpdir):
     lid_driven_cavity = "incompressible/icoFoam/cavity/cavity"
 
     if os.environ.get("FOAM_TUTORIALS"):
-        return Path(os.environ.get("FOAM_TUTORIALS")) / lid_driven_cavity
+        src = Path(os.environ.get("FOAM_TUTORIALS")) / lid_driven_cavity
+        dst = tmpdir / lid_driven_cavity
+
+        shutil.copytree(src, dst)
+        return dst
 
     check_output(
         [
@@ -47,6 +52,7 @@ def test_OpenFOAMCaseProperties(set_up_of_case):
     # check file getter
     assert of_case.controlDict.get("application") == "icoFoam"
     assert of_case.controlDict.get("startTime") == 0
+    assert of_case.fvSolution.get("solvers")["p"]["solver"] == "PCG"
 
     # check file setter
     of_case.controlDict.set({"startTime": 10})
