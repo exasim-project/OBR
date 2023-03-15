@@ -20,8 +20,8 @@ import os
 import re
 import time
 
-from signac_labels import *
-from signac_operations import *
+from .signac_wrapper.labels import *
+from .signac_wrapper.operations import *
 
 
 @click.group()

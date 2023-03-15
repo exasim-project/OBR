@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import flow
-from signac_labels import *
+from .labels import *
 from typing import Callable, Any
 
 from core import execute
