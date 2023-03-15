@@ -13,7 +13,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from .labels import *
-from OpenFOAM.case import OpenFOAMCase
+from obr.OpenFOAM.case import OpenFOAMCase
 
 
 # TODO operations should get an id/hash so that we can log success
