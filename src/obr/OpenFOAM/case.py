@@ -56,12 +56,17 @@ class File(FileParser):
         non-existent keys are added
         """
         modifies_file(self.path)
-        logged_func(
-            self.set_key_value_pairs,
-            # FIXME add job.doc reference
-            self.job.doc,
-            dictionary=args,
-        )
+        if self.job:
+            logged_func(
+                self.set_key_value_pairs,
+                # FIXME add job.doc reference
+                self.job.doc,
+                dictionary=args,
+            )
+        else:
+            self.set_key_value_pairs(args)
+
+        self._parsed_file = self.parse_file_to_dict()
 
 
 class OpenFOAMCase(BlockMesh):

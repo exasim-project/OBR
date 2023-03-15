@@ -46,5 +46,8 @@ def test_OpenFOAMCaseProperties(set_up_of_case):
 
     # check file getter
     assert of_case.controlDict.get("application") == "icoFoam"
-
     assert of_case.controlDict.get("startTime") == 0
+
+    # check file setter
+    of_case.controlDict.set({"startTime": 10})
+    assert of_case.controlDict.get("startTime") == 10
