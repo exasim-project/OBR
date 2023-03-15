@@ -413,7 +413,7 @@ def get_number_of_procs(job) -> int:
         return np
     return int(
         OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get(
-            "numberSubDomains"
+            "numberOfSubdomains"
         )
     )
 
