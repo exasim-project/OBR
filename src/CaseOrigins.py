@@ -64,19 +64,19 @@ class GitRepo(CaseOrigin):
         self.commit = self.args.get("commit", None)
         self.branch = self.args.get("branch", None)
         self.folder = self.args.get("folder", None)
+        self.cache_folder = self.args.get("cache_folder", None)
 
     def init(self, job):
+        if self.cache_folder and Path(self.cache_folder).exists():
+            check_output(["cp", "-r", self.cache_folder, job.path + "/case"])
+            return
         if not self.folder:
-            execute(["git clone {} case".format(self.url)], cwd=job.path)
+            check_output(["git", "clone", self.url, "case"], cwd=job.path)
         else:
-            execute(["git clone {} repo".format(self.url)], cwd=job.path)
-            execute(["cp -r repo/{} case".format(self.folder)], cwd=job.path)
+            check_output(["git", "clone", self.url, "repo"], cwd=job.path)
+            check_output(["cp", "-r", f"repo/{self.folder}", "case"], cwd=job.path)
 
         if self.commit:
-            execute(
-                ["git checkout {}".format(self.commit)], cwd=Path(job.path) / "case"
-            )
+            check_output(["git", "checkout", self.commit], cwd=Path(job.path) / "case")
         if self.branch:
-            execute(
-                ["git checkout {}".format(self.branch)], cwd=Path(job.path) / "case"
-            )
+            check_output(["git", "checkout", self.branch], cwd=Path(job.path) / "case")

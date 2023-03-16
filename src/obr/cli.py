@@ -148,7 +148,7 @@ def run(ctx, **kwargs):
         )
 
 
-def parse_variables(in_str, args, domain):
+def parse_variables(in_str: str, args: dict, domain: str):
     ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
     for inst in ocurrances:
         if not args.get(inst, ""):
@@ -157,7 +157,6 @@ def parse_variables(in_str, args, domain):
             "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
         )
     expr = re.findall(r"\${{([\'\"\= 0.-9()*+A-Za-z_>!]*)}}", in_str)
-    print("expr", expr, in_str)
     for inst in expr:
         in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
     return in_str
