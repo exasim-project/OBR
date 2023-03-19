@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 from .labels import *
 from obr.OpenFOAM.case import OpenFOAMCase
 
+import CaseOrigins
+
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -359,14 +361,15 @@ def decomposePar(job, args={}):
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
-@OpenFOAMProject.pre(lambda job: job.doc.get("is_base", False))
+@OpenFOAMProject.pre(lambda job: not bool(job.doc.get("base_id")))
 @OpenFOAMProject.post(is_case)
 @OpenFOAMProject.operation
-def fetchCase(job):
-    import CaseOrigins
+def fetchCase(job, args={}):
+    args = get_args(job, args)
+    print("args", args)
 
-    case_type = job.sp["case"]
-    fetch_case_handler = getattr(CaseOrigins, case_type)(job.doc["parameters"])
+    case_type = job.sp["type"]
+    fetch_case_handler = getattr(CaseOrigins, case_type)(args)
     fetch_case_handler.init(job=job)
 
 

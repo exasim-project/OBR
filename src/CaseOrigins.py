@@ -21,7 +21,7 @@ class OpenFOAMTutorialCase(CaseOrigin):
         super().__init__(args_dict)
         self.tutorial_domain = self.args["origin"]
         self.solver = self.args["solver"]
-        self.case = self.args["case"]
+        self.case = self.args["type"]
 
     def init(self, job):
         check_output(["cp", "-r", self.path, job.path + "/case"])

@@ -208,7 +208,7 @@ def init(ctx, **kwargs):
     print(config)
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
-    obr_create_tree.obr_create_tree(project, config, kwargs, config_file)
+    obr_create_tree.obr_create_tree(project, config, kwargs)
 
 
 @cli.command()
