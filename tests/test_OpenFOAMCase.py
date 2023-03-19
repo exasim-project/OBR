@@ -67,7 +67,7 @@ def test_OpenFOAMCasefvSolutionDictGetter(set_up_of_case):
 def test_OpenFOAMCaseFvSchemesGetter(set_up_of_case):
     of_case = OpenFOAMCase(set_up_of_case, {})
     # currently only get converts to integer type
-    assert of_case.fvSolution.get("PISO")["nCorrectors"] == "2"
+    assert of_case.fvSolution.get("PISO")["nCorrectors"] == 2
 
     assert of_case.fvSchemes.get("ddtSchemes")["default"] == "Euler"
     assert of_case.fvSchemes.get("gradSchemes")["default"] == "Gauss linear"
