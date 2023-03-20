@@ -22,6 +22,7 @@ import time
 
 from .signac_wrapper.labels import *
 from .signac_wrapper.operations import *
+from .create_tree import create_tree
 
 
 @click.group()
@@ -170,9 +171,9 @@ def parse_variables(in_str: str, args: dict, domain: str):
 @click.option("-c", "--config", help="Path to configuration file.")
 @click.option("-t", "--tasks", default=-1, help="Number of tasks to run concurrently.")
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
+@click.option("--verbose", default=0, help="set verbosity")
 @click.pass_context
 def init(ctx, **kwargs):
-    import obr_create_tree
     import urllib.request
 
     if kwargs.get("url"):
@@ -203,12 +204,11 @@ def init(ctx, **kwargs):
         )
     )
 
-    # TODO add an option to write out parsed file
-    # for debuging
-    print(config)
+    if kwargs.get("verbose", 0) >= 1:
+        print(config)
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
-    obr_create_tree.obr_create_tree(project, config, kwargs)
+    create_tree(project, config, kwargs)
 
 
 @cli.command()

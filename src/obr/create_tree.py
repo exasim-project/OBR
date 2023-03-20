@@ -37,11 +37,24 @@ def flatten(d, parent_key="", sep="/"):
     return dict(items)
 
 
+def get_path_from(operation: dict, value) -> str:
+    if not operation.get("schema"):
+        print(
+            """Error Schema missing for
+
+Set schema to allow creating views
+        """
+        )
+        raise KeyError
+
+    return operation["schema"].format(**flatten(value)) + "/"
+
+
 def extract_from_operation(operation, value):
     """takes an operation"""
     key = operation.get("key", "").replace(".", "_dot_")
     if not key:
-        path = operation["schema"].format(**flatten(value)) + "/"
+        path = get_path_from(operation, value)
         args = value
         keys = list(value.keys())
     else:
@@ -75,8 +88,12 @@ def generate_view(
     if (view_path).exists():
         check_output(["rm", "-rf", str(view_path)])
 
+    print("id_path_mapping", id_path_mapping)
+    if not id_path_mapping:
+        return
+
     project.find_jobs(filter={"has_child": False}).export_to(
-        workspace,
+        str(workspace),
         path=lambda job: "view/" + id_path_mapping[job.id],
         copytree=lambda src, dst: ln(src, dst),
     )
@@ -201,7 +218,7 @@ def setup_job_doc(job, base_id, operation, keys: list, value, reset=False):
     job.doc["state"] = ""
 
 
-def obr_create_tree(
+def create_tree(
     project: OpenFOAMProject,
     config: dict,
     arguments: dict,
@@ -228,7 +245,7 @@ def obr_create_tree(
     operations = add_variations(
         operations,
         project,
-        config["variation"],
+        config.get("variation", {}),
         of_case,
         id_path_mapping,
     )
