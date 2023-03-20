@@ -55,15 +55,23 @@ def is_case(job):
 
 def operation_complete(job, operation):
     """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
-    if job.doc.get("obr"):
-        state = job.doc.get("obr").get(operation)
-        if not state:
-            return False
-        args_in = get_args(job, False)
-        prev_args = {key: job.sp[key] for key in job.doc.get("keys", [])}
-        return (state[-1]["state"] == "success") and (args_in == prev_args)
+    if job.doc.get("state") == "ready":
+        return True
     else:
         return False
+    # TODO check if anything else is actually needed
+    # if job.doc.get("obr"):
+    #     # if job has completed before its state
+    #     # is set to success
+
+    #     state = job.doc.get("obr").get(operation)
+    #     if not state:
+    #         return False
+    #     args_in = get_args(job, False)
+    #     prev_args = {key: job.sp[key] for key in job.doc.get("keys", [])}
+    #     return (state[-1]["state"] == "success") and (args_in == prev_args)
+    # else:
+    #     return False
 
 
 def basic_eligible(job, operation):
@@ -256,7 +264,7 @@ def set_failure(operation_name, error, job):
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "controlDict"))
-@OpenFOAMProject.post.true("set_controlDict")
+@OpenFOAMProject.post(lambda job: operation_complete(job, "controlDict"))
 @OpenFOAMProject.operation
 def controlDict(job, args={}):
     """sets up the controlDict"""
@@ -265,7 +273,6 @@ def controlDict(job, args={}):
     # if this was a variation. In any case this could be a decorator
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
-    job.doc.controlDict = True
 
 
 @generate
@@ -287,6 +294,7 @@ def blockMesh(job, args={}):
         .split()[-1]
     )
     job.doc["obr"]["nCells"] = int(cells)
+    job.doc.blockMesh = True
 
 
 @generate
@@ -366,7 +374,6 @@ def decomposePar(job, args={}):
 @OpenFOAMProject.operation
 def fetchCase(job, args={}):
     args = get_args(job, args)
-    print("args", args)
 
     case_type = job.sp["type"]
     fetch_case_handler = getattr(CaseOrigins, case_type)(args)

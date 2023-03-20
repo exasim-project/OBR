@@ -88,7 +88,6 @@ def generate_view(
     if (view_path).exists():
         check_output(["rm", "-rf", str(view_path)])
 
-    print("id_path_mapping", id_path_mapping)
     if not id_path_mapping:
         return
 
@@ -198,6 +197,11 @@ def setup_job_doc(job, base_id, operation, keys: list, value, reset=False):
     doc_operation_hash = job.doc.get("operation_hash")
 
     if doc_operation_hash == operation_hash and not reset:
+        return
+
+    # dont overwrite old job state on init so that we can update a tree without
+    # triggering rerunning operations
+    if job.doc.get("state") == "ready":
         return
 
     # set up the hash of the operation

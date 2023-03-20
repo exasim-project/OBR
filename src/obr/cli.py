@@ -147,6 +147,7 @@ def run(ctx, **kwargs):
             names=kwargs.get("operations").split(","),
             np=kwargs.get("tasks", -1),
         )
+    print("[OBR] completed all operations")
 
 
 def parse_variables(in_str: str, args: dict, domain: str):
@@ -209,6 +210,8 @@ def init(ctx, **kwargs):
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     create_tree(project, config, kwargs)
+
+    print("[OBR] successfully initialised")
 
 
 @cli.command()
