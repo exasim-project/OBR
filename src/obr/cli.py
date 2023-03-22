@@ -37,7 +37,7 @@ def cli(ctx, debug):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-p", "--pretend", default=False)
+@click.option("-p", "--pretend", is_flag=False)
 @click.option("-o", "--operation")
 @click.option("--bundling", default=None)
 @click.option("--bundling_match", is_flag=True)
