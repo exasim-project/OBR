@@ -54,16 +54,18 @@ class File(FileParser):
         if the key exists in the controlDict the values are replaced
         non-existent keys are added
         """
+        args_copy = {k: v for k, v in args.items()}
+
         modifies_file(self.path)
         if self.job:
             logged_func(
                 self.set_key_value_pairs,
                 # FIXME add job.doc reference
                 self.job.doc,
-                dictionary=args,
+                dictionary=args_copy,
             )
         else:
-            self.set_key_value_pairs(args)
+            self.set_key_value_pairs(args_copy)
 
         self._parsed_file = self.parse_file_to_dict()
 
@@ -137,7 +139,7 @@ class OpenFOAMCase(BlockMesh):
                 }
             )
         self._exec_operation(["decomposePar", "-force"])
-        fvSolutionArgs = args.get("fvSolution", False)
+        fvSolutionArgs = args.get("fvSolution", {})
         if fvSolutionArgs:
             self.fvSolution.set(fvSolutionArgs)
 
