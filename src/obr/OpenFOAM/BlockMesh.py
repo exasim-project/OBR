@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import setFunctions as sf
 from core import modifies_file
 from typing import TYPE_CHECKING, Any
 from subprocess import check_output
