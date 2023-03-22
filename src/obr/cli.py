@@ -176,7 +176,10 @@ def parse_variables(in_str: str, args: dict, domain: str):
         )
     expr = re.findall(r"\${{([\'\"\= 0.-9()*+A-Za-z_>!]*)}}", in_str)
     for inst in expr:
-        in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
+        try:
+            in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
+        except:
+            print(in_str, inst)
     return in_str
 
 
@@ -213,6 +216,7 @@ def init(ctx, **kwargs):
                 include_str = ws + ws.join(include_handle.readlines())
             config_str = config_str.replace(include, include_str)
 
+    config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(
         parse_variables(
             parse_variables(config_str, os.environ, "env"),
