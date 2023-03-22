@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import setFunctions as sf
 import errno
 import os
 from copy import deepcopy
@@ -12,7 +11,7 @@ from core import (
     modifies_file,
 )
 
-from .BlockMesh import BlockMesh
+from .BlockMesh import BlockMesh, calculate_simple_partition
 
 from Owls.parser.FoamDict import FileParser
 
@@ -128,7 +127,7 @@ class OpenFOAMCase(BlockMesh):
                 numberSubDomains = int(args["numberSubDomains"])
                 coeffs = args.get("coeffs", None)
                 if not coeffs:
-                    coeffs = sf.calculate_simple_partition(numberSubDomains, [1, 1, 1])
+                    coeffs = calculate_simple_partition(numberSubDomains, [1, 1, 1])
 
             self.decomposeParDict.set(
                 {
