@@ -44,6 +44,7 @@ def cli(ctx, debug):
 @click.option("--query", default=None, help="")
 @click.option("--bundling_key", default=None, help="")
 @click.option("-p", "--partition", default="cpuonly")
+@click.option("--account", default="")
 @click.option("--pretend", is_flag=True)
 @click.pass_context
 def submit(ctx, **kwargs):
@@ -57,6 +58,7 @@ def submit(ctx, **kwargs):
     queries = input_to_queries(queries_str)
     bundling_key = kwargs.get("bundling_key")
     partition = kwargs.get("partition")
+    account = kwargs.get("account")
 
     if queries:
         sel_jobs = query_impl(project, queries, output=False)
@@ -78,7 +80,11 @@ def submit(ctx, **kwargs):
                     jobs=jobs,
                     bundle_size=len(jobs),
                     names=[kwargs.get("operation")],
-                    **{"partition": partition, "pretend": kwargs["pretend"]},
+                    **{
+                        "partition": partition,
+                        "pretend": kwargs["pretend"],
+                        "account": account,
+                    },
                 ),
             )
             time.sleep(15)
@@ -87,7 +93,11 @@ def submit(ctx, **kwargs):
         print(
             project.submit(
                 names=[kwargs.get("operation")],
-                **{"partition": partition, "pretend": kwargs["pretend"]},
+                **{
+                    "partition": partition,
+                    "pretend": kwargs["pretend"],
+                    "account": account,
+                },
             )
         )
 
