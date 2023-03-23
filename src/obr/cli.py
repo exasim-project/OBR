@@ -43,7 +43,6 @@ def cli(ctx, debug):
 @click.option("-o", "--operation")
 @click.option("--query", default=None, help="")
 @click.option("--bundling_key", default=None, help="")
-@click.option("--bundling_match", is_flag=True)
 @click.option("--partition", is_flag=True)
 @click.pass_context
 def submit(ctx, **kwargs):
@@ -54,6 +53,7 @@ def submit(ctx, **kwargs):
     project._entrypoint = {"executable": "", "path": "obr"}
 
     queries_str = kwargs.get("query")
+    queries = input_to_queries(queries_str)
     bundling_key = kwargs.get("bundling_key")
     partition = kwargs.get("partition")
 
@@ -70,7 +70,7 @@ def submit(ctx, **kwargs):
         bundling_values = get_values(jobs, bundling_key)
         for bundle_value in bundling_values:
             jobs = [j for j in project if bundle_value in list(j.sp().values())]
-            print(f"[OBR] submit bundle {bundle} of {len(jobs)} jobs")
+            print(f"[OBR] submit bundle {bundle_value} of {len(jobs)} jobs")
             print(
                 "[OBR] submission response",
                 project.submit(

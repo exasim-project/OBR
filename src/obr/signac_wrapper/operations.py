@@ -564,9 +564,9 @@ def query_to_dict(
     return ret
 
 
-def get_values(job_statepoints: list, key: str) -> set:
+def get_values(jobs: list, key: str) -> set:
     """find all different statepoint values"""
-    values = [sp.get(key) for sp in job_statepoints if sp.get(key)]
+    values = [job.sp().get(key) for job in jobs if job.sp().get(key)]
     return set(values)
 
 
