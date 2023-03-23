@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from core import modifies_file
+from ..core import modifies_file
 from typing import TYPE_CHECKING, Any
 from subprocess import check_output
 import sys

@@ -5,7 +5,7 @@ import os
 from copy import deepcopy
 from pathlib import Path
 
-from core import (
+from ..core import (
     logged_execute,
     logged_func,
     modifies_file,

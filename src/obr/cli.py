@@ -38,7 +38,7 @@ def cli(ctx, debug):
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option(
-    "-p", "--pretend", is_flag=False, help="Set flag to only print submission script"
+    "-p", "--pretend", is_flag=True, help="Set flag to only print submission script"
 )
 @click.option("-o", "--operation")
 @click.option("--bundling", default=None)
@@ -77,15 +77,16 @@ def submit(ctx, **kwargs):
             print("submit matching jobs", non_matching_jobs)
             for bundle in bundling_set_vals:
                 jobs = [j for j in project if bundle in list(j.sp.values())]
-                print(len(jobs))
+                print(f"submit bundle {bundle} of {len(jobs)} jobs")
 
                 print(
+                    "submission response",
                     project.submit(
                         jobs=jobs,
                         bundle_size=len(jobs),
                         names=[kwargs.get("operation")],
                         **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
-                    )
+                    ),
                 )
                 time.sleep(15)
     else:

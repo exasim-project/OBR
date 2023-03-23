@@ -3,18 +3,16 @@ import flow
 import os
 import sys
 import re
-
-from typing import Callable, Any
-from core import execute
 from copy import deepcopy
+from typing import Callable, Any
 from pathlib import Path
 from subprocess import check_output
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from ..core import execute
 from .labels import *
 from obr.OpenFOAM.case import OpenFOAMCase
-
 import CaseOrigins
 
 
@@ -92,6 +90,13 @@ def basic_eligible(job, operation):
         or not needs_init_dependent(job)
         or not is_case(job)
     ):
+        # For Debug purposes
+        if False:
+            print(f"check if job {job.id} is eligible is False")
+            print("is_locked should be False", is_locked(job))
+            print("base case is ready should be True", base_case_is_ready(job))
+            print("needs_init_dependent should be True", needs_init_dependent(job))
+            print("is_case should be True", is_case(job))
         return False
     return True
 
@@ -121,9 +126,12 @@ def needs_init_dependent(job):
     copy_instead_link = job.sp.get("operation") == "shell"
     if job.doc.get("base_id"):
         if job.doc.get("init_dependent"):
+            #    print("already init", job.id)
             return True
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
-        base_path = Path(project.open_job(id=job.doc.get("base_id")).path) / "case"
+        # print("project", job.path, project)
+        base_id = job.doc.get("base_id")
+        base_path = Path(job.path) / ".." / base_id / "case"
         dst_path = Path(job.path) / "case"
         # base path might not be ready atm
         for root, folder, files in os.walk(Path(base_path)):
