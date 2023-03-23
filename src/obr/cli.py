@@ -41,8 +41,10 @@ def cli(ctx, debug):
     "-p", "--pretend", is_flag=True, help="Set flag to only print submission script"
 )
 @click.option("-o", "--operation")
-@click.option("--bundling", default=None)
+@click.option("--query", default=None, help="")
+@click.option("--bundling_key", default=None, help="")
 @click.option("--bundling_match", is_flag=True)
+@click.option("--partition", is_flag=True)
 @click.pass_context
 def submit(ctx, **kwargs):
     if kwargs.get("folder"):
@@ -51,51 +53,36 @@ def submit(ctx, **kwargs):
     project = OpenFOAMProject().init_project()
     project._entrypoint = {"executable": "", "path": "obr"}
 
+    queries_str = kwargs.get("query")
+    bundling_key = kwargs.get("bundling_key")
+    partition = kwargs.get("partition")
+
+    if queries:
+        sel_jobs = query_impl(project, queries, output=False)
+        jobs = [j for j in project if j.id in sel_jobs]
+    else:
+        jobs = [j for j in project]
+
     # OpenFOAMProject().main()
     # print(dir(project.operations["runParallelSolver"]))
     # TODO find a signac way to do that
-    bundling_key = kwargs["bundling"]
     if bundling_key:
-        non_matching_jobs = [
-            j for j in project if not bundling_key in list(j.sp().keys())
-        ]
-        bundling_set_vals = set(
-            [
-                j.sp()[bundling_key]
-                for j in project
-                if bundling_key in list(j.sp().keys())
-            ]
-        )
-
-        if not kwargs["bundling_match"]:
-            print("submit non matching jobs", non_matching_jobs)
+        bundling_values = get_values(jobs, bundling_key)
+        for bundle_value in bundling_values:
+            jobs = [j for j in project if bundle_value in list(j.sp().values())]
+            print(f"[OBR] submit bundle {bundle} of {len(jobs)} jobs")
             print(
+                "[OBR] submission response",
                 project.submit(
-                    jobs=non_matching_jobs,
-                    bundle_size=len(non_matching_jobs),
+                    jobs=jobs,
+                    bundle_size=len(jobs),
                     names=[kwargs.get("operation")],
                     **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
-                )
+                ),
             )
-
-        if kwargs["bundling_match"]:
-            print("submit matching jobs", non_matching_jobs)
-            for bundle in bundling_set_vals:
-                jobs = [j for j in project if bundle in list(j.sp().values())]
-                print(f"submit bundle {bundle} of {len(jobs)} jobs")
-
-                print(
-                    "submission response",
-                    project.submit(
-                        jobs=jobs,
-                        bundle_size=len(jobs),
-                        names=[kwargs.get("operation")],
-                        **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
-                    ),
-                )
-                time.sleep(15)
+            time.sleep(15)
     else:
-        print("submit all jobs")
+        print(f"[OBR] submitting {len(jobs)} individual jobs")
         print(
             project.submit(
                 names=[kwargs.get("operation")],

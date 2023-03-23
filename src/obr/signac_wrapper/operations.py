@@ -485,13 +485,13 @@ def input_to_queries(inp: str) -> list[Query]:
 
 
 def query_to_dict(
-    project: list, queries: list[Query], output=False, latest_only=True, strict=False
+    jobs: list, queries: list[Query], output=False, latest_only=True, strict=False
 ) -> list[query_result]:
     """Given a list jobs find all jobs for which a query matches"""
     docs: dict = {}
 
     # merge job docs and statepoints
-    for job in project:
+    for job in jobs:
         if not job.doc.get("obr"):
             continue
         docs[job.id] = {}
@@ -564,11 +564,17 @@ def query_to_dict(
     return ret
 
 
+def get_values(job_statepoints: list, key: str) -> set:
+    """find all different statepoint values"""
+    values = [sp.get(key) for sp in job_statepoints if sp.get(key)]
+    return set(values)
+
+
 def query_impl(
-    project, queries: list[Query], output=False, latest_only=True
+    jobs: list, queries: list[Query], output=False, latest_only=True
 ) -> list[str]:
     """Performs a query and returns corresponding job.ids"""
-    res = query_to_dict(project, queries, output, latest_only)
+    res = query_to_dict(jobs, queries, output, latest_only)
     if output:
         for r in res:
             print(r)
