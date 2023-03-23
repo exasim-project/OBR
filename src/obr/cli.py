@@ -74,6 +74,19 @@ def submit(ctx, **kwargs):
     # OpenFOAMProject().main()
     # print(dir(project.operations["runParallelSolver"]))
     # TODO find a signac way to do that
+    cluster_args = {
+        "partition": partition,
+        "pretend": kwargs["pretend"],
+        "account": account,
+    }
+
+    # TODO improve this using regex
+    scheduler_args = kwargs.get("scheduler_args")
+    if scheduler_args:
+        split = scheduler_args.split(" ")
+        for i in range(0, len(split), 2):
+            cluster_args.update({split[i]: split[i + 1]})
+
     if bundling_key:
         bundling_values = get_values(jobs, bundling_key)
         for bundle_value in bundling_values:
@@ -85,11 +98,7 @@ def submit(ctx, **kwargs):
                     jobs=jobs,
                     bundle_size=len(jobs),
                     names=[kwargs.get("operation")],
-                    **{
-                        "partition": partition,
-                        "pretend": kwargs["pretend"],
-                        "account": account,
-                    },
+                    **cluster_args,
                 ),
             )
             time.sleep(15)
@@ -98,11 +107,7 @@ def submit(ctx, **kwargs):
         print(
             project.submit(
                 names=[kwargs.get("operation")],
-                **{
-                    "partition": partition,
-                    "pretend": kwargs["pretend"],
-                    "account": account,
-                },
+                **cluster_args,
             )
         )
 
