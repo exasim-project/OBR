@@ -46,6 +46,11 @@ def cli(ctx, debug):
 @click.option("-p", "--partition", default="cpuonly")
 @click.option("--account", default="")
 @click.option("--pretend", is_flag=True)
+@click.option(
+    "--scheduler_args",
+    default="",
+    help="Currently required to be in --key1 value --key2 value2 form",
+)
 @click.pass_context
 def submit(ctx, **kwargs):
     if kwargs.get("folder"):
