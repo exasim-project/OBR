@@ -43,7 +43,8 @@ def cli(ctx, debug):
 @click.option("-o", "--operation")
 @click.option("--query", default=None, help="")
 @click.option("--bundling_key", default=None, help="")
-@click.option("--partition", is_flag=True)
+@click.option("-p", "--partition", default="cpuonly")
+@click.option("--pretend", is_flag=True)
 @click.pass_context
 def submit(ctx, **kwargs):
     if kwargs.get("folder"):
@@ -77,7 +78,7 @@ def submit(ctx, **kwargs):
                     jobs=jobs,
                     bundle_size=len(jobs),
                     names=[kwargs.get("operation")],
-                    **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
+                    **{"partition": partition, "pretend": kwargs["pretend"]},
                 ),
             )
             time.sleep(15)
@@ -86,7 +87,7 @@ def submit(ctx, **kwargs):
         print(
             project.submit(
                 names=[kwargs.get("operation")],
-                **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
+                **{"partition": partition, "pretend": kwargs["pretend"]},
             )
         )
 
