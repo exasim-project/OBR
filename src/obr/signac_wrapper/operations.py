@@ -86,7 +86,7 @@ def basic_eligible(job, operation):
     if (
         is_locked(job)
         or not base_case_is_ready(job)
-        or not operation == job.sp.get("operation")
+        or not operation == job.sp().get("operation")
         or not needs_init_dependent(job)
         or not is_case(job)
     ):
@@ -123,7 +123,7 @@ def needs_init_dependent(job):
     # side effects
     # in future it might make sense to specify the files which are modified
     # in the yaml file
-    copy_instead_link = job.sp.get("operation") == "shell"
+    copy_instead_link = job.sp().get("operation") == "shell"
     if job.doc.get("base_id"):
         if job.doc.get("init_dependent"):
             #    print("already init", job.id)
@@ -187,7 +187,7 @@ def get_args(job, args):
         return (
             {key: value for key, value in args.items()}
             if args
-            else {key: job.sp[key] for key in job.doc["keys"]}
+            else {key: job.sp()[key] for key in job.doc["keys"]}
         )
     else:
         return args
@@ -383,7 +383,7 @@ def decomposePar(job, args={}):
 def fetchCase(job, args={}):
     args = get_args(job, args)
 
-    case_type = job.sp["type"]
+    case_type = job.sp()["type"]
     fetch_case_handler = getattr(CaseOrigins, case_type)(args)
     fetch_case_handler.init(job=job)
 
@@ -426,7 +426,7 @@ def checkMesh(job, args={}):
 
 
 def get_number_of_procs(job) -> int:
-    np = int(job.sp.get("numberSubDomains", 0))
+    np = int(job.sp().get("numberSubDomains", 0))
     if np:
         return np
     return int(
@@ -497,7 +497,7 @@ def query_to_dict(
         docs[job.id] = {}
         for key, value in job.doc.obr.items():
             docs[job.id].update({key: value})
-        docs[job.id].update(job.sp)
+        docs[job.id].update(job.sp())
 
     ret = []
 

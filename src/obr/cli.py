@@ -50,16 +50,21 @@ def submit(ctx, **kwargs):
 
     project = OpenFOAMProject().init_project()
     project._entrypoint = {"executable": "", "path": "obr"}
+
     # OpenFOAMProject().main()
     # print(dir(project.operations["runParallelSolver"]))
     # TODO find a signac way to do that
     bundling_key = kwargs["bundling"]
     if bundling_key:
         non_matching_jobs = [
-            j for j in project if not bundling_key in list(j.sp.keys())
+            j for j in project if not bundling_key in list(j.sp().keys())
         ]
         bundling_set_vals = set(
-            [j.sp[bundling_key] for j in project if bundling_key in list(j.sp.keys())]
+            [
+                j.sp()[bundling_key]
+                for j in project
+                if bundling_key in list(j.sp().keys())
+            ]
         )
 
         if not kwargs["bundling_match"]:
@@ -76,7 +81,7 @@ def submit(ctx, **kwargs):
         if kwargs["bundling_match"]:
             print("submit matching jobs", non_matching_jobs)
             for bundle in bundling_set_vals:
-                jobs = [j for j in project if bundle in list(j.sp.values())]
+                jobs = [j for j in project if bundle in list(j.sp().values())]
                 print(f"submit bundle {bundle} of {len(jobs)} jobs")
 
                 print(
