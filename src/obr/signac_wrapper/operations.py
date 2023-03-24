@@ -454,12 +454,12 @@ class query_result:
 @dataclass
 class Query:
     key: str
-    value: Any = ""
+    value: Any = None
     state: dict = field(default_factory=dict)
     predicate: Callable = equal
 
     def execute(self, key, value):
-        if self.value:
+        if not (self.value == None):
             if self.predicate({self.key: self.value}, {key: value}) and not self.state:
                 self.state = {key: value}
         else:
@@ -552,6 +552,8 @@ def query_to_dict(
         # in strict mode all queries need to have some result
         if strict:
             all_required = len(res_tmp.result) == len(queries)
+            # if not all_required:
+            #    raise Exception(res_tmp)
 
         # merge all results to a single dictionary
         res_tmp_dict = {}
