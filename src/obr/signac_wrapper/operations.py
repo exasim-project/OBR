@@ -436,14 +436,6 @@ def get_number_of_procs(job) -> int:
     )
 
 
-def equal(a, b):
-    return a == b
-
-
-def not_equal(a, b):
-    return a != b
-
-
 @dataclass
 class query_result:
     id: str = field()
@@ -456,15 +448,26 @@ class Query:
     key: str
     value: Any = None
     state: dict = field(default_factory=dict)
-    predicate: Callable = equal
+    predicate: str = "equal"
 
     def execute(self, key, value):
+        predicate_map = {
+            "==": lambda a, b: a == b,
+            "!=": lambda a, b: a != b,
+            ">": lambda a, b: a > b,
+            "<": lambda a, b: a < b,
+        }
+        self.predicate_op = predicate_map[self.predicate]
+
         if not (self.value == None):
-            if self.predicate({self.key: self.value}, {key: value}) and not self.state:
+            if (
+                self.predicate_op({self.key: self.value}, {key: value})
+                and not self.state
+            ):
                 self.state = {key: value}
         else:
             # print(key, value)
-            if self.predicate(self.key, key) and not self.state:
+            if self.predicate_op(self.key, key) and not self.state:
                 self.state = {key: value}
 
     def match(self):
