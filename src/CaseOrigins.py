@@ -72,11 +72,13 @@ class GitRepo(CaseOrigin):
             return
         if not self.folder:
             check_output(["git", "clone", self.url, "case"], cwd=job.path)
+            if self.commit:
+                check_output(["git", "checkout", self.commit], cwd=Path(job.path) / "case")
         else:
             check_output(["git", "clone", self.url, "repo"], cwd=job.path)
+            if self.commit:
+                check_output(["git", "checkout", self.commit], cwd=Path(job.path) / "repo")
             check_output(["cp", "-r", f"repo/{self.folder}", "case"], cwd=job.path)
 
-        if self.commit:
-            check_output(["git", "checkout", self.commit], cwd=Path(job.path) / "case")
         if self.branch:
             check_output(["git", "checkout", self.branch], cwd=Path(job.path) / "case")
