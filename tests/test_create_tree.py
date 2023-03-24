@@ -15,6 +15,7 @@ def emmit_test_config():
             "solver": "pisoFoam",
             "url": "https://develop.openfoam.com/committees/hpc.git",
             "folder": "Lid_driven_cavity-3d/S",
+            "commit": "f9594d16aa6993bb3690ec47b2ca624b37ea40cd"
             "cache_folder": "None/S",
             "post_build": [
                 {"shell": "cp system/fvSolution.fixedNORM system/fvSolution"},
