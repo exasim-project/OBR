@@ -54,6 +54,8 @@ class File(FileParser):
 
     def md5sum(self, refresh=False) -> str:
         """Compute a files md5sum"""
+        if not self.path.exits():
+            raise FileNotFoundError(self.path)
         if not self._md5sum or refresh:
             self._md5sum = check_output(["md5sum", str(self.path)], text=True)
         return self._md5sum
