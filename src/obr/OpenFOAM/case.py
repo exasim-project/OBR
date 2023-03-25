@@ -32,7 +32,7 @@ class File(FileParser):
         """Parse file and store dictionary"""
         if not self.path.exists():
             return None
-        if not self.parsed_file or refresh:
+        if not self._parsed_file or refresh:
             self._parsed_file = self.parse_file_to_dict()
 
     @property
