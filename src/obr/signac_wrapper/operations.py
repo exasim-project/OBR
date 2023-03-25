@@ -393,8 +393,8 @@ def decomposePar(job, args={}):
 
     # TODO consider also latest/all time folder contents
     target_md5sums = [
-        dst_case.decomposeParDict.md5sum(),
-        dst_case.blockMeshDict.md5sum(),
+        target_case.decomposeParDict.md5sum(),
+        target_case.blockMeshDict.md5sum(),
     ]
 
     found = False
