@@ -399,7 +399,7 @@ def decomposePar(job, args={}):
 
     found = False
     for job_path in job_paths:
-        dst_case = OpenFOAMCase(job_path / "case", {})
+        dst_case = OpenFOAMCase(Path(job_path) / "case", {})
         dst_md5sums = [
             dst_case.decomposeParDict.md5sum(),
             dst_case.blockMeshDictmd5sum(),
