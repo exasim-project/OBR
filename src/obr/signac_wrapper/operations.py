@@ -112,36 +112,36 @@ def base_case_is_ready(job):
         return parent_job.doc.get("state", "") == "ready"
 
 
-def _link_path(base, dst, copy_instead_link):
+def _link_path(base: Path, dst: Path, copy_instead_link: bool):
     """creates file tree under dst with same folder structure as base but all files are relative symlinks"""
     # ensure dst path exists
     check_output(["mkdir", "-p", str(dst)])
     # base path might not be ready atm
-    for root, folder, files in os.walk(Path(base_path)):
-        relative_path = Path(root).relative_to(base_path)
+    for root, folder, files in os.walk(Path(base)):
+        relative_path = Path(root).relative_to(base)
         for fold in folder:
             src = Path(root) / fold
-            dst = Path(dst_path) / relative_path / fold
+            dst = Path(dst) / relative_path / fold
             if not dst.exists():
                 check_output(
                     [
                         "mkdir",
                         fold,
                     ],
-                    cwd=dst_path / relative_path,
+                    cwd=dst / relative_path,
                 )
         for fn in files:
             src = Path(root) / fn
-            dst = Path(dst_path) / relative_path / fn
+            dst = Path(dst) / relative_path / fn
             if not dst.exists():
                 if copy_instead_link:
                     check_output(
                         [
                             "cp",
-                            str(os.path.relpath(src, dst_path / relative_path)),
+                            str(os.path.relpath(src, dst / relative_path)),
                             ".",
                         ],
-                        cwd=dst_path / relative_path,
+                        cwd=dst / relative_path,
                     )
 
                 else:
@@ -149,9 +149,9 @@ def _link_path(base, dst, copy_instead_link):
                         [
                             "ln",
                             "-s",
-                            str(os.path.relpath(src, dst_path / relative_path)),
+                            str(os.path.relpath(src, dst / relative_path)),
                         ],
-                        cwd=dst_path / relative_path,
+                        cwd=dst / relative_path,
                     )
 
 
