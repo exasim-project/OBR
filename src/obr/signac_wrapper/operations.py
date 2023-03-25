@@ -130,7 +130,7 @@ def _link_path(base: Path, dst: Path, copy_instead_link: bool):
                         "mkdir",
                         fold,
                     ],
-                    cwd=dst_ / relative_path,
+                    cwd=dst / relative_path,
                 )
 
         for fn in files:

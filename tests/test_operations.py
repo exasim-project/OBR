@@ -5,16 +5,21 @@ from pathlib import Path
 
 
 def test_link_path(tmpdir):
-    check_output(["mkdir", "foo"], cwd=tmpdir)
-    check_output(["touch", "foo/bar"], cwd=tmpdir)
+    check_output(["mkdir", "src"], cwd=tmpdir)
+    check_output(["touch", "src/file1"], cwd=tmpdir)
+    check_output(["mkdir", "src/fold1"], cwd=tmpdir)
+    check_output(["touch", "src/fold1/file2"], cwd=tmpdir)
 
-    _link_path(tmpdir / "foo", tmpdir / "bar", copy_instead_link=False)
+    _link_path(tmpdir / "src", tmpdir / "dst", copy_instead_link=False)
 
-    dst = Path(tmpdir) / "bar"
+    dst = Path(tmpdir) / "dst"
 
     assert dst.exists() == True
 
-    dst_bar = dst / "bar"
+    dst_file = dst / "file1"
 
-    assert dst_bar.exists() == True
-    assert dst_bar.is_symlink() == True
+    assert dst_file.exists() == True
+    assert dst_file.is_symlink() == True
+
+    dst_fold = dst / "fold1"
+    assert dst_fold.exists() == True
