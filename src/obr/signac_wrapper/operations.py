@@ -387,7 +387,7 @@ def decomposePar(job, args={}):
     # exists and decomposition is already done
     # if so just copy/link folders
     workspace_folder = Path(job.path) / "../"
-    _, job_paths, _ = next(os.walk(workspace_folder))
+    root, job_paths, _ = next(os.walk(workspace_folder))
 
     target_case = OpenFOAMCase(str(job.path) + "/case", job)
 
@@ -399,7 +399,7 @@ def decomposePar(job, args={}):
 
     found = False
     for job_path in job_paths:
-        dst_case = OpenFOAMCase(Path(job_path) / "case", {})
+        dst_case = OpenFOAMCase(Path(root) / job_path / "case", {})
         dst_md5sums = [
             dst_case.decomposeParDict.md5sum(),
             dst_case.blockMeshDictmd5sum(),
