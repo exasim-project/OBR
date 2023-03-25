@@ -112,6 +112,49 @@ def base_case_is_ready(job):
         return parent_job.doc.get("state", "") == "ready"
 
 
+def _link_path(base, dst, copy_instead_link):
+    """creates file tree under dst with same folder structure as base but all files are relative symlinks"""
+    # ensure dst path exists
+    check_output(["mkdir", "-p", str(dst)])
+    # base path might not be ready atm
+    for root, folder, files in os.walk(Path(base_path)):
+        relative_path = Path(root).relative_to(base_path)
+        for fold in folder:
+            src = Path(root) / fold
+            dst = Path(dst_path) / relative_path / fold
+            if not dst.exists():
+                check_output(
+                    [
+                        "mkdir",
+                        fold,
+                    ],
+                    cwd=dst_path / relative_path,
+                )
+        for fn in files:
+            src = Path(root) / fn
+            dst = Path(dst_path) / relative_path / fn
+            if not dst.exists():
+                if copy_instead_link:
+                    check_output(
+                        [
+                            "cp",
+                            str(os.path.relpath(src, dst_path / relative_path)),
+                            ".",
+                        ],
+                        cwd=dst_path / relative_path,
+                    )
+
+                else:
+                    check_output(
+                        [
+                            "ln",
+                            "-s",
+                            str(os.path.relpath(src, dst_path / relative_path)),
+                        ],
+                        cwd=dst_path / relative_path,
+                    )
+
+
 def needs_init_dependent(job):
     """check if this job has been already linked to
 
@@ -131,46 +174,10 @@ def needs_init_dependent(job):
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
         # print("project", job.path, project)
         base_id = job.doc.get("base_id")
+
         base_path = Path(job.path) / ".." / base_id / "case"
         dst_path = Path(job.path) / "case"
-        # base path might not be ready atm
-        for root, folder, files in os.walk(Path(base_path)):
-            check_output(["mkdir", "-p", "case"], cwd=job.path)
-            relative_path = Path(root).relative_to(base_path)
-            for fold in folder:
-                src = Path(root) / fold
-                dst = Path(dst_path) / relative_path / fold
-                if not dst.exists():
-                    check_output(
-                        [
-                            "mkdir",
-                            fold,
-                        ],
-                        cwd=dst_path / relative_path,
-                    )
-            for fn in files:
-                src = Path(root) / fn
-                dst = Path(dst_path) / relative_path / fn
-                if not dst.exists():
-                    if copy_instead_link:
-                        check_output(
-                            [
-                                "cp",
-                                str(os.path.relpath(src, dst_path / relative_path)),
-                                ".",
-                            ],
-                            cwd=dst_path / relative_path,
-                        )
-
-                    else:
-                        check_output(
-                            [
-                                "ln",
-                                "-s",
-                                str(os.path.relpath(src, dst_path / relative_path)),
-                            ],
-                            cwd=dst_path / relative_path,
-                        )
+        _link_path(base_path, dst_path, copy_instead_link)
         job.doc["init_dependent"] = True
         return True
     else:
@@ -370,7 +377,39 @@ def has_mesh(job):
 @OpenFOAMProject.operation
 def decomposePar(job, args={}):
     args = get_args(job, args)
-    OpenFOAMCase(str(job.path) + "/case", job).decomposePar(args)
+
+    # TODO
+    # before decomposing check if case with same state
+    # ie time folder blockMeshDict decomposeParDict
+    # exists and decomposition is already done
+    # if so just copy/link folders
+    workspace_folder = Path(job.path) / "../"
+    _, job_paths, _ = next(os.walk(workspace_folder))
+
+    target_case = OpenFOAMCase(str(job.path) + "/case", job)
+
+    # TODO consider also latest/all time folder contents
+    target_md5sums = [
+        dst_case.decomposeParDict.md5sum(),
+        dst_case.blockMeshDict.md5sum(),
+    ]
+
+    found = False
+    for job_path in job_paths:
+        dst_case = OpenFOAMCase(job_path / "case", {})
+        dst_md5sums = [
+            dst_case.decomposeParDict.md5sum(),
+            dst_case.blockMeshDict.md5sum(),
+        ]
+        if target_md5sums == dst_md5sums:
+            found = True
+            break
+
+    if found:
+        for processor_path in dst_case.processor_folder:
+            _link_path(processor_path, target_case.path / processor_path.parts[-1])
+    else:
+        target_case.decomposePar(args)
 
 
 @generate
@@ -448,7 +487,7 @@ class Query:
     key: str
     value: Any = None
     state: dict = field(default_factory=dict)
-    predicate: str = "equal"
+    predicate: str = "=="
 
     def execute(self, key, value):
         predicate_map = {

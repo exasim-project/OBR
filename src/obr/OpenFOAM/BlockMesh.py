@@ -4,6 +4,7 @@ from ..core import modifies_file
 from typing import TYPE_CHECKING, Any
 from subprocess import check_output
 import sys
+from pathlib import Path
 
 
 if TYPE_CHECKING:
@@ -11,6 +12,7 @@ if TYPE_CHECKING:
     class OpenFOAMCase:
         constant_folder: Any
         controlDict: Any
+        system_folder: Any
         _exec_operation: Any
 
     _Base = OpenFOAMCase
@@ -82,7 +84,7 @@ class BlockMesh(_Base):
         super().__init__(**kwargs)
 
     @property
-    def blockMeshDict(self):
+    def blockMeshDict(self) -> Path | None:
         sys_block_mesh = self.system_folder / "blockMeshDict"
         if sys_block_mesh.exists():
             return sys_block_mesh
@@ -92,7 +94,7 @@ class BlockMesh(_Base):
         return None
 
     @property
-    def polyMesh(self) -> list:
+    def polyMesh(self) -> list[Path]:
         return [
             self.constant_folder / "polyMesh" / "points",
             self.constant_folder / "polyMesh" / "boundary",
@@ -100,6 +102,12 @@ class BlockMesh(_Base):
             self.constant_folder / "polyMesh" / "owner",
             self.constant_folder / "polyMesh" / "neighbour",
         ]
+
+    def md5sum(self) -> str | None:
+        fn = str(self.blockMeshDict)
+        if not fn:
+            return None
+        return check_output(["md5sum", fn], text=True)
 
     def refineMesh(self, args: dict):
         """ """

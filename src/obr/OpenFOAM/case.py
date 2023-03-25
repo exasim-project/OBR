@@ -4,6 +4,7 @@ import errno
 import os
 from copy import deepcopy
 from pathlib import Path
+from subprocess import check_output
 
 from ..core import (
     logged_execute,
@@ -23,22 +24,26 @@ class File(FileParser):
         self._file = kwargs["file"]
         self._folder = kwargs["folder"]
         self.job = kwargs["job"]
-        self._parse_file()
         self._optional = kwargs.get("optional", False)
+        self._parsed_file = None
+        self._md5sum = None
 
-    def _parse_file(self):
-        if self.path.exists():
+    def _parse_file(self, refresh=False):
+        """Parse file and store dictionary"""
+        if not self.path.exists():
+            return None
+        if not self.parsed_file or refresh:
             self._parsed_file = self.parse_file_to_dict()
-        else:
-            self._parsed_file = {}
 
     @property
     def path(self):
         return self._folder / self._file
 
     def get(self, name: str):
+        """Get a value from an OpenFOAM dictionary file"""
         # TODO replace with a safer option
         # also consider moving that to Owls
+        self._parse_file()
         if self.path.exists():
             try:
                 return eval(self._parsed_file.get(name))
@@ -46,6 +51,12 @@ class File(FileParser):
                 return self._parsed_file.get(name)
         else:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.path)
+
+    def md5sum(self, refresh=False) -> str:
+        """Compute a files md5sum"""
+        if not self._md5sum or refresh:
+            self._md5sum = check_output(["md5sum", str(self.path)], text=True)
+        return self._md5sum
 
     # @decorator_modifies_file
     def set(self, args: dict):
@@ -67,7 +78,8 @@ class File(FileParser):
         else:
             self.set_key_value_pairs(args_copy)
 
-        self._parsed_file = self.parse_file_to_dict()
+        self._parse_file(refresh=True)
+        self.md5sum(refresh=True)
 
 
 class OpenFOAMCase(BlockMesh):
@@ -114,6 +126,14 @@ class OpenFOAMCase(BlockMesh):
         if not proc_zero.exists():
             return False
         return True
+
+    @property
+    def processor_folder(self) -> list[Path]:
+        if not self.is_decomposed:
+            return []
+        _, folds, files = next(os.walk(self.path))
+        proc_folds = [self.path / f for f in folds if "processor" in f]
+        return proc_folds
 
     def _exec_operation(self, operation):
         logged_execute(operation, self.path, self.job.doc)
