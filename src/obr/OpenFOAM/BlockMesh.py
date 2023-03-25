@@ -103,7 +103,7 @@ class BlockMesh(_Base):
             self.constant_folder / "polyMesh" / "neighbour",
         ]
 
-    def md5sum(self) -> str | None:
+    def blockMeshDictmd5sum(self) -> str | None:
         fn = str(self.blockMeshDict)
         if not fn:
             return None

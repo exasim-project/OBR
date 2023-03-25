@@ -394,7 +394,7 @@ def decomposePar(job, args={}):
     # TODO consider also latest/all time folder contents
     target_md5sums = [
         target_case.decomposeParDict.md5sum(),
-        target_case.blockMeshDict.md5sum(),
+        target_case.blockMeshDictmd5sum(),
     ]
 
     found = False
@@ -402,7 +402,7 @@ def decomposePar(job, args={}):
         dst_case = OpenFOAMCase(job_path / "case", {})
         dst_md5sums = [
             dst_case.decomposeParDict.md5sum(),
-            dst_case.blockMeshDict.md5sum(),
+            dst_case.blockMeshDictmd5sum(),
         ]
         if target_md5sums == dst_md5sums:
             found = True
