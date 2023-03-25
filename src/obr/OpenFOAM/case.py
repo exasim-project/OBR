@@ -65,6 +65,7 @@ class File(FileParser):
         if the key exists in the controlDict the values are replaced
         non-existent keys are added
         """
+        self._parse_file()
         args_copy = {k: v for k, v in args.items()}
 
         modifies_file(self.path)
