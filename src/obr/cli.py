@@ -60,12 +60,12 @@ def submit(ctx, **kwargs):
     project._entrypoint = {"executable": "", "path": "obr"}
 
     queries_str = kwargs.get("query")
-    queries = input_to_queries(queries_str)
     bundling_key = kwargs.get("bundling_key")
     partition = kwargs.get("partition")
     account = kwargs.get("account")
 
     if queries:
+        queries = input_to_queries(queries_str)
         sel_jobs = query_impl(project, queries, output=False)
         jobs = [j for j in project if j.id in sel_jobs]
     else:
