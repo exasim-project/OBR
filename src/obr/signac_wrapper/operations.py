@@ -491,6 +491,8 @@ class Query:
     value: Any = None
     state: dict = field(default_factory=dict)
     predicate: str = "eq"
+    # Whether
+    negate: bool = True
 
     def execute(self, key, value):
         predicate_map = {
@@ -585,6 +587,11 @@ def query_to_dict(
                 q_tmp = deepcopy(q)
                 res = execute_query(q_tmp, key, value)
                 if res.state:
+                    # a filter query was hit
+                    if res.negate:
+                        all_required = False
+                        break
+
                     res_cache = res.state
                     tmp_qs.append(res)
 
