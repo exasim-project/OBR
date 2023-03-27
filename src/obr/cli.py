@@ -155,6 +155,7 @@ def run(ctx, **kwargs):
         project.run(
             jobs=jobs,  # project.groupby("doc.is_base"),
             names=kwargs.get("operations").split(","),
+            progress=True,
             np=kwargs.get("tasks", -1),
         )
     else:
