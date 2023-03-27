@@ -64,7 +64,7 @@ def submit(ctx, **kwargs):
     partition = kwargs.get("partition")
     account = kwargs.get("account")
 
-    if queries:
+    if queries_str:
         queries = input_to_queries(queries_str)
         sel_jobs = query_impl(project, queries, output=False)
         jobs = [j for j in project if j.id in sel_jobs]
