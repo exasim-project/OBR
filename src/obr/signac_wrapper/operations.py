@@ -490,20 +490,21 @@ class Query:
     key: str
     value: Any = None
     state: dict = field(default_factory=dict)
-    predicate: str = "=="
+    predicate: str = "eq"
 
     def execute(self, key, value):
         predicate_map = {
-            "==": lambda a, b: a == b,
-            "!=": lambda a, b: a != b,
-            ">": lambda a, b: a > b,
-            "<": lambda a, b: a < b,
+            "eq": lambda a, b: a == b,
+            "neq": lambda a, b: a != b,
+            "gt": lambda a, b: a > b,
+            "lt": lambda a, b: a < b,
         }
         self.predicate_op = predicate_map[self.predicate]
 
         if not (self.value == None):
             if (
-                self.predicate_op({self.key: self.value}, {key: value})
+                self.predicate_op(self.value, value)
+                and self.key == key
                 and not self.state
             ):
                 self.state = {key: value}
@@ -518,7 +519,11 @@ class Query:
 
 def input_to_query(inp: str) -> Query:
     """converts cli input  str to a Query object"""
-    inp = inp.replace("key", '"key"').replace("value", '"value"')
+    inp = (
+        inp.replace("key", '"key"')
+        .replace("value", '"value"')
+        .replace("predicate", '"predicate"')
+    )
     return Query(**eval(inp))
 
 
