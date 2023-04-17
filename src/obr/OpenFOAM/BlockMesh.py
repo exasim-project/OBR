@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from ..core import modifies_file
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 from subprocess import check_output
 import sys
 from pathlib import Path
@@ -84,7 +84,7 @@ class BlockMesh(_Base):
         super().__init__(**kwargs)
 
     @property
-    def blockMeshDict(self) -> Path | None:
+    def blockMeshDict(self) -> Optional[Path]:
         sys_block_mesh = self.system_folder / "blockMeshDict"
         if sys_block_mesh.exists():
             return sys_block_mesh
@@ -103,7 +103,7 @@ class BlockMesh(_Base):
             self.constant_folder / "polyMesh" / "neighbour",
         ]
 
-    def blockMeshDictmd5sum(self) -> str | None:
+    def blockMeshDictmd5sum(self) -> Optional[str]:
         fn = str(self.blockMeshDict)
         if not fn:
             return None
