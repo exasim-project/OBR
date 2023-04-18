@@ -17,7 +17,6 @@ Why does this file exist, and why not put this in __main__?
 import click
 import yaml  # type: ignore[import]
 import os
-import re
 import time
 
 from .signac_wrapper.labels import *

@@ -5,7 +5,6 @@ import re
 import hashlib
 from pathlib import Path
 from subprocess import check_output
-from functools import wraps
 
 
 def parse_variables_impl(in_str, args, domain):
@@ -65,7 +64,7 @@ def logged_execute(cmd, path, doc):
     if log and len(log) > 1000:
         h = hashlib.new("md5")
         h.update(log.encode())
-        hash_ = h.hexdigest()
+        h.hexdigest()
         fn = f"{cmd_str}_{timestamp}.log"
         with open(path / fn, "w") as fh:
             fh.write(log)

@@ -4,10 +4,9 @@ import os
 import sys
 import re
 from copy import deepcopy
-from typing import Callable, Any
+from typing import Any
 from pathlib import Path
 from subprocess import check_output
-from collections import defaultdict
 from dataclasses import dataclass, field
 
 from ..core.core import execute
@@ -656,7 +655,6 @@ def runParallelSolver(job, args={}):
     args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
-    mpiargs = "--map-by core --bind-to core"
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     res = job.doc["obr"].get(solver, [])
     res.append(
@@ -695,7 +693,6 @@ def archive(job, args={}):
 @OpenFOAMProject.operation(aggregator=flow.aggregator())
 def apply(*jobs, args={}):
     import importlib.util
-    import sys
 
     fp = Path(os.environ.get("OBR_CALL_ARGS"))
     spec = importlib.util.spec_from_file_location("apply_func", fp)
