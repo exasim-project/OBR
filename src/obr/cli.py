@@ -23,6 +23,7 @@ import time
 from .signac_wrapper.labels import *
 from .signac_wrapper.operations import *
 from .create_tree import create_tree
+from core.parse_yaml import read_yaml
 
 
 @click.group()
@@ -167,23 +168,6 @@ def run(ctx, **kwargs):
     print("[OBR] completed all operations")
 
 
-def parse_variables(in_str: str, args: dict, domain: str):
-    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
-    for inst in ocurrances:
-        if not args.get(inst, ""):
-            print(f"warning {inst} not defined")
-        in_str = in_str.replace(
-            "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
-        )
-    expr = re.findall(r"\${{([\'\"\= 0.-9()*+A-Za-z_>!]*)}}", in_str)
-    for inst in expr:
-        try:
-            in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
-        except:
-            print(in_str, inst)
-    return in_str
-
-
 @cli.command()
 @click.option(
     "-f", "--folder", default=".", help="Where to create the worspace and view"
@@ -195,36 +179,9 @@ def parse_variables(in_str: str, args: dict, domain: str):
 @click.option("--verbose", default=0, help="set verbosity")
 @click.pass_context
 def init(ctx, **kwargs):
-    import urllib.request
-
-    if kwargs.get("url"):
-        with urllib.request.urlopen(kwargs["url"]) as f:
-            config_str = f.read().decode("utf-8")
-    else:
-        config_file = kwargs["config"]
-        yaml_location = (Path(os.getcwd()) / config_file).parents[0]
-
-        # load base yaml file
-        with open(config_file, "r") as config_handle:
-            config_str = config_handle.read()
-
-        # search for includes
-        includes = re.findall("[  ]*\${{include.[\w.]*}}", config_str)
-        for include in includes:
-            ws = " ".join(include.split(" ")[:-1])
-            fn = ".".join(include.split(".")[1:]).replace("}", "")
-            with open(yaml_location / fn, "r") as include_handle:
-                include_str = ws + ws.join(include_handle.readlines())
-            config_str = config_str.replace(include, include_str)
-
+    config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
-    config = yaml.safe_load(
-        parse_variables(
-            parse_variables(config_str, os.environ, "env"),
-            {"location": str(yaml_location)},
-            "yaml",
-        )
-    )
+    config = yaml.safe_load(config_str)
 
     if kwargs.get("verbose", 0) >= 1:
         print(config)

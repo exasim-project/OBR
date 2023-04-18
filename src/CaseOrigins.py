@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from subprocess import check_output
-from obr.core import execute
+from obr.core.core import execute
 
 
 class CaseOrigin:

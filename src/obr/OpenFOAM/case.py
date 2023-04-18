@@ -6,7 +6,7 @@ from copy import deepcopy
 from pathlib import Path
 from subprocess import check_output
 
-from ..core import (
+from ..core.core import (
     logged_execute,
     logged_func,
     modifies_file,
