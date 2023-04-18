@@ -26,15 +26,19 @@ def read_yaml(kwargs: dict) -> str:
     )
 
 
-def add_includes(yaml_location, config_str: str) -> str:
+def add_includes(yaml_location: Path, config_str: str) -> str:
     """Replace {{include.filename}} by the content of that file"""
-    includes = re.findall("[  ]*\${{include.[\w.]*}}", config_str)
-    for include in includes:
-        ws = " ".join(include.split(" ")[:-1])
-        fn = ".".join(include.split(".")[1:]).replace("}", "")
+    includes = re.findall("([ \t]*)\${{include.([\w.]*)}}", config_str)
+    for ws, fn in includes:
+        # if fn startswith a single dot here it is left from the re.findall
+        # and means include.. thus we add the dot again
+        orig_fn = fn
+        if fn.startswith("."):
+            fn = "../" + fn[1:]
         with open(yaml_location / fn, "r") as include_handle:
             include_str = ws + ws.join(include_handle.readlines())
-        config_str = config_str.replace(include, include_str)
+        orig_search = ws + "${{include." + orig_fn + "}}"
+        config_str = config_str.replace(orig_search, include_str)
     return config_str
 
 
