@@ -19,7 +19,6 @@ import sys
 import hashlib
 
 from collections.abc import MutableMapping
-from copy import deepcopy
 from pathlib import Path
 from subprocess import check_output
 
@@ -39,12 +38,10 @@ def flatten(d, parent_key="", sep="/"):
 
 def get_path_from(operation: dict, value) -> str:
     if not operation.get("schema"):
-        print(
-            """Error Schema missing for
+        print("""Error Schema missing for
 
 Set schema to allow creating views
-        """
-        )
+        """)
         raise KeyError
 
     return operation["schema"].format(**flatten(value)) + "/"

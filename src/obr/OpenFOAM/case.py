@@ -2,7 +2,6 @@
 
 import errno
 import os
-from copy import deepcopy
 from pathlib import Path
 from subprocess import check_output
 
