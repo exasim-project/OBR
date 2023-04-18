@@ -10,7 +10,7 @@ from subprocess import check_output
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from ..core import execute
+from ..core.core import execute
 from .labels import *
 from obr.OpenFOAM.case import OpenFOAMCase
 import CaseOrigins
