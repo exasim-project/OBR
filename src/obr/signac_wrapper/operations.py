@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 import flow
-from signac_labels import *
-
-
-from core import execute
-from OpenFOAMCase import OpenFOAMCase
-
 import os
 import sys
+import re
+from copy import deepcopy
+from typing import Callable, Any
 from pathlib import Path
 from subprocess import check_output
 from collections import defaultdict
 from dataclasses import dataclass, field
+
+from ..core import execute
+from .labels import *
+from obr.OpenFOAM.case import OpenFOAMCase
+import CaseOrigins
+
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -25,7 +28,6 @@ class OpenFOAMProject(flow.FlowProject):
 
 
 generate = OpenFOAMProject.make_group(name="generate")
-
 simulate = OpenFOAMProject.make_group("execute")
 
 
@@ -50,17 +52,24 @@ def is_case(job):
 
 
 def operation_complete(job, operation):
-    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success
-    """
-    if job.doc.get("obr"):
-        state = job.doc.get("obr").get(operation)
-        if not state:
-            return False
-        args_in = get_args(job, False)
-        prev_args = {key: job.sp[key] for key in job.doc.get("keys", [])}
-        return (state[-1]["state"] == "success") and (args_in == prev_args)
+    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
+    if job.doc.get("state") == "ready":
+        return True
     else:
         return False
+    # TODO check if anything else is actually needed
+    # if job.doc.get("obr"):
+    #     # if job has completed before its state
+    #     # is set to success
+
+    #     state = job.doc.get("obr").get(operation)
+    #     if not state:
+    #         return False
+    #     args_in = get_args(job, False)
+    #     prev_args = {key: job.sp[key] for key in job.doc.get("keys", [])}
+    #     return (state[-1]["state"] == "success") and (args_in == prev_args)
+    # else:
+    #     return False
 
 
 def basic_eligible(job, operation):
@@ -77,10 +86,17 @@ def basic_eligible(job, operation):
     if (
         is_locked(job)
         or not base_case_is_ready(job)
-        or not operation == job.sp.get("operation")
+        or not operation == job.sp().get("operation")
         or not needs_init_dependent(job)
         or not is_case(job)
     ):
+        # For Debug purposes
+        if False:
+            print(f"check if job {job.id} is eligible is False")
+            print("is_locked should be False", is_locked(job))
+            print("base case is ready should be True", base_case_is_ready(job))
+            print("needs_init_dependent should be True", needs_init_dependent(job))
+            print("is_case should be True", is_case(job))
         return False
     return True
 
@@ -96,6 +112,52 @@ def base_case_is_ready(job):
         return parent_job.doc.get("state", "") == "ready"
 
 
+def _link_path(base: Path, dst: Path, copy_instead_link: bool):
+    """creates file tree under dst with same folder structure as base but all files are relative symlinks"""
+    # ensure dst path exists
+    check_output(["mkdir", "-p", str(dst)])
+
+    # base path might not be ready atm
+    for root, folder, files in os.walk(Path(base)):
+        relative_path = Path(root).relative_to(base)
+
+        for fold in folder:
+            src = Path(root) / fold
+            dst_ = Path(dst) / relative_path / fold
+            if not dst_.exists():
+                check_output(
+                    [
+                        "mkdir",
+                        fold,
+                    ],
+                    cwd=dst / relative_path,
+                )
+
+        for fn in files:
+            src = Path(root) / fn
+            dst_ = Path(dst) / relative_path / fn
+            if not dst_.exists():
+                if copy_instead_link:
+                    check_output(
+                        [
+                            "cp",
+                            str(os.path.relpath(src, dst / relative_path)),
+                            ".",
+                        ],
+                        cwd=dst / relative_path,
+                    )
+
+                else:
+                    check_output(
+                        [
+                            "ln",
+                            "-s",
+                            str(os.path.relpath(src, dst / relative_path)),
+                        ],
+                        cwd=dst / relative_path,
+                    )
+
+
 def needs_init_dependent(job):
     """check if this job has been already linked to
 
@@ -107,51 +169,18 @@ def needs_init_dependent(job):
     # side effects
     # in future it might make sense to specify the files which are modified
     # in the yaml file
-    copy_instead_link = job.sp.get("operation") == "shell"
+    copy_instead_link = job.sp().get("operation") == "shell"
     if job.doc.get("base_id"):
         if job.doc.get("init_dependent"):
+            #    print("already init", job.id)
             return True
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
-        base_path = Path(project.open_job(id=job.doc.get("base_id")).path) / "case"
-        dst_path = Path(job.path) / "case"
-        # base path might not be ready atm
-        for root, folder, files in os.walk(Path(base_path)):
-            check_output(["mkdir", "-p", "case"], cwd=job.path)
-            relative_path = Path(root).relative_to(base_path)
-            for fold in folder:
-                src = Path(root) / fold
-                dst = Path(dst_path) / relative_path / fold
-                if not dst.exists():
-                    check_output(
-                        [
-                            "mkdir",
-                            fold,
-                        ],
-                        cwd=dst_path / relative_path,
-                    )
-            for fn in files:
-                src = Path(root) / fn
-                dst = Path(dst_path) / relative_path / fn
-                if not dst.exists():
-                    if copy_instead_link:
-                        check_output(
-                            [
-                                "cp",
-                                str(os.path.relpath(src, dst_path / relative_path)),
-                                ".",
-                            ],
-                            cwd=dst_path / relative_path,
-                        )
+        # print("project", job.path, project)
+        base_id = job.doc.get("base_id")
 
-                    else:
-                        check_output(
-                            [
-                                "ln",
-                                "-s",
-                                str(os.path.relpath(src, dst_path / relative_path)),
-                            ],
-                            cwd=dst_path / relative_path,
-                        )
+        base_path = Path(job.path) / ".." / base_id / "case"
+        dst_path = Path(job.path) / "case"
+        _link_path(base_path, dst_path, copy_instead_link)
         job.doc["init_dependent"] = True
         return True
     else:
@@ -168,7 +197,7 @@ def get_args(job, args):
         return (
             {key: value for key, value in args.items()}
             if args
-            else {key: job.sp[key] for key in job.doc["keys"]}
+            else {key: job.sp()[key] for key in job.doc["keys"]}
         )
     else:
         return args
@@ -253,7 +282,7 @@ def set_failure(operation_name, error, job):
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "controlDict"))
-@OpenFOAMProject.post.true("set_controlDict")
+@OpenFOAMProject.post(lambda job: operation_complete(job, "controlDict"))
 @OpenFOAMProject.operation
 def controlDict(job, args={}):
     """sets up the controlDict"""
@@ -262,7 +291,6 @@ def controlDict(job, args={}):
     # if this was a variation. In any case this could be a decorator
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
-    job.doc.controlDict = True
 
 
 @generate
@@ -284,6 +312,7 @@ def blockMesh(job, args={}):
         .split()[-1]
     )
     job.doc["obr"]["nCells"] = int(cells)
+    job.doc.blockMesh = True
 
 
 @generate
@@ -351,21 +380,53 @@ def has_mesh(job):
 @OpenFOAMProject.operation
 def decomposePar(job, args={}):
     args = get_args(job, args)
-    OpenFOAMCase(str(job.path) + "/case", job).decomposePar(args)
+
+    # TODO
+    # before decomposing check if case with same state
+    # ie time folder blockMeshDict decomposeParDict
+    # exists and decomposition is already done
+    # if so just copy/link folders
+    workspace_folder = Path(job.path) / "../"
+    root, job_paths, _ = next(os.walk(workspace_folder))
+
+    target_case = OpenFOAMCase(str(job.path) + "/case", job)
+
+    # TODO consider also latest/all time folder contents
+    target_md5sums = [
+        target_case.decomposeParDict.md5sum(),
+        target_case.blockMeshDictmd5sum(),
+    ]
+
+    found = False
+    for job_path in job_paths:
+        dst_case = OpenFOAMCase(Path(root) / job_path / "case", {})
+        dst_md5sums = [
+            dst_case.decomposeParDict.md5sum(),
+            dst_case.blockMeshDictmd5sum(),
+        ]
+        if target_md5sums == dst_md5sums:
+            found = True
+            break
+
+    if found:
+        for processor_path in dst_case.processor_folder:
+            _link_path(processor_path, target_case.path / processor_path.parts[-1])
+    else:
+        target_case.decomposePar(args)
 
 
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
-@OpenFOAMProject.pre(lambda job: job.doc.get("is_base", False))
+@OpenFOAMProject.pre(lambda job: not bool(job.doc.get("base_id")))
 @OpenFOAMProject.post(is_case)
 @OpenFOAMProject.operation
-def fetchCase(job):
-    import CaseOrigins
+def fetchCase(job, args={}):
+    args = get_args(job, args)
 
-    case_type = job.sp["case"]
-    fetch_case_handler = getattr(CaseOrigins, case_type)(job.doc["parameters"])
+    case_type = job.sp()["type"]
+    fetch_case_handler = getattr(CaseOrigins, case_type)(args)
     fetch_case_handler.init(job=job)
 
 
@@ -407,12 +468,12 @@ def checkMesh(job, args={}):
 
 
 def get_number_of_procs(job) -> int:
-    np = int(job.sp.get("numberSubDomains"))
+    np = int(job.sp().get("numberSubDomains", 0))
     if np:
         return np
     return int(
         OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get(
-            "numberSubDomains"
+            "numberOfSubdomains"
         )
     )
 
@@ -420,86 +481,162 @@ def get_number_of_procs(job) -> int:
 @dataclass
 class query_result:
     id: str = field()
-    result: dict = field(default_factory=dict)
+    result: list[dict] = field(default_factory=list[dict])
 
 
 # TODO implement to clean up query_to_dict
-# @dataclass
-# class query:
-#     key
-#     value
-#     must_match: bool = True
-#     predicate = equal
+@dataclass
+class Query:
+    key: str
+    value: Any = None
+    state: dict = field(default_factory=dict)
+    predicate: str = "eq"
+    # Whether
+    negate: bool = True
+
+    def execute(self, key, value):
+        predicate_map = {
+            "eq": lambda a, b: a == b,
+            "neq": lambda a, b: a != b,
+            "gt": lambda a, b: a > b,
+            "lt": lambda a, b: a < b,
+        }
+        self.predicate_op = predicate_map[self.predicate]
+
+        if not (self.value == None):
+            if (
+                self.predicate_op(self.value, value)
+                and self.key == key
+                and not self.state
+            ):
+                self.state = {key: value}
+        else:
+            # print(key, value)
+            if self.predicate_op(self.key, key) and not self.state:
+                self.state = {key: value}
+
+    def match(self):
+        return self.state
+
+
+def input_to_query(inp: str) -> Query:
+    """converts cli input  str to a Query object"""
+    inp = (
+        inp.replace("key", '"key"')
+        .replace("value", '"value"')
+        .replace("predicate", '"predicate"')
+    )
+    return Query(**eval(inp))
+
+
+def input_to_queries(inp: str) -> list[Query]:
+    """Convert a json string to list of queries"""
+
+    inp_lst = re.findall("{[\w:\"'0-9,. ]*}", inp)
+    return [input_to_query(x) for x in inp_lst]
 
 
 def query_to_dict(
-    project: list, queries: str, output=False, latest_only=True
+    jobs: list, queries: list[Query], output=False, latest_only=True, strict=False
 ) -> list[query_result]:
     """Given a list jobs find all jobs for which a query matches"""
-    queries = queries.split(" and ")
-    docs = {}
-    for job in project:
+    docs: dict = {}
+
+    # merge job docs and statepoints
+    for job in jobs:
         if not job.doc.get("obr"):
             continue
         docs[job.id] = {}
         for key, value in job.doc.obr.items():
             docs[job.id].update({key: value})
-        docs[job.id].update(job.sp)
+        docs[job.id].update(job.sp())
 
-    res = []
+    ret = []
+
+    def execute_query(query, key, value) -> Query:
+        if isinstance(value, list) and latest_only and value:
+            value = value[-1]
+        # descent one level down
+        # statepoints and job documents might contain subdicts which we want to descent
+        # into
+        signac_attr_dict_str = "JSONAttrDict"
+        if isinstance(value, dict) or type(value).__name__ == signac_attr_dict_str:
+            sub_results = list(
+                filter(
+                    lambda x: x.state,
+                    [
+                        execute_query(deepcopy(query), sub_key, sub_value)
+                        for sub_key, sub_value in value.items()
+                    ],
+                )
+            )
+            if len(sub_results) > 0:
+                return sub_results[0]
+        query.execute(key, value)
+        return query
+
     for job_id, doc in docs.items():
-        q_success = []
-        res_tmp = query_result(job.id)
-
-        # scan through all operations and statepoint values of a job
+        # scan through merged operations and statepoint values of a job
         # look for keys and values
         # and append if all queries have been matched
-        for key, value in doc.items():
-            for q in queries:
-                if "==" in q:
-                    q_key, q_value = q.split("==")
-                    q_value = q_value.replace(" ", "")
-                    q_key = q_key.replace(" ", "")
-                else:
-                    q_key = q
-                    q_value = ""
+        tmp_qs: list[Query] = []
+        all_required = True
+        for q in queries:
+            res_cache = {}
+            for key, value in doc.items():
+                q_tmp = deepcopy(q)
+                res = execute_query(q_tmp, key, value)
+                if res.state:
+                    # a filter query was hit
+                    if res.negate:
+                        all_required = False
+                        break
 
-                # is an operation just consider latest
-                # execution for now
-                if isinstance(value, list) and latest_only:
-                    value = value[-1]
+                    res_cache = res.state
+                    tmp_qs.append(res)
 
-                # is an operation just consider latest
-                # execution for now
-                if isinstance(value, dict):
-                    for operation_key, operation_value in value.items():
-                        if operation_key == q_key and q_value in str(operation_value):
-                            res_tmp.result.update(
-                                {
-                                    key: operation_value,
-                                }
-                            )
-                            q_success.append(True)
-                else:
-                    if key == q_key and q_value in str(value):
-                        res_tmp.result.update({key: value})
-                        q_success.append(True)
+            # res.state could be from any key before
+            if q.value and not res_cache:
+                all_required = False
 
-        # all queries have been found
-        # TODO queries without predicate should be optional
-        if len(q_success) == len(queries):
-            res.append(res_tmp)
+        # append if all required results are present
+        res_tmp = query_result(job_id)
+        for q in tmp_qs:
+            # requests a value but not a state
+            # is currently considered to be failed
+            res_tmp.result.append(q.state)
 
-    return res
+        # in strict mode all queries need to have some result
+        if strict:
+            all_required = len(res_tmp.result) == len(queries)
+            # if not all_required:
+            #    raise Exception(res_tmp)
+
+        # merge all results to a single dictionary
+        res_tmp_dict = {}
+        for d in res_tmp.result:
+            res_tmp_dict.update(d)
+        res_tmp.result = [res_tmp_dict]
+
+        if all_required:
+            ret.append(deepcopy(res_tmp))
+    return ret
 
 
-def query_impl(project, queries: str, output=False, latest_only=True) -> list[str]:
+def get_values(jobs: list, key: str) -> set:
+    """find all different statepoint values"""
+    values = [job.sp().get(key) for job in jobs if job.sp().get(key)]
+    return set(values)
+
+
+def query_impl(
+    jobs: list, queries: list[Query], output=False, latest_only=True
+) -> list[str]:
     """Performs a query and returns corresponding job.ids"""
-    res = query_to_dict(project, queries, output, latest_only)
+    res = query_to_dict(jobs, queries, output, latest_only)
     if output:
         for r in res:
-            for k, v in r.items():
-                print(k, v)
+            print(r)
 
     query_ids = []
     for id_ in res:

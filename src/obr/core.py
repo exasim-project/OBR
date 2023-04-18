@@ -119,7 +119,7 @@ def logged_func(func, doc, **kwargs):
 def execute(steps: list[str], job) -> bool:
     path = Path(job.path) / "case"
     if not steps:
-        return
+        return False
 
     steps_filt = []
     if not isinstance(steps, list):

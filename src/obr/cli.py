@@ -15,13 +15,14 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 import click
-import yaml
+import yaml  # type: ignore[import]
 import os
 import re
 import time
 
-from signac_labels import *
-from signac_operations import *
+from .signac_wrapper.labels import *
+from .signac_wrapper.operations import *
+from .create_tree import create_tree
 
 
 @click.group()
@@ -36,10 +37,20 @@ def cli(ctx, debug):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-p", "--pretend", default=False)
+@click.option(
+    "-p", "--pretend", is_flag=True, help="Set flag to only print submission script"
+)
 @click.option("-o", "--operation")
-@click.option("--bundling", default=None)
-@click.option("--bundling_match", is_flag=True)
+@click.option("--query", default=None, help="")
+@click.option("--bundling_key", default=None, help="")
+@click.option("-p", "--partition", default="cpuonly")
+@click.option("--account", default="")
+@click.option("--pretend", is_flag=True)
+@click.option(
+    "--scheduler_args",
+    default="",
+    help="Currently required to be in --key1 value --key2 value2 form",
+)
 @click.pass_context
 def submit(ctx, **kwargs):
     if kwargs.get("folder"):
@@ -47,50 +58,56 @@ def submit(ctx, **kwargs):
 
     project = OpenFOAMProject().init_project()
     project._entrypoint = {"executable": "", "path": "obr"}
+
+    queries_str = kwargs.get("query")
+    bundling_key = kwargs.get("bundling_key")
+    partition = kwargs.get("partition")
+    account = kwargs.get("account")
+
+    if queries_str:
+        queries = input_to_queries(queries_str)
+        sel_jobs = query_impl(project, queries, output=False)
+        jobs = [j for j in project if j.id in sel_jobs]
+    else:
+        jobs = [j for j in project]
+
     # OpenFOAMProject().main()
     # print(dir(project.operations["runParallelSolver"]))
     # TODO find a signac way to do that
-    bundling_key = kwargs["bundling"]
+    cluster_args = {
+        "partition": partition,
+        "pretend": kwargs["pretend"],
+        "account": account,
+    }
+
+    # TODO improve this using regex
+    scheduler_args = kwargs.get("scheduler_args")
+    if scheduler_args:
+        split = scheduler_args.split(" ")
+        for i in range(0, len(split), 2):
+            cluster_args.update({split[i]: split[i + 1]})
+
     if bundling_key:
-        non_matching_jobs = [
-            j for j in project if not bundling_key in list(j.sp.keys())
-        ]
-        bundling_set_vals = set(
-            [j.sp[bundling_key] for j in project if bundling_key in list(j.sp.keys())]
-        )
-
-        if not kwargs["bundling_match"]:
-            print("submit non matching jobs", non_matching_jobs)
+        bundling_values = get_values(jobs, bundling_key)
+        for bundle_value in bundling_values:
+            jobs = [j for j in project if bundle_value in list(j.sp().values())]
+            print(f"[OBR] submit bundle {bundle_value} of {len(jobs)} jobs")
             print(
+                "[OBR] submission response",
                 project.submit(
-                    jobs=non_matching_jobs,
-                    bundle_size=len(non_matching_jobs),
+                    jobs=jobs,
+                    bundle_size=len(jobs),
                     names=[kwargs.get("operation")],
-                    **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
-                )
+                    **cluster_args,
+                ),
             )
-
-        if kwargs["bundling_match"]:
-            print("submit matching jobs", non_matching_jobs)
-            for bundle in bundling_set_vals:
-                jobs = [j for j in project if bundle in list(j.sp.values())]
-                print(len(jobs))
-
-                print(
-                    project.submit(
-                        jobs=jobs,
-                        bundle_size=len(jobs),
-                        names=[kwargs.get("operation")],
-                        **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
-                    )
-                )
-                time.sleep(15)
+            time.sleep(15)
     else:
-        print("submit all jobs")
+        print(f"[OBR] submitting {len(jobs)} individual jobs")
         print(
             project.submit(
                 names=[kwargs.get("operation")],
-                **{"partition": "cpuonly", "pretend": kwargs["pretend"]},
+                **cluster_args,
             )
         )
 
@@ -115,7 +132,8 @@ def run(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
-    queries = kwargs.get("query")
+    queries_str = kwargs.get("query")
+    queries = input_to_queries(queries_str)
     if queries:
         sel_jobs = query_impl(project, queries, output=False)
         jobs = [j for j in project if j.id in sel_jobs]
@@ -137,6 +155,7 @@ def run(ctx, **kwargs):
         project.run(
             jobs=jobs,  # project.groupby("doc.is_base"),
             names=kwargs.get("operations").split(","),
+            progress=True,
             np=kwargs.get("tasks", -1),
         )
     else:
@@ -145,9 +164,10 @@ def run(ctx, **kwargs):
             names=kwargs.get("operations").split(","),
             np=kwargs.get("tasks", -1),
         )
+    print("[OBR] completed all operations")
 
 
-def parse_variables(in_str, args, domain):
+def parse_variables(in_str: str, args: dict, domain: str):
     ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
     for inst in ocurrances:
         if not args.get(inst, ""):
@@ -156,9 +176,11 @@ def parse_variables(in_str, args, domain):
             "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
         )
     expr = re.findall(r"\${{([\'\"\= 0.-9()*+A-Za-z_>!]*)}}", in_str)
-    print("expr", expr, in_str)
     for inst in expr:
-        in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
+        try:
+            in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
+        except:
+            print(in_str, inst)
     return in_str
 
 
@@ -170,9 +192,9 @@ def parse_variables(in_str, args, domain):
 @click.option("-c", "--config", help="Path to configuration file.")
 @click.option("-t", "--tasks", default=-1, help="Number of tasks to run concurrently.")
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
+@click.option("--verbose", default=0, help="set verbosity")
 @click.pass_context
 def init(ctx, **kwargs):
-    import obr_create_tree
     import urllib.request
 
     if kwargs.get("url"):
@@ -195,6 +217,7 @@ def init(ctx, **kwargs):
                 include_str = ws + ws.join(include_handle.readlines())
             config_str = config_str.replace(include, include_str)
 
+    config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(
         parse_variables(
             parse_variables(config_str, os.environ, "env"),
@@ -203,12 +226,13 @@ def init(ctx, **kwargs):
         )
     )
 
-    # TODO add an option to write out parsed file
-    # for debuging
-    print(config)
+    if kwargs.get("verbose", 0) >= 1:
+        print(config)
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
-    obr_create_tree.obr_create_tree(project, config, kwargs, config_file)
+    create_tree(project, config, kwargs)
+
+    print("[OBR] successfully initialised")
 
 
 @cli.command()
@@ -235,7 +259,8 @@ def query(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
-    queries = kwargs.get("query")
+    queries_str = kwargs.get("query")
+    queries = input_to_queries(queries_str)
     query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
 
 
