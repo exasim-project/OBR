@@ -31,6 +31,7 @@ class Query:
         }
         self.predicate_op = predicate_map[self.predicate]
 
+        # a value specific value has been requested
         if not (self.value == None):
             if (
                 self.predicate_op(self.value, value)
@@ -39,7 +40,6 @@ class Query:
             ):
                 self.state = {key: value}
         else:
-            # print(key, value)
             if self.predicate_op(self.key, key) and not self.state:
                 self.state = {key: value}
 
@@ -49,6 +49,7 @@ class Query:
 
 def input_to_query(inp: str) -> Query:
     """converts cli input  str to a Query object"""
+    # FIXME this fails if values are name value
     inp = (
         inp.replace("key", '"key"')
         .replace("value", '"value"')
@@ -68,22 +69,20 @@ def execute_query(query, key, value, latest_only=True, track_keys=list) -> Query
         value = value[-1]
     # descent one level down, statepoints and job documents might contain
     # subdicts which we want to descent into at the same time we need to track
+
     signac_attr_dict_str = "JSONAttrDict"
+
     if isinstance(value, dict) or type(value).__name__ == signac_attr_dict_str:
         track_keys.append(key)
-        sub_results = list(
-            filter(
-                lambda x: x.state,
-                [
-                    execute_query(
-                        deepcopy(query), sub_key, sub_value, latest_only, track_keys
-                    )
-                    for sub_key, sub_value in value.items()
-                ],
-            )
-        )
-        if len(sub_results) > 0:
-            return sub_results[0]
+        sub_results = [
+            execute_query(deepcopy(query), sub_key, sub_value, latest_only, track_keys)
+            for sub_key, sub_value in value.items()
+        ]
+        # if a query matched to any of the values we continue with this query
+        for q in sub_results:
+            if q.match():
+                return q
+
     query.execute(key, value)
     # if we have a match store previous keys
     if query.match():

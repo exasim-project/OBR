@@ -49,7 +49,20 @@ def test_execute_query():
 
 @pytest.fixture
 def mock_job_dict():
-    return {12345: {"preconditioner": "IC"}, 23456: {"obr": {"preconditioner": "IC"}}}
+    return {
+        12345: {"preconditioner": "IC"},
+        23456: {"obr": {"preconditioner": "IC"}},
+        34567: {
+            "obr": {
+                "postProcessing": {
+                    "machine_name": {
+                        "time": [1, 2, 3],
+                        "logFiles": ["foo", "bar", "baz"],
+                    }
+                }
+            }
+        },
+    }
 
 
 def test_flatten_jobs(mock_job_dict):
@@ -71,3 +84,12 @@ def test_flatten_jobs(mock_job_dict):
 
     executed_query = query_flat_jobs(mock_job_dict, queries, False, True, True)
     assert executed_query[0].id == 12345
+
+
+def test_nested_results_with_lists(mock_job_dict):
+    input_w_value = "{key:'time'}"
+    queries = input_to_queries(input_w_value)
+
+    executed_query = execute_query(queries[0], 34567, mock_job_dict[34567], True, [])
+    assert executed_query.state == {"time": 3}
+    assert executed_query.sub_keys == [34567, "obr", "postProcessing", "machine_name"]
