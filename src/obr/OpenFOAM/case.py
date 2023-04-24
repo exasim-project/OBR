@@ -160,6 +160,15 @@ class OpenFOAMCase(BlockMesh):
                     "coeffs": {"n": coeffs},
                 }
             )
+        else:
+            numberSubDomains = int(args["numberSubDomains"])
+            self.decomposeParDict.set(
+                {
+                    "method": method,
+                    "numberOfSubdomains": numberSubDomains,
+                }
+            )
+
         self._exec_operation(["decomposePar", "-force"])
         fvSolutionArgs = args.get("fvSolution", {})
         if fvSolutionArgs:
