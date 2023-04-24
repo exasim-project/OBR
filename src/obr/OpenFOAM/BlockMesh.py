@@ -104,10 +104,10 @@ class BlockMesh(_Base):
         ]
 
     def blockMeshDictmd5sum(self) -> Optional[str]:
-        fn = str(self.blockMeshDict)
+        fn = self.blockMeshDict
         if not fn:
             return None
-        return check_output(["md5sum", fn], text=True)
+        return check_output(["md5sum", str(fn)], text=True)
 
     def refineMesh(self, args: dict):
         """ """
