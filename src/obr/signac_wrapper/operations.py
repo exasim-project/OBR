@@ -489,6 +489,10 @@ def get_values(jobs: list, key: str) -> set:
 def runParallelSolver(job, args={}):
     from datetime import datetime
 
+    fp = os.environ.get("OBR_SKIP_COMPLETE")
+    if finished(job):
+        return True
+
     args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
