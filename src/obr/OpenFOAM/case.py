@@ -64,7 +64,7 @@ class File(FileParser):
         else:
             self.set_key_value_pairs(args_copy)
 
-        self._update()
+        self.update()
         self.md5sum(refresh=True)
 
 
@@ -128,11 +128,11 @@ class OpenFOAMCase(BlockMesh):
         """Sets decomposeParDict and calls decomposePar"""
         method = args["method"]
         if method == "simple":
-            if not args.get("numberSubDomains"):
+            if not args.get("numberOfSubDomains"):
                 coeffs = [int(i) for i in args["coeffs"]]
                 numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
             else:
-                numberSubDomains = int(args["numberSubDomains"])
+                numberSubDomains = int(args["numberOfSubDomains"])
                 coeffs = args.get("coeffs", None)
                 if not coeffs:
                     coeffs = calculate_simple_partition(numberSubDomains, [1, 1, 1])
@@ -145,7 +145,7 @@ class OpenFOAMCase(BlockMesh):
                 }
             )
         else:
-            numberSubDomains = int(args["numberSubDomains"])
+            numberSubDomains = int(args["numberOfSubDomains"])
             self.decomposeParDict.set(
                 {
                     "method": method,
