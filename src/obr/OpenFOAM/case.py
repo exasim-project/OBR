@@ -34,10 +34,6 @@ class File(FileParser):
         if refresh:
             self._update()
 
-    @property
-    def path(self):
-        return self._folder / self._file
-
     def get(self, name: str):
         """Get a value from an OpenFOAM dictionary file"""
         # TODO replace with a safer option
