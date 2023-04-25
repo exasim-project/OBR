@@ -19,9 +19,10 @@ from Owls.parser.FoamDict import FileParser
 class File(FileParser):
     def __init__(self, **kwargs):
         # forwards all unused arguments
-        super().__init__(**kwargs)
         self._file = kwargs["file"]
         self._folder = kwargs["folder"]
+        kwargs["path"] = Path(self._file) / self._folder
+        super().__init__(**kwargs)
         self.job = kwargs["job"]
         self._optional = kwargs.get("optional", False)
         self._parsed_file = None
