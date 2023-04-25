@@ -75,6 +75,7 @@ class File(FileParser):
             )
         else:
             self.set_key_value_pairs(args_copy)
+        self.write_to_disk()
 
         self._parse_file(refresh=True)
         self.md5sum(refresh=True)
