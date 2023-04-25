@@ -491,7 +491,7 @@ def runParallelSolver(job, args={}):
 
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
-        return True
+        return "true"
 
     args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)
