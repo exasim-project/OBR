@@ -23,6 +23,7 @@ from .signac_wrapper.labels import *
 from .signac_wrapper.operations import *
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
+from .core.queries import input_to_queries
 
 
 @click.group()
