@@ -21,31 +21,20 @@ class File(FileParser):
         # forwards all unused arguments
         self._file = kwargs["file"]
         self._folder = kwargs["folder"]
-        kwargs["path"] = Path(self._file) / self._folder
+        kwargs["path"] = Path(self._folder) / self._file
         super().__init__(**kwargs)
         self.job = kwargs["job"]
         self._optional = kwargs.get("optional", False)
         self._md5sum = None
 
-    def _parse_file(self, refresh=False):
-        """Parse file and store dictionary"""
-        if not self.path.exists():
-            return None
-        if refresh:
-            self._update()
-
     def get(self, name: str):
         """Get a value from an OpenFOAM dictionary file"""
         # TODO replace with a safer option
         # also consider moving that to Owls
-        self._parse_file()
-        if self.path.exists():
-            try:
-                return eval(self._parsed_file.get(name))
-            except:
-                return self._parsed_file.get(name)
-        else:
-            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.path)
+        try:
+            return eval(super().get(name))
+        except:
+            return super().get(name)
 
     def md5sum(self, refresh=False) -> str:
         """Compute a files md5sum"""
@@ -62,7 +51,6 @@ class File(FileParser):
         if the key exists in the controlDict the values are replaced
         non-existent keys are added
         """
-        self._parse_file()
         args_copy = {k: v for k, v in args.items()}
 
         modifies_file(self.path)
@@ -75,9 +63,8 @@ class File(FileParser):
             )
         else:
             self.set_key_value_pairs(args_copy)
-        self.write_to_disk()
 
-        self._parse_file(refresh=True)
+        self._update()
         self.md5sum(refresh=True)
 
 
