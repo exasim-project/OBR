@@ -25,15 +25,14 @@ class File(FileParser):
         super().__init__(**kwargs)
         self.job = kwargs["job"]
         self._optional = kwargs.get("optional", False)
-        self._parsed_file = None
         self._md5sum = None
 
     def _parse_file(self, refresh=False):
         """Parse file and store dictionary"""
         if not self.path.exists():
             return None
-        if not self._parsed_file or refresh:
-            self._parsed_file = self.parse_file_to_dict()
+        if refresh:
+            self._update()
 
     @property
     def path(self):
