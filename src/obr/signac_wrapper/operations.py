@@ -489,8 +489,8 @@ def get_values(jobs: list, key: str) -> set:
 def runParallelSolver(job, args={}):
     from datetime import datetime
 
-    fp = os.environ.get("OBR_SKIP_COMPLETE")
-    if finished(job):
+    skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
+    if skip_complete and finished(job):
         return True
 
     args = get_args(job, args)
