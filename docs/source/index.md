@@ -8,7 +8,10 @@
 ```{toctree}
 :caption: 'Contents:'
 :maxdepth: 2
+
+commandLine/CLI
 ```
+
 
 ```{warning}
 This library is currently under heavy development. Things might change frequently.
