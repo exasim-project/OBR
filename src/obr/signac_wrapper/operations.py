@@ -260,9 +260,40 @@ def dispatch_pre_hooks(operation_name, job):
     execute_pre_build(operation_name, job)
 
 
+def gather_caseFiles(case_path: str) -> list[str]:
+    """Gathers a list of files inside a case folder that are also not symlinks."""
+    sys_path = case_path + '/system'
+    sys_include_path = sys_path+'/include'
+    const_path = case_path + '/constant'
+    const_polyMesh_path = const_path + '/polyMesh'
+    files = []
+    for f in os.listdir(sys_path):
+        f_path = os.path.join(sys_path, f)
+        if os.path.isfile(f_path) and not os.path.islink(f_path):
+            files.append(f_path)
+    for f in os.listdir(sys_include_path):
+        f_path = os.path.join(sys_include_path, f)
+        if os.path.isfile(f_path) and not os.path.islink(f_path):
+            files.append(f_path)
+    for f in os.listdir(const_polyMesh_path):    # NOTE is polymesh subject to change during simulation?
+        f_path = os.path.join(const_polyMesh_path, f)
+        if os.path.isfile(f_path) and not os.path.islink(f_path):
+            files.append(f_path)
+    return files
+
+
 def dispatch_post_hooks(operation_name, job):
     """just forwards to start_job_state and execute_pre_build"""
     execute_post_build(operation_name, job)
+    files = gather_caseFiles(f'{job.path}/case')
+    for case_file in files:
+        md5sum = check_output(["md5sum", str(case_file)], text=True)
+        if 'md5sum' not in job.doc['obr']:
+            job.doc['obr']['md5sum'] = dict()
+        _, r_path = case_file.split(job.id)[:]  # NOTE is total path really necessary?
+        f_path, fname = r_path.rsplit('/', 1)[:]
+        signac_friendly_path = f_path + fname.replace('.', '-')   # NOTE signac throws: "Mapping keys may not contain dots ('.')"
+        job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]
     end_job_state(operation_name, job)
 
 
@@ -274,6 +305,7 @@ def set_failure(operation_name, error, job):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exit(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "controlDict"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "controlDict"))
@@ -422,6 +454,7 @@ def decomposePar(job, args={}):
 def fetchCase(job, args={}):
     args = get_args(job, args)
 
+    print('Running fetchCase')
     case_type = job.sp()["type"]
     fetch_case_handler = getattr(CaseOrigins, case_type)(args)
     fetch_case_handler.init(job=job)
@@ -488,7 +521,7 @@ def get_values(jobs: list, key: str) -> set:
 )
 def runParallelSolver(job, args={}):
     from datetime import datetime
-
+    print('running runParallelSolver')
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
         return "true"
