@@ -41,7 +41,7 @@ def cli(ctx, debug):
 @click.option(
     "-p", "--pretend", is_flag=True, help="Set flag to only print submission script"
 )
-@click.option("-o", "--operation")
+@click.option("-o", "--operation", required=True)
 @click.option("--query", default=None, help="")
 @click.option("--bundling_key", default=None, help="")
 @click.option("-p", "--partition", default="cpuonly")
@@ -119,7 +119,7 @@ def submit(ctx, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-o", "--operations", default="")
+@click.option("-o", "--operations", required=True)
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
@@ -170,15 +170,17 @@ def run(ctx, **kwargs):
 
 @cli.command()
 @click.option(
-    "-f", "--folder", default=".", help="Where to create the worspace and view"
+    "-f", "--folder", default=".", help="Where to create the worspace and view. Default: '.' "
 )
 @click.option("-e", "--execute", default=False)
-@click.option("-c", "--config", help="Path to configuration file.")
+@click.option("-c", "--config", required=True, help="Path to configuration file.")
 @click.option("-t", "--tasks", default=-1, help="Number of tasks to run concurrently.")
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.option("--verbose", default=0, help="set verbosity")
 @click.pass_context
 def init(ctx, **kwargs):
+
+
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
@@ -208,7 +210,7 @@ def status(ctx, **kwargs):
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
-@click.option("-q", "--query")
+@click.option("-q", "--query", required=True)
 @click.pass_context
 def query(ctx, **kwargs):
     # TODO refactor
