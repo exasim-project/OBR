@@ -313,7 +313,6 @@ def set_failure(operation_name, error, job):
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
-@OpenFOAMProject.operation_hooks.on_exit(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "controlDict"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "controlDict"))
@@ -462,7 +461,6 @@ def decomposePar(job, args={}):
 def fetchCase(job, args={}):
     args = get_args(job, args)
 
-    print('Running fetchCase')
     case_type = job.sp()["type"]
     fetch_case_handler = getattr(CaseOrigins, case_type)(args)
     fetch_case_handler.init(job=job)
@@ -529,7 +527,6 @@ def get_values(jobs: list, key: str) -> set:
 )
 def runParallelSolver(job, args={}):
     from datetime import datetime
-    print('running runParallelSolver')
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
         return "true"
