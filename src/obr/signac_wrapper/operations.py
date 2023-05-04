@@ -267,18 +267,26 @@ def gather_caseFiles(case_path: str) -> list[str]:
     const_path = case_path + '/constant'
     const_polyMesh_path = const_path + '/polyMesh'
     files = []
-    for f in os.listdir(sys_path):
-        f_path = os.path.join(sys_path, f)
-        if os.path.isfile(f_path) and not os.path.islink(f_path):
-            files.append(f_path)
-    for f in os.listdir(sys_include_path):
-        f_path = os.path.join(sys_include_path, f)
-        if os.path.isfile(f_path) and not os.path.islink(f_path):
-            files.append(f_path)
-    for f in os.listdir(const_polyMesh_path):    # NOTE is polymesh subject to change during simulation?
-        f_path = os.path.join(const_polyMesh_path, f)
-        if os.path.isfile(f_path) and not os.path.islink(f_path):
-            files.append(f_path)
+    if os.path.isdir(sys_path):
+        for f in os.listdir(sys_path):
+            f_path = os.path.join(sys_path, f)
+            if os.path.isfile(f_path) and not os.path.islink(f_path):
+                files.append(f_path)
+    if os.path.isdir(sys_include_path):
+        for f in os.listdir(sys_include_path):
+            f_path = os.path.join(sys_include_path, f)
+            if os.path.isfile(f_path) and not os.path.islink(f_path):
+                files.append(f_path)
+    if os.path.isdir(const_path):
+        for f in os.listdir(const_path):
+            f_path = os.path.join(const_path, f)
+            if os.path.isfile(f_path) and not os.path.islink(f_path):
+                files.append(f_path)
+    if os.path.isdir(const_polyMesh_path):
+        for f in os.listdir(const_polyMesh_path):    # NOTE is polymesh subject to change during simulation?
+            f_path = os.path.join(const_polyMesh_path, f)
+            if os.path.isfile(f_path) and not os.path.islink(f_path):
+                files.append(f_path)
     return files
 
 
@@ -292,7 +300,7 @@ def dispatch_post_hooks(operation_name, job):
             job.doc['obr']['md5sum'] = dict()
         _, r_path = case_file.split(job.id)[:]  # NOTE is total path really necessary?
         f_path, fname = r_path.rsplit('/', 1)[:]
-        signac_friendly_path = f_path + fname.replace('.', '-')   # NOTE signac throws: "Mapping keys may not contain dots ('.')"
+        signac_friendly_path = f"{f_path}/{fname.replace('.', '-')}"   # NOTE signac throws: "Mapping keys may not contain dots ('.')"
         job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]
     end_job_state(operation_name, job)
 
