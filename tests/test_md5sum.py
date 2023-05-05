@@ -52,13 +52,17 @@ def test_md5sum_calculation(tmpdir, emmit_test_config):
         assert case_fold.exists()
     project.run(names=["fetchCase"])
 
-    case_path = os.path.join(root, folder[0], 'case')
-    md5summed_files_target = set([f.rsplit('/', 1)[1] for f in gather_caseFiles(case_path=case_path)])
-    job_doc_path = os.path.join(root, folder[0], 'signac_job_document.json')
+    case_path = os.path.join(root, folder[0], "case")
+    md5summed_files_target = set(
+        [f.rsplit("/", 1)[1] for f in gather_caseFiles(case_path=case_path)]
+    )
+    job_doc_path = os.path.join(root, folder[0], "signac_job_document.json")
 
     with open(job_doc_path) as job_file:
         job = json.load(job_file)
-        md5summed_files_actual = [file.rsplit('/', 1)[1].replace('-', '.') for file in job['obr']['md5sum']]
+        md5summed_files_actual = [
+            file.rsplit("/", 1)[1].replace("-", ".") for file in job["obr"]["md5sum"]
+        ]
         print(md5summed_files_target)
         print(md5summed_files_actual)
         for fname in md5summed_files_actual:

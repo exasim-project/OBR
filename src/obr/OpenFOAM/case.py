@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import errno
 import os
 from pathlib import Path
 from subprocess import check_output
@@ -83,7 +82,7 @@ class OpenFOAMCase(BlockMesh):
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
         # FIXME fvSchemes does not exist when using this class in post hooks?
-        if Path(self.system_folder / 'fvSchemes').exists():
+        if Path(self.system_folder / "fvSchemes").exists():
             self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
         self.decomposeParDict = File(
             folder=self.system_folder, file="decomposeParDict", job=job, optional=True
@@ -103,14 +102,14 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def constant_polyMesh_folder(self):
-        cpf = self.constant_folder / 'polyMesh'
+        cpf = self.constant_folder / "polyMesh"
         if cpf.exists():
             return cpf
         return None
 
     @property
     def system_include_folder(self):
-        cpf = self.system_folder / 'include'
+        cpf = self.system_folder / "include"
         if cpf.exists():
             return cpf
         return None
@@ -169,7 +168,6 @@ class OpenFOAMCase(BlockMesh):
                     files.append(f_path)
         return files
 
-
     def _exec_operation(self, operation):
         logged_execute(operation, self.path, self.job.doc)
 
@@ -219,9 +217,9 @@ class OpenFOAMCase(BlockMesh):
         self._exec_operation([solver])
 
     def is_file_modified(self, path):
-        if 'md5sum' not in self.job.doc['obr']:
+        if "md5sum" not in self.job.doc["obr"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum = self.job.doc['obr']['md5sum'].get(path)
+        current_md5sum = self.job.doc["obr"]["md5sum"].get(path)
         md5sum = check_output(["md5sum", path], text=True)
         return current_md5sum != md5sum
 

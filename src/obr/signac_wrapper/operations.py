@@ -268,10 +268,12 @@ def dispatch_post_hooks(operation_name, job):
     for case_path in files:
         case_file = str(case_path)
         md5sum = check_output(["md5sum", case_file], text=True)
-        if 'md5sum' not in job.doc['obr']:
-            job.doc['obr']['md5sum'] = dict()
+        if "md5sum" not in job.doc["obr"]:
+            job.doc["obr"]["md5sum"] = dict()
         rel_path = case_path.relative_to(job.path).parts[1:]
-        signac_friendly_path = path_to_signac(str(rel_path))  # signac does not allow . inside paths or job.doc keys
+        signac_friendly_path = path_to_signac(
+            str(rel_path)
+        )  # signac does not allow . inside paths or job.doc keys
         job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]
     end_job_state(operation_name, job)
 
@@ -498,6 +500,7 @@ def get_values(jobs: list, key: str) -> set:
 )
 def runParallelSolver(job, args={}):
     from datetime import datetime
+
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
         return "true"
