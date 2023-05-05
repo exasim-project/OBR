@@ -144,7 +144,11 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def config_file_tree(self) -> list[Path]:
-        "Iterates through case file tree and returns a list of paths to non-symlinked files."
+        """Iterates through case file tree and returns a list of paths to non-symlinked files.
+        
+        
+        
+        """
         files = []
         if self.system_folder.is_dir():
             for f in self.system_folder.iterdir():
