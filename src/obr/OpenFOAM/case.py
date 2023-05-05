@@ -44,6 +44,12 @@ class File(FileParser):
             self._md5sum = check_output(["md5sum", str(self.path)], text=True)
         return self._md5sum
 
+    def is_modified(self) -> bool:
+        if not self._md5sum:
+            return False
+        current_md5sum = check_output(["md5sum", str(self.path)], text=True)
+        return self._md5sum != current_md5sum
+
     # @decorator_modifies_file
     def set(self, args: dict):
         """modifies the current controlDict by the given dictionary
