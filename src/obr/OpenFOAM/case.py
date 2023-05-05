@@ -72,11 +72,14 @@ class OpenFOAMCase(BlockMesh):
     """A class for simple access to typical OpenFOAM files"""
 
     def __init__(self, path, job):
+        print(path)
         self.path_ = Path(path)
         self.job = job
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
-        self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
+        # FIXME fvSchemes does not exist when using this class in post hooks?
+        if Path(self.system_folder / 'fvSchemes').exists():
+            self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
         self.decomposeParDict = File(
             folder=self.system_folder, file="decomposeParDict", job=job, optional=True
         )
@@ -92,6 +95,20 @@ class OpenFOAMCase(BlockMesh):
     @property
     def constant_folder(self):
         return self.path / "constant"
+
+    @property
+    def constant_polyMesh_folder(self):
+        cpf = self.constant_folder / 'polyMesh'
+        if cpf.exists():
+            return cpf
+        return None
+
+    @property
+    def system_include_folder(self):
+        cpf = self.system_folder / 'include'
+        if cpf.exists():
+            return cpf
+        return None
 
     @property
     def zero_folder(self):
@@ -120,6 +137,33 @@ class OpenFOAMCase(BlockMesh):
         _, folds, files = next(os.walk(self.path))
         proc_folds = [self.path / f for f in folds if "processor" in f]
         return proc_folds
+
+    @property
+    def config_file_tree(self) -> list[Path]:
+        "Iterates through case file tree and returns a list of paths to non-symlinked files."
+        files = []
+        if self.system_folder.is_dir():
+            for f in self.system_folder.iterdir():
+                f_path = self.system_folder / f
+                if f_path.is_file() and not f_path.is_symlink():
+                    files.append(f_path)
+        if self.system_include_folder is not None:
+            for f in self.system_include_folder.iterdir():
+                f_path = self.system_include_folder / f
+                if f_path.is_file() and not f_path.is_symlink():
+                    files.append(f_path)
+        if self.constant_folder.is_dir():
+            for f in self.constant_folder.iterdir():
+                f_path = self.constant_folder / f
+                if f_path.is_file() and not f_path.is_symlink():
+                    files.append(f_path)
+        if self.constant_polyMesh_folder is not None:
+            for f in self.constant_polyMesh_folder.iterdir():
+                f_path = self.constant_polyMesh_folder / f
+                if f_path.is_file() and not f_path.is_symlink():
+                    files.append(f_path)
+        return files
+
 
     def _exec_operation(self, operation):
         logged_execute(operation, self.path, self.job.doc)
@@ -168,3 +212,17 @@ class OpenFOAMCase(BlockMesh):
     def run(self, args: dict):
         solver = self.controlDict.get("application")
         self._exec_operation([solver])
+
+    def is_file_modified(self, path):
+        if 'md5sum' not in self.job.doc['obr']:
+            return False  # no md5sum has been calculated for this file
+        current_md5sum = self.job.doc['obr']['md5sum'].get(path)
+        md5sum = check_output(["md5sum", path], text=True)
+        return current_md5sum != md5sum
+
+    def is_tree_modified(self):
+        m_files = []
+        for file in self.config_file_tree:
+            if self.is_file_modified(file):
+                m_files.append(file)
+        return m_files

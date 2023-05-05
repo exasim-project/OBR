@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 from subprocess import check_output
-from ..core.core import execute
+from ..core.core import execute, path_to_signac
 from .labels import *
 from obr.OpenFOAM.case import OpenFOAMCase
 import CaseOrigins
@@ -260,47 +260,18 @@ def dispatch_pre_hooks(operation_name, job):
     execute_pre_build(operation_name, job)
 
 
-def gather_caseFiles(case_path: str) -> list[str]:
-    """Gathers a list of files inside a case folder that are also not symlinks."""
-    sys_path = case_path + '/system'
-    sys_include_path = sys_path+'/include'
-    const_path = case_path + '/constant'
-    const_polyMesh_path = const_path + '/polyMesh'
-    files = []
-    if os.path.isdir(sys_path):
-        for f in os.listdir(sys_path):
-            f_path = os.path.join(sys_path, f)
-            if os.path.isfile(f_path) and not os.path.islink(f_path):
-                files.append(f_path)
-    if os.path.isdir(sys_include_path):
-        for f in os.listdir(sys_include_path):
-            f_path = os.path.join(sys_include_path, f)
-            if os.path.isfile(f_path) and not os.path.islink(f_path):
-                files.append(f_path)
-    if os.path.isdir(const_path):
-        for f in os.listdir(const_path):
-            f_path = os.path.join(const_path, f)
-            if os.path.isfile(f_path) and not os.path.islink(f_path):
-                files.append(f_path)
-    if os.path.isdir(const_polyMesh_path):
-        for f in os.listdir(const_polyMesh_path):    # NOTE is polymesh subject to change during simulation?
-            f_path = os.path.join(const_polyMesh_path, f)
-            if os.path.isfile(f_path) and not os.path.islink(f_path):
-                files.append(f_path)
-    return files
-
-
 def dispatch_post_hooks(operation_name, job):
     """just forwards to start_job_state and execute_pre_build"""
     execute_post_build(operation_name, job)
-    files = gather_caseFiles(f'{job.path}/case')
-    for case_file in files:
-        md5sum = check_output(["md5sum", str(case_file)], text=True)
+    case = OpenFOAMCase(str(job.path) + "/case", job)
+    files = case.config_file_tree
+    for case_path in files:
+        case_file = str(case_path)
+        md5sum = check_output(["md5sum", case_file], text=True)
         if 'md5sum' not in job.doc['obr']:
             job.doc['obr']['md5sum'] = dict()
-        _, r_path = case_file.split(job.id)[:]  # NOTE is total path really necessary?
-        f_path, fname = r_path.rsplit('/', 1)[:]
-        signac_friendly_path = f"{f_path}/{fname.replace('.', '-')}"   # NOTE signac throws: "Mapping keys may not contain dots ('.')"
+        rel_path = case_path.relative_to(job.path).parts[1:]
+        signac_friendly_path = path_to_signac(str(rel_path))  # signac does not allow . inside paths or job.doc keys
         job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]
     end_job_state(operation_name, job)
 

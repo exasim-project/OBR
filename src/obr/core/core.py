@@ -6,6 +6,10 @@ import hashlib
 from pathlib import Path
 from subprocess import check_output
 
+# these are to be replaced with each other
+SIGNAC_PATH_TOKEN = '_dot_'
+PATH_TOKEN = '.'
+
 
 def parse_variables_impl(in_str, args, domain):
     ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
@@ -19,6 +23,16 @@ def parse_variables(in_str):
     return in_str
 
 
+def path_to_signac(path: str | Path) -> str:
+    """Signac throws errors if . are in e.g. file names. We replace . with """
+    return str(path).replace(PATH_TOKEN, SIGNAC_PATH_TOKEN)
+
+
+def signac_to_path(sign_path: str | Path) -> str:
+    """Counter function to `path_to_signac`, allowing equal transformations."""
+    return str(sign_path).replace(SIGNAC_PATH_TOKEN, PATH_TOKEN)
+
+
 def logged_execute(cmd, path, doc):
     """execute cmd and logs success
 
@@ -30,7 +44,7 @@ def logged_execute(cmd, path, doc):
     check_output(["mkdir", "-p", ".obr_store"], cwd=path)
     d = doc.get("obr", {})
     cmd_str = " ".join(cmd)
-    cmd_str = cmd_str.replace(".", "_dot_").split()
+    cmd_str = path_to_signac(cmd_str).split()  # replace dots in cmd_str with _dot_'s
     if len(cmd_str) > 1:
         flags = cmd_str[1:]
     else:
