@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 from subprocess import check_output
-from ..core.core import execute
+from ..core.core import execute, path_to_signac
 from .labels import *
 from obr.OpenFOAM.case import OpenFOAMCase
 import CaseOrigins
@@ -263,6 +263,18 @@ def dispatch_pre_hooks(operation_name, job):
 def dispatch_post_hooks(operation_name, job):
     """just forwards to start_job_state and execute_pre_build"""
     execute_post_build(operation_name, job)
+    case = OpenFOAMCase(str(job.path) + "/case", job)
+    files = case.config_file_tree
+    for case_path in files:
+        case_file = str(case_path)
+        md5sum = check_output(["md5sum", case_file], text=True)
+        if "md5sum" not in job.doc["obr"]:
+            job.doc["obr"]["md5sum"] = dict()
+        rel_path = case_path.relative_to(job.path).parts[1:]
+        signac_friendly_path = path_to_signac(
+            str(rel_path)
+        )  # signac does not allow . inside paths or job.doc keys
+        job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]
     end_job_state(operation_name, job)
 
 
