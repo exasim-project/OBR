@@ -72,7 +72,6 @@ class OpenFOAMCase(BlockMesh):
     """A class for simple access to typical OpenFOAM files"""
 
     def __init__(self, path, job):
-        print(path)
         self.path_ = Path(path)
         self.job = job
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
