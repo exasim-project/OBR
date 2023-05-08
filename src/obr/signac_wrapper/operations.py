@@ -264,14 +264,13 @@ def dispatch_post_hooks(operation_name, job):
     """just forwards to start_job_state and execute_pre_build"""
     execute_post_build(operation_name, job)
     case = OpenFOAMCase(str(job.path) + "/case", job)
-    files = case.config_file_tree
+    files: list[str] = case.config_file_tree
     for case_path in files:
-        case_file = str(case_path)
+        case_file = Path(job.path) / 'case' / case_path
         md5sum = check_output(["md5sum", case_file], text=True)
         if 'md5sum' not in job.doc['obr']:
             job.doc['obr']['md5sum'] = dict()
-        rel_path = case_path.relative_to(job.path).parts[1:]
-        signac_friendly_path = path_to_signac(str(rel_path))  # signac does not allow . inside paths or job.doc keys
+        signac_friendly_path = path_to_signac(str(case_path))  # signac does not allow . inside paths or job.doc keys
         job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]
     end_job_state(operation_name, job)
 

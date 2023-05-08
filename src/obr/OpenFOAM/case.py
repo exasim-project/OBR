@@ -15,6 +15,14 @@ from .BlockMesh import BlockMesh, calculate_simple_partition
 
 from Owls.parser.FoamDict import FileParser
 
+OF_HEADER = r"""/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2206                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/"""
+
 
 class File(FileParser):
     def __init__(self, **kwargs):
@@ -88,6 +96,8 @@ class OpenFOAMCase(BlockMesh):
         self.decomposeParDict = File(
             folder=self.system_folder, file="decomposeParDict", job=job, optional=True
         )
+        self.file_dict: dict[str, File] = dict()
+        self.config_file_tree
 
     @property
     def path(self):
@@ -144,31 +154,44 @@ class OpenFOAMCase(BlockMesh):
         return proc_folds
 
     @property
-    def config_file_tree(self) -> list[Path]:
+    def config_file_tree(self) -> list[str]:
         "Iterates through case file tree and returns a list of paths to non-symlinked files."
-        files = []
         if self.system_folder.is_dir():
-            for f in self.system_folder.iterdir():
-                f_path = self.system_folder / f
+            for f_path in self.system_folder.iterdir():
                 if f_path.is_file() and not f_path.is_symlink():
-                    files.append(f_path)
+                    if self.has_openfoam_header(f_path):
+                        key = str(f_path.relative_to(self.path))
+                        self.file_dict[key] = File(folder=self.system_folder, file=f_path.name, job=self.job)
         if self.system_include_folder is not None:
-            for f in self.system_include_folder.iterdir():
-                f_path = self.system_include_folder / f
+            for f_path in self.system_include_folder.iterdir():
                 if f_path.is_file() and not f_path.is_symlink():
-                    files.append(f_path)
+                    if self.has_openfoam_header(f_path):
+                        key = str(f_path.relative_to(self.path))
+                        self.file_dict[key] = File(folder=self.system_include_folder, file=f_path.name, job=self.job)
         if self.constant_folder.is_dir():
-            for f in self.constant_folder.iterdir():
-                f_path = self.constant_folder / f
+            for f_path in self.constant_folder.iterdir():
                 if f_path.is_file() and not f_path.is_symlink():
-                    files.append(f_path)
+                    if self.has_openfoam_header(f_path):
+                        key = str(f_path.relative_to(self.path))
+                        self.file_dict[key] = File(folder=self.constant_folder, file=f_path.name, job=self.job)
         if self.constant_polyMesh_folder is not None:
-            for f in self.constant_polyMesh_folder.iterdir():
-                f_path = self.constant_polyMesh_folder / f
+            for f_path in self.constant_polyMesh_folder.iterdir():
                 if f_path.is_file() and not f_path.is_symlink():
-                    files.append(f_path)
-        return files
+                    if self.has_openfoam_header(f_path):
+                        key = str(f_path.relative_to(self.path))
+                        self.file_dict[key] = File(folder=self.constant_polyMesh_folder, file=f_path.name, job=self.job)
+        return list(self.file_dict.keys())
 
+    def get(self, key: str) -> File | None:
+        return self.file_dict.get(key, None)
+
+    def has_openfoam_header(self, path: Path) -> bool:
+        with path.open() as f:
+            try:
+                header = ''.join(f.readlines()[:7])
+                return header[:-1] == OF_HEADER   # ignore last \n
+            except UnicodeDecodeError:
+                return False
 
     def _exec_operation(self, operation):
         logged_execute(operation, self.path, self.job.doc)
