@@ -1,0 +1,25 @@
+case:
+    type: GitRepo
+    solver: pisoFoam
+    url: https://develop.openfoam.com/committees/hpc.git
+    folder: Lid_driven_cavity-3d/S
+    cache_folder: ${{env.LidDrivenCavity}}/S
+    commit: f9594d16aa6993bb3690ec47b2ca624b37ea40cd
+    post_build:
+      # NOTE Need to create fvSolution first
+      - shell: cp system/fvSolution.fixedNORM system/fvSolution
+      - controlDict:
+           writeFormat: binary
+           libs: ["libOGL.so", "libpetscFoam.so"]
+      - fvSolution:
+            set: solvers/p
+            clear: True
+            tolerance: 1e-04
+            relTol: 0
+            maxIter: 5000
+variation:
+  ${{include._blockMesh.yaml}}
+    variation:
+      ${{include../../common/_solver.yaml}}
+        variation:
+          ${{include../../common/_decomposition.yaml}}
