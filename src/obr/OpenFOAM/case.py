@@ -4,7 +4,7 @@ import errno
 import os
 from pathlib import Path
 from subprocess import check_output
-
+import re
 from ..core.core import (
     logged_execute,
     logged_func,
@@ -15,13 +15,13 @@ from .BlockMesh import BlockMesh, calculate_simple_partition
 
 from Owls.parser.FoamDict import FileParser
 
-OF_HEADER = r"""/*--------------------------------*- C++ -*----------------------------------*\
-| =========                 |                                                 |
-| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  v2206                                 |
-|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
-|    \\/     M anipulation  |                                                 |
-\*---------------------------------------------------------------------------*/"""
+OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
+\| =========                 \|                                                 \|
+\| \\\\      /  F ield         \| OpenFOAM: The Open Source CFD Toolbox           \|
+\|  \\\\    /   O peration     \| Version:  v\d{4}                                 \|
+\|   \\\\  /    A nd           \| Web:      www\.OpenFOAM\.com                      \|
+\|    \\\\/     M anipulation  \|                                                 \|
+\\\*---------------------------------------------------------------------------\*/)"""
 
 
 class File(FileParser):
@@ -189,7 +189,7 @@ class OpenFOAMCase(BlockMesh):
         with path.open() as f:
             try:
                 header = ''.join(f.readlines()[:7])
-                return header[:-1] == OF_HEADER   # ignore last \n
+                return re.match(OF_HEADER_REGEX, header) is not None
             except UnicodeDecodeError:
                 return False
 
