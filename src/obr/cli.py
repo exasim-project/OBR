@@ -105,12 +105,16 @@ def submit(ctx, **kwargs):
             time.sleep(15)
     else:
         print(f"[OBR] submitting {len(jobs)} individual jobs")
-        print(
-            project.submit(
-                names=[kwargs.get("operation")],
-                **cluster_args,
+        jobs = [j for j in project]
+        for job in jobs:
+            print(
+                "[OBR] submission response",
+                project.submit(
+                    jobs=[job],
+                    names=[kwargs.get("operation")],
+                    **cluster_args,
+                ),
             )
-        )
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
