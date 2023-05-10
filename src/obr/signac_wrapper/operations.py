@@ -444,13 +444,13 @@ def is_locked(job):
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "refineMesh"))
-@OpenFOAMProject.pre(has_mesh)
+# @OpenFOAMProject.pre(has_mesh)
 @OpenFOAMProject.post(lambda job: operation_complete(job, "refineMesh"))
 @OpenFOAMProject.operation
 def refineMesh(job, args={}):
     args = get_args(job, args)
-    for _ in range(args.get("value")):
-        OpenFOAMCase(str(job.path) + "/case", job).refineMesh(args)
+    args["base_id"] = job.doc["base_id"]
+    OpenFOAMCase(str(job.path) + "/case", job).refineMesh(args)
 
 
 @OpenFOAMProject.pre(base_case_is_ready)
@@ -494,6 +494,11 @@ def get_values(jobs: list, key: str) -> set:
 def runParallelSolver(job, args={}):
     from datetime import datetime
 
+    # NOTE
+    skip_job = os.environ.get("OBR_JOB")
+    if skip_job and not str(job.id) == skip_job:
+        return "true"
+
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
         return "true"
@@ -521,6 +526,48 @@ def runParallelSolver(job, args={}):
         "np": get_number_of_procs(job),
     }
     return os.environ.get("OBR_RUN_CMD").format(**cli_args) + "|| true"
+
+
+@simulate
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.operation(cmd=True)
+def runSerialSolver(job, args={}):
+    from datetime import datetime
+
+    skip_job = os.environ.get("OBR_JOB")
+    if skip_job and not str(job.id) == skip_job:
+        return "true"
+
+    skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
+    if skip_complete and finished(job):
+        return "true"
+
+    args = get_args(job, args)
+    case = OpenFOAMCase(str(job.path) + "/case", job)
+    solver = case.controlDict.get("application")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    res = job.doc["obr"].get(solver, [])
+    res.append(
+        {
+            "type": "shell",
+            "log": f"{solver}_{timestamp}.log",
+            "state": "started",
+            "timestamp": timestamp,
+        }
+    )
+    job.doc["obr"][solver] = res
+    job.doc["obr"]["solver"] = solver
+
+    solver_cmd = (
+        "{solver} -case {path}/case >  {path}/case/{solver}_{timestamp}.log 2>&1"
+    )
+    cli_args = {
+        "solver": solver,
+        "path": job.path,
+        "timestamp": timestamp,
+        "np": get_number_of_procs(job),
+    }
+    return solver_cmd.format(**cli_args) + "|| true"
 
 
 @OpenFOAMProject.operation

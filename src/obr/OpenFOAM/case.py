@@ -130,6 +130,11 @@ class OpenFOAMCase(BlockMesh):
         return self.path / "0"
 
     @property
+    def time_folder(self) -> list[str]:
+        """TODO FIXME"""
+        return [self.path / "0"]
+
+    @property
     def init_p(self):
         return self.zero_folder / "p"
 
