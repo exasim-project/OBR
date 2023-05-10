@@ -115,6 +115,7 @@ def submit(ctx, **kwargs):
                     **cluster_args,
                 ),
             )
+            time.sleep(15)
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
