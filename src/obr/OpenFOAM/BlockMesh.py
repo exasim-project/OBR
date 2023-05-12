@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from subprocess import check_output
 import sys
 from pathlib import Path
+import shutil
 
 
 if TYPE_CHECKING:
@@ -111,12 +112,22 @@ class BlockMesh(_Base):
 
     def refineMesh(self, args: dict):
         """ """
+        if args.get("mapFields"):
+            for p in self.time_folder:
+                shutil.rmtree(p)
+
         modifies_file(self.polyMesh)
         if args.get("adapt_timestep", True):
             modifies_file(self.controlDict.path)
             deltaT = float(self.controlDict.get("deltaT"))
             self.controlDict.set({"deltaT": deltaT / 2.0})
         self._exec_operation(["refineMesh", "-overwrite"])
+
+        if args.get("mapFields"):
+            base = str(self.path / f"../../{args['base_id']}/case")
+            self._exec_operation(
+                ["mapFields", base, "-consistent", "-sourceTime", "latestTime"]
+            )
 
     def modifyBlockMesh(self, args: dict):
         modifies_file(self.blockMeshDict)
