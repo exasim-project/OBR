@@ -107,7 +107,12 @@ def submit(ctx, **kwargs):
         print(f"[OBR] submitting {len(jobs)} individual jobs")
         jobs = [j for j in project]
         for job in jobs:
-            print("[OBR] submission response",project.submit(jobs=[job],names=[kwargs.get("operation")],**cluster_args,
+            print(
+                "[OBR] submission response",
+                project.submit(
+                    jobs=[job],
+                    names=[kwargs.get("operation")],
+                    **cluster_args,
                 ),
             )
             time.sleep(15)
