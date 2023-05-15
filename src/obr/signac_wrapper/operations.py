@@ -266,11 +266,13 @@ def dispatch_post_hooks(operation_name, job):
     case = OpenFOAMCase(str(job.path) + "/case", job)
     files: list[str] = case.config_file_tree
     for case_path in files:
-        case_file = Path(job.path) / 'case' / case_path
+        case_file = Path(job.path) / "case" / case_path
         md5sum = check_output(["md5sum", case_file], text=True)
-        if 'md5sum' not in job.doc['obr']:
-            job.doc['obr']['md5sum'] = dict()
-        signac_friendly_path = path_to_signac(str(case_path))  # signac does not allow . inside paths or job.doc keys
+        if "md5sum" not in job.doc["obr"]:
+            job.doc["obr"]["md5sum"] = dict()
+        signac_friendly_path = path_to_signac(
+            str(case_path)
+        )  # signac does not allow . inside paths or job.doc keys
         job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]
     end_job_state(operation_name, job)
 
@@ -497,6 +499,7 @@ def get_values(jobs: list, key: str) -> set:
 )
 def runParallelSolver(job, args={}):
     from datetime import datetime
+
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
         return "true"

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import errno
 import os
 from pathlib import Path
 from subprocess import check_output
@@ -91,7 +90,7 @@ class OpenFOAMCase(BlockMesh):
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
         # FIXME fvSchemes does not exist when using this class in post hooks?
-        if Path(self.system_folder / 'fvSchemes').exists():
+        if Path(self.system_folder / "fvSchemes").exists():
             self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
         self.decomposeParDict = File(
             folder=self.system_folder, file="decomposeParDict", job=job, optional=True
@@ -113,14 +112,14 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def constant_polyMesh_folder(self):
-        cpf = self.constant_folder / 'polyMesh'
+        cpf = self.constant_folder / "polyMesh"
         if cpf.exists():
             return cpf
         return None
 
     @property
     def system_include_folder(self):
-        cpf = self.system_folder / 'include'
+        cpf = self.system_folder / "include"
         if cpf.exists():
             return cpf
         return None
@@ -161,25 +160,37 @@ class OpenFOAMCase(BlockMesh):
                 if f_path.is_file() and not f_path.is_symlink():
                     if self.has_openfoam_header(f_path):
                         key = str(f_path.relative_to(self.path))
-                        self.file_dict[key] = File(folder=self.system_folder, file=f_path.name, job=self.job)
+                        self.file_dict[key] = File(
+                            folder=self.system_folder, file=f_path.name, job=self.job
+                        )
         if self.system_include_folder is not None:
             for f_path in self.system_include_folder.iterdir():
                 if f_path.is_file() and not f_path.is_symlink():
                     if self.has_openfoam_header(f_path):
                         key = str(f_path.relative_to(self.path))
-                        self.file_dict[key] = File(folder=self.system_include_folder, file=f_path.name, job=self.job)
+                        self.file_dict[key] = File(
+                            folder=self.system_include_folder,
+                            file=f_path.name,
+                            job=self.job,
+                        )
         if self.constant_folder.is_dir():
             for f_path in self.constant_folder.iterdir():
                 if f_path.is_file() and not f_path.is_symlink():
                     if self.has_openfoam_header(f_path):
                         key = str(f_path.relative_to(self.path))
-                        self.file_dict[key] = File(folder=self.constant_folder, file=f_path.name, job=self.job)
+                        self.file_dict[key] = File(
+                            folder=self.constant_folder, file=f_path.name, job=self.job
+                        )
         if self.constant_polyMesh_folder is not None:
             for f_path in self.constant_polyMesh_folder.iterdir():
                 if f_path.is_file() and not f_path.is_symlink():
                     if self.has_openfoam_header(f_path):
                         key = str(f_path.relative_to(self.path))
-                        self.file_dict[key] = File(folder=self.constant_polyMesh_folder, file=f_path.name, job=self.job)
+                        self.file_dict[key] = File(
+                            folder=self.constant_polyMesh_folder,
+                            file=f_path.name,
+                            job=self.job,
+                        )
         return list(self.file_dict.keys())
 
     def get(self, key: str) -> File | None:
@@ -188,7 +199,7 @@ class OpenFOAMCase(BlockMesh):
     def has_openfoam_header(self, path: Path) -> bool:
         with path.open() as f:
             try:
-                header = ''.join(f.readlines()[:7])
+                header = "".join(f.readlines()[:7])
                 return re.match(OF_HEADER_REGEX, header) is not None
             except UnicodeDecodeError:
                 return False
@@ -242,9 +253,9 @@ class OpenFOAMCase(BlockMesh):
         self._exec_operation([solver])
 
     def is_file_modified(self, path):
-        if 'md5sum' not in self.job.doc['obr']:
+        if "md5sum" not in self.job.doc["obr"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum = self.job.doc['obr']['md5sum'].get(path)
+        current_md5sum = self.job.doc["obr"]["md5sum"].get(path)
         md5sum = check_output(["md5sum", path], text=True)
         return current_md5sum != md5sum
 

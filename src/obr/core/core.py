@@ -7,8 +7,8 @@ from pathlib import Path
 from subprocess import check_output
 
 # these are to be replaced with each other
-SIGNAC_PATH_TOKEN = '_dot_'
-PATH_TOKEN = '.'
+SIGNAC_PATH_TOKEN = "_dot_"
+PATH_TOKEN = "."
 
 
 def parse_variables_impl(in_str, args, domain):
@@ -24,7 +24,7 @@ def parse_variables(in_str):
 
 
 def path_to_signac(path: str | Path) -> str:
-    """Signac throws errors if . are in e.g. file names. We replace . with """
+    """Signac throws errors if . are in e.g. file names. We replace . with"""
     return str(path).replace(PATH_TOKEN, SIGNAC_PATH_TOKEN)
 
 
