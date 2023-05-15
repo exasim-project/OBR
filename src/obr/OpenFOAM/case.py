@@ -15,13 +15,12 @@ from .BlockMesh import BlockMesh, calculate_simple_partition
 
 from Owls.parser.FoamDict import FileParser
 
-# FIXME extend regex for other OPENFOAM variants
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
-\| =========                 \|                                                 \|
-\| \\\\      /  F ield         \| OpenFOAM: The Open Source CFD Toolbox           \|
-\|  \\\\    /   O peration     \| Version:  v\d{4}                                 \|
-\|   \\\\  /    A nd           \| Web:      www\.OpenFOAM\.com                      \|
-\|    \\\\/     M anipulation  \|                                                 \|
+(\||)\s*=========                 \|(\s*\||)
+(\||)\s*\\\\      /  F ield         \| (OpenFOAM:|foam-extend:)\s*[\d\w\W]*\s*(\||)
+(\||)\s*\\\\    /   O peration     \| (Version:|Website:)\s*[\d\w\W]*\s*(\||)
+(\||)\s*\\\\  /    A nd           \| (Web:|Version:)\s*[\d\w\W]*\s*(\||)
+(\||)\s*\\\\/     M anipulation  \|(\s*\||)
 \\\*---------------------------------------------------------------------------\*/)"""
 
 
