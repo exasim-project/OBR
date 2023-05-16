@@ -24,6 +24,7 @@ from .signac_wrapper.operations import *
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
+import logging
 
 
 @click.group()
@@ -92,7 +93,7 @@ def submit(ctx, **kwargs):
         bundling_values = get_values(jobs, bundling_key)
         for bundle_value in bundling_values:
             jobs = [j for j in project if bundle_value in list(j.sp().values())]
-            print(f"[OBR] submit bundle {bundle_value} of {len(jobs)} jobs")
+            logging.info(f"[OBR] submit bundle {bundle_value} of {len(jobs)} jobs")
             print(
                 "[OBR] submission response",
                 project.submit(
@@ -104,7 +105,7 @@ def submit(ctx, **kwargs):
             )
             time.sleep(15)
     else:
-        print(f"[OBR] submitting {len(jobs)} individual jobs")
+        logging.info(f"[OBR] submitting {len(jobs)} individual jobs")
         print(
             project.submit(
                 names=[kwargs.get("operation")],
@@ -119,7 +120,7 @@ def submit(ctx, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-o", "--operations", required=True)
+@click.option("-o", "--operations", required=True, help='Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply.')
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
@@ -152,20 +153,27 @@ def run(ctx, **kwargs):
     # print(agg._aggregates_by_id)
     # jobs = project.groups["generate"]
     # print(list(project.groupby("doc.is_base")))
+
+    # check if provided operation(s) is/are invalid
+    given_operations = kwargs.get('operations').replace(' ', '').split(',')
+    if not project.operations_are_valid(given_operations):
+        logging.error('Given Operations are invalid, exiting.')
+        return
+
     if not kwargs.get("aggregate"):
         project.run(
             jobs=jobs,  # project.groupby("doc.is_base"),
-            names=kwargs.get("operations").split(","),
+            names=given_operations,
             progress=True,
             np=kwargs.get("tasks", -1),
         )
     else:
         # calling for aggregates does not work with jobs
         project.run(
-            names=kwargs.get("operations").split(","),
+            names=given_operations,
             np=kwargs.get("tasks", -1),
         )
-    print("[OBR] completed all operations")
+    logging.info("[OBR] completed all operations")
 
 
 @cli.command()
@@ -186,12 +194,12 @@ def init(ctx, **kwargs):
     config = yaml.safe_load(config_str)
 
     if kwargs.get("verbose", 0) >= 1:
-        print(config)
+        logging.info(config)
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     create_tree(project, config, kwargs)
 
-    print("[OBR] successfully initialised")
+    logging.info("[OBR] successfully initialised")
 
 
 @cli.command()
@@ -201,7 +209,6 @@ def init(ctx, **kwargs):
 def status(ctx, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
-
     project = OpenFOAMProject.get_project()
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
@@ -224,6 +231,7 @@ def query(ctx, **kwargs):
 
 
 def main():
+    logging.basicConfig(format=f'[{__name__}:%(lineno)d]\t%(levelname)7s: %(message)s', level=logging.INFO)
     cli(obj={})
 
 

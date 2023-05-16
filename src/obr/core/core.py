@@ -5,7 +5,7 @@ import re
 import hashlib
 from pathlib import Path
 from subprocess import check_output
-
+import logging
 
 def parse_variables_impl(in_str, args, domain):
     ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
@@ -55,6 +55,7 @@ def logged_execute(cmd, path, doc):
         log = cmd + " not found"
         state = "failure"
     except Exception as e:
+        logging.error(e)
         print(__file__, __name__, e)
         print("General Execption", __file__, __name__, e, e.output)
         log = ret

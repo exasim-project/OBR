@@ -8,7 +8,7 @@ from ..core.core import execute
 from .labels import *
 from obr.OpenFOAM.case import OpenFOAMCase
 import CaseOrigins
-
+import logging
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -18,7 +18,16 @@ import CaseOrigins
 
 
 class OpenFOAMProject(flow.FlowProject):
-    pass
+    def operations_are_valid(self, ops: list[str]) -> bool:
+        valid = True
+        operations = [o[0] for o in self._collect_operations()]
+        for op in ops:
+            if op not in operations:
+                logging.error(f'{op} is not a valid operation!')
+                valid = False
+        if not valid:
+            logging.info(f'Valid operations include:\t{", ".join(operations)}')
+        return valid
 
 
 generate = OpenFOAMProject.make_group(name="generate")
@@ -213,7 +222,7 @@ def execute_operation(job, operation_name, operations):
                 func = list(operation.keys())[0]
                 getattr(sys.modules[__name__], func)(job, operation.get(func))
         except Exception as e:
-            print(e)
+            logging.error(e)
             job.doc["state"] == "failure"
     return True
 
