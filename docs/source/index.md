@@ -43,23 +43,40 @@ Here `operation` can be either a simple key value manipulation of OpenFOAM dicti
 
 ## Available Operations
 
-## Usage
+## Usage Example
 
-The benchmark runnner is split into several layers:
+The benchmark runner is split into several layers:
     1. case generation
     2. case run/submit
     3. case postprocessing
 
+The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks/tree/case_windsor_body) provides a good point to start learning from. After cloning the repository, `cd` into the `WindsorBody` subdirectory.
 ### 1. Creating a tree
 
-To create a tree of case variation run
+In general, to create a tree of case variation run
 
+    obr init --folder [path] --config path-to-config.yaml
 
-    obr init --folder [path] --config assets/lidDrivenCavity.yaml
+Within the context of the `micro_benchmarks` example, simply run
+
+    obr init --folder . --config assets/scaling.yaml
+
+OBR should now print a low of configuration, followed by `[OBR] successfully initialized`.
 
 ### 2. Running a tree
 
-    obr run -o runParallelSolver --folder
+Finally, a tree can be run with the `obr run` command-line option:
+
+    obr run -o fetchCase --folder path-to-tree
+
+Or, in this specific example (the default of `--folder` is `.`):
+
+    obr run -o fetchCase
+
+Within `WindsorBody/workspace` should now have appeared a multitude of directories (=cases).
+Not all cases are afflicted by every obr operation. For instance, only the directory named `78e2de3e6205144311d04282001fe21f` should have a further subdirectory named `case`.
+
+Inside `78e2de3e6205144311d04282001fe21f/signac_job_document.json`, the operation is summarized.
 
 # Indices and tables
 
