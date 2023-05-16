@@ -5,8 +5,9 @@
 
 # Welcome to obr's documentation!
 
+## Contents
 ```{toctree}
-:caption: 'Contents:'
+:caption: ''
 :maxdepth: 2
 
 commandLine/CLI

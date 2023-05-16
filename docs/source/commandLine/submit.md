@@ -1,6 +1,7 @@
-# OBR submit
+## OBR submit
 
-## Usage
+### Usage
+```zsh
 Usage: obr submit [OPTIONS]
 
 Options:
@@ -15,3 +16,4 @@ Options:
   --scheduler_args TEXT  Currently required to be in --key1 value --key2
                          value2 form
   --help                 Show this message and exit.
+```

@@ -1,6 +1,6 @@
-# OBR query
+## OBR query
 
-## Usage
+### Usage
 ```zsh
 Usage: obr query [OPTIONS]
 
@@ -12,10 +12,10 @@ Options:
   --help             Show this message and exit.
 ```
 
-## Understanding OBR query
+### Understanding OBR query
 `obr query` recursively traverses the current directory, or the directory specified by the `--folder` argument, for `signac_statepoint.json` files.
 
-## Common Problems
+### Common Problems
 
 1. `obr query -q [Query]` does not return anything.
      - As of now, `obr query` ignores jobs that do not include the `obr` key in their corresponding `signac_job_document.json` file.

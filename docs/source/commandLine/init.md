@@ -1,6 +1,7 @@
-# OBR init
+## OBR init
 
-## Usage
+### Usage
+```zsh
 Usage: obr init [OPTIONS]
 
 Options:
@@ -11,3 +12,4 @@ Options:
   -u, --url TEXT         Url to a configuration yaml
   --verbose INTEGER      set verbosity
   --help                 Show this message and exit.
+```
