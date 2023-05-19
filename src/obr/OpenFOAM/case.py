@@ -109,7 +109,7 @@ class OpenFOAMCase(BlockMesh):
         return self.path / "constant"
 
     @property
-    def constant_polyMesh_folder(self):
+    def const_polyMesh_folder(self):
         cpf = self.constant_folder / "polyMesh"
         if cpf.exists():
             return cpf
@@ -172,9 +172,7 @@ class OpenFOAMCase(BlockMesh):
             self.file_dict[rel_path] = file
         for file, rel_path in self.config_files_in_folder(self.system_include_folder):
             self.file_dict[rel_path] = file
-        for file, rel_path in self.config_files_in_folder(
-            self.constant_polyMesh_folder
-        ):
+        for file, rel_path in self.config_files_in_folder(self.const_polyMesh_folder):
             self.file_dict[rel_path] = file
         return list(self.file_dict.keys())
 
