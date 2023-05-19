@@ -238,6 +238,9 @@ class OpenFOAMCase(BlockMesh):
         self._exec_operation([solver])
 
     def is_file_modified(self, path: str) -> bool:
+        """
+        checks if a file has been modified by comparing the current md5sum with the previously saved one inside `self.job.dict`
+        """
         if "md5sum" not in self.job.doc["obr"]:
             return False  # no md5sum has been calculated for this file
         current_md5sum = self.job.doc["obr"]["md5sum"].get(path)
@@ -245,6 +248,9 @@ class OpenFOAMCase(BlockMesh):
         return current_md5sum != md5sum
 
     def is_tree_modified(self) -> list[str]:
+        """
+        iterates all files inside the case tree and returns a list of files that were modified, based on their md5sum.
+        """
         m_files = []
         for file in self.config_file_tree:
             if self.is_file_modified(file):
@@ -252,6 +258,9 @@ class OpenFOAMCase(BlockMesh):
         return m_files
 
     def perform_post_md5sum_calculations(self):
+        """
+        calculates md5sums for all case files. Primarily called from `dispatch_post_hooks`
+        """
         for case_path in self.config_file_tree:
             case_file = Path(self.job.path) / "case" / case_path
             md5sum = check_output(["md5sum", case_file], text=True)
