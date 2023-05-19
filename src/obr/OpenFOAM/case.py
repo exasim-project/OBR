@@ -6,12 +6,7 @@ import os
 from pathlib import Path
 from subprocess import check_output
 import re
-from ..core.core import (
-    logged_execute,
-    logged_func,
-    modifies_file,
-    path_to_key
-)
+from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
 
 from .BlockMesh import BlockMesh, calculate_simple_partition
 
@@ -93,7 +88,7 @@ class OpenFOAMCase(BlockMesh):
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
         # FIXME fvSchemes does not exist when using this class in post hooks?
-        if Path(self.system_folder / 'fvSchemes').exists():
+        if Path(self.system_folder / "fvSchemes").exists():
             self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
         self.decomposeParDict = File(
             folder=self.system_folder, file="decomposeParDict", job=job, optional=True
@@ -115,14 +110,14 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def constant_polyMesh_folder(self):
-        cpf = self.constant_folder / 'polyMesh'
+        cpf = self.constant_folder / "polyMesh"
         if cpf.exists():
             return cpf
         return None
 
     @property
     def system_include_folder(self):
-        cpf = self.system_folder / 'include'
+        cpf = self.system_folder / "include"
         if cpf.exists():
             return cpf
         return None
@@ -155,7 +150,9 @@ class OpenFOAMCase(BlockMesh):
         proc_folds = [self.path / f for f in folds if "processor" in f]
         return proc_folds
 
-    def config_files_in_folder(self, folder: Path) -> Generator[Tuple[File, str], Any, None]:
+    def config_files_in_folder(
+        self, folder: Path
+    ) -> Generator[Tuple[File, str], Any, None]:
         """Yields all OF config files  in given folder"""
         if folder.is_dir():
             for f_path in folder.iterdir():
@@ -167,14 +164,17 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def config_file_tree(self) -> list[str]:
-        """Iterates through case file tree and returns a list of paths to non-symlinked files."""
+        """Iterates through case file tree and returns a list of paths to non-symlinked files.
+        """
         for file, rel_path in self.config_files_in_folder(self.system_folder):
             self.file_dict[rel_path] = file
         for file, rel_path in self.config_files_in_folder(self.constant_folder):
             self.file_dict[rel_path] = file
         for file, rel_path in self.config_files_in_folder(self.system_include_folder):
             self.file_dict[rel_path] = file
-        for file, rel_path in self.config_files_in_folder(self.constant_polyMesh_folder):
+        for file, rel_path in self.config_files_in_folder(
+            self.constant_polyMesh_folder
+        ):
             self.file_dict[rel_path] = file
         return list(self.file_dict.keys())
 
@@ -184,7 +184,7 @@ class OpenFOAMCase(BlockMesh):
     def has_openfoam_header(self, path: Path) -> bool:
         with path.open() as f:
             try:
-                header = ''.join(f.readlines()[:7])
+                header = "".join(f.readlines()[:7])
                 return re.match(OF_HEADER_REGEX, header) is not None
             except UnicodeDecodeError:
                 return False
@@ -238,9 +238,9 @@ class OpenFOAMCase(BlockMesh):
         self._exec_operation([solver])
 
     def is_file_modified(self, path: str) -> bool:
-        if 'md5sum' not in self.job.doc['obr']:
+        if "md5sum" not in self.job.doc["obr"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum = self.job.doc['obr']['md5sum'].get(path)
+        current_md5sum = self.job.doc["obr"]["md5sum"].get(path)
         md5sum = check_output(["md5sum", path], text=True)
         return current_md5sum != md5sum
 
@@ -253,9 +253,11 @@ class OpenFOAMCase(BlockMesh):
 
     def perform_post_md5sum_calculations(self):
         for case_path in self.config_file_tree:
-            case_file = Path(self.job.path) / 'case' / case_path
+            case_file = Path(self.job.path) / "case" / case_path
             md5sum = check_output(["md5sum", case_file], text=True)
-            if 'md5sum' not in self.job.doc['obr']:
-                self.job.doc['obr']['md5sum'] = dict()
-            signac_friendly_path = path_to_key(str(case_path))  # signac does not allow . inside paths or job.doc keys
+            if "md5sum" not in self.job.doc["obr"]:
+                self.job.doc["obr"]["md5sum"] = dict()
+            signac_friendly_path = path_to_key(
+                str(case_path)
+            )  # signac does not allow . inside paths or job.doc keys
             self.job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]

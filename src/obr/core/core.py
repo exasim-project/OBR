@@ -6,9 +6,10 @@ import hashlib
 from pathlib import Path
 from subprocess import check_output
 from typing import Union
+
 # these are to be replaced with each other
-SIGNAC_PATH_TOKEN = '_dot_'
-PATH_TOKEN = '.'
+SIGNAC_PATH_TOKEN = "_dot_"
+PATH_TOKEN = "."
 
 
 def parse_variables_impl(in_str, args, domain):
@@ -24,8 +25,8 @@ def parse_variables(in_str):
 
 
 def path_to_key(path: Union[str, Path]) -> str:
-    """Signac throws errors if '.' are used in keys within JSONAttrDicts, which are often needed, for example in file names. 
-    Thus, this function replaces . with _dot_ """
+    """Signac throws errors if '.' are used in keys within JSONAttrDicts, which are often needed, for example in file names.
+    Thus, this function replaces . with _dot_"""
     return str(path).replace(PATH_TOKEN, SIGNAC_PATH_TOKEN)
 
 
