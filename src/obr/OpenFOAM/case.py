@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import errno
+from typing import Union, Generator, Tuple, Any
 import os
 from pathlib import Path
 from subprocess import check_output
@@ -9,6 +10,7 @@ from ..core.core import (
     logged_execute,
     logged_func,
     modifies_file,
+    path_to_key
 )
 
 from .BlockMesh import BlockMesh, calculate_simple_partition
@@ -153,36 +155,30 @@ class OpenFOAMCase(BlockMesh):
         proc_folds = [self.path / f for f in folds if "processor" in f]
         return proc_folds
 
+    def config_files_in_folder(self, folder: Path) -> Generator[Tuple[File, str], Any, None]:
+        """Yields all OF config files  in given folder"""
+        if folder.is_dir():
+            for f_path in folder.iterdir():
+                if f_path.is_file() and not f_path.is_symlink():
+                    if self.has_openfoam_header(f_path):
+                        rel_path = str(f_path.relative_to(self.path))
+                        file_obj = File(folder=folder, file=f_path.name, job=self.job)
+                        yield file_obj, rel_path
+
     @property
     def config_file_tree(self) -> list[str]:
-        "Iterates through case file tree and returns a list of paths to non-symlinked files."
-        if self.system_folder.is_dir():
-            for f_path in self.system_folder.iterdir():
-                if f_path.is_file() and not f_path.is_symlink():
-                    if self.has_openfoam_header(f_path):
-                        key = str(f_path.relative_to(self.path))
-                        self.file_dict[key] = File(folder=self.system_folder, file=f_path.name, job=self.job)
-        if self.system_include_folder is not None:
-            for f_path in self.system_include_folder.iterdir():
-                if f_path.is_file() and not f_path.is_symlink():
-                    if self.has_openfoam_header(f_path):
-                        key = str(f_path.relative_to(self.path))
-                        self.file_dict[key] = File(folder=self.system_include_folder, file=f_path.name, job=self.job)
-        if self.constant_folder.is_dir():
-            for f_path in self.constant_folder.iterdir():
-                if f_path.is_file() and not f_path.is_symlink():
-                    if self.has_openfoam_header(f_path):
-                        key = str(f_path.relative_to(self.path))
-                        self.file_dict[key] = File(folder=self.constant_folder, file=f_path.name, job=self.job)
-        if self.constant_polyMesh_folder is not None:
-            for f_path in self.constant_polyMesh_folder.iterdir():
-                if f_path.is_file() and not f_path.is_symlink():
-                    if self.has_openfoam_header(f_path):
-                        key = str(f_path.relative_to(self.path))
-                        self.file_dict[key] = File(folder=self.constant_polyMesh_folder, file=f_path.name, job=self.job)
+        """Iterates through case file tree and returns a list of paths to non-symlinked files."""
+        for file, rel_path in self.config_files_in_folder(self.system_folder):
+            self.file_dict[rel_path] = file
+        for file, rel_path in self.config_files_in_folder(self.constant_folder):
+            self.file_dict[rel_path] = file
+        for file, rel_path in self.config_files_in_folder(self.system_include_folder):
+            self.file_dict[rel_path] = file
+        for file, rel_path in self.config_files_in_folder(self.constant_polyMesh_folder):
+            self.file_dict[rel_path] = file
         return list(self.file_dict.keys())
 
-    def get(self, key: str) -> File | None:
+    def get(self, key: str) -> Union[File, None]:
         return self.file_dict.get(key, None)
 
     def has_openfoam_header(self, path: Path) -> bool:
@@ -241,16 +237,25 @@ class OpenFOAMCase(BlockMesh):
         solver = self.controlDict.get("application")
         self._exec_operation([solver])
 
-    def is_file_modified(self, path):
+    def is_file_modified(self, path: str) -> bool:
         if 'md5sum' not in self.job.doc['obr']:
             return False  # no md5sum has been calculated for this file
         current_md5sum = self.job.doc['obr']['md5sum'].get(path)
         md5sum = check_output(["md5sum", path], text=True)
         return current_md5sum != md5sum
 
-    def is_tree_modified(self):
+    def is_tree_modified(self) -> list[str]:
         m_files = []
         for file in self.config_file_tree:
             if self.is_file_modified(file):
                 m_files.append(file)
         return m_files
+
+    def perform_post_md5sum_calculations(self):
+        for case_path in self.config_file_tree:
+            case_file = Path(self.job.path) / 'case' / case_path
+            md5sum = check_output(["md5sum", case_file], text=True)
+            if 'md5sum' not in self.job.doc['obr']:
+                self.job.doc['obr']['md5sum'] = dict()
+            signac_friendly_path = path_to_key(str(case_path))  # signac does not allow . inside paths or job.doc keys
+            self.job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]

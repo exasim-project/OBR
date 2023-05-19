@@ -59,8 +59,6 @@ def test_md5sum_calculation(tmpdir, emmit_test_config):
     with open(job_doc_path) as job_file:
         job = json.load(job_file)
         md5summed_files_actual = [file.rsplit('/', 1)[1].replace('-', '.') for file in job['obr']['md5sum']]
-        print(md5summed_files_target)
-        print(md5summed_files_actual)
         for fname in md5summed_files_actual:
             if fname in md5summed_files_target:
                 md5summed_files_target.remove(fname)
