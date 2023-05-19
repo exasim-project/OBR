@@ -16,7 +16,7 @@ OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*---------
 (\||)\s*=========                 \|(\s*\||)
 (\||)\s*\\\\      /  F ield         \| (OpenFOAM:|foam-extend:)\s*[\d\w\W]*\s*(\||)
 (\||)\s*\\\\    /   O peration     \| (Version:|Website:)\s*[\d\w\W]*\s*(\||)
-(\||)\s*\\\\  /    A nd           \| (Web:|Version:)\s*[\d\w\W]*\s*(\||)
+(\||)\s*\\\\  /    A nd           \| (Web:|Version:|Website)\s*[\d\w\W]*\s*(\||)
 (\||)\s*\\\\/     M anipulation  \|(\s*\||)
 \\\*---------------------------------------------------------------------------\*/)"""
 
@@ -154,6 +154,9 @@ class OpenFOAMCase(BlockMesh):
         self, folder: Path
     ) -> Generator[Tuple[File, str], Any, None]:
         """Yields all OF config files  in given folder"""
+        if not folder:
+            # const_polymesh and system_include can be None
+            return
         if folder.is_dir():
             for f_path in folder.iterdir():
                 if f_path.is_file() and not f_path.is_symlink():

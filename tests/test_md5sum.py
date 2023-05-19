@@ -1,6 +1,7 @@
 from obr.create_tree import create_tree
-from obr.signac_wrapper.operations import OpenFOAMProject, gather_caseFiles
-
+from obr.signac_wrapper.operations import OpenFOAMProject
+from obr.OpenFOAM.case import OpenFOAMCase
+from obr.core.core import key_to_path
 import pytest
 import os
 import json
@@ -53,13 +54,17 @@ def test_md5sum_calculation(tmpdir, emmit_test_config):
     project.run(names=["fetchCase"])
 
     case_path = os.path.join(root, folder[0], 'case')
-    md5summed_files_target = set([f.rsplit('/', 1)[1] for f in gather_caseFiles(case_path=case_path)])
-    job_doc_path = os.path.join(root, folder[0], 'signac_job_document.json')
+    job = None
 
+    job_doc_path = os.path.join(root, folder[0], 'signac_job_document.json')
     with open(job_doc_path) as job_file:
         job = json.load(job_file)
-        md5summed_files_actual = [file.rsplit('/', 1)[1].replace('-', '.') for file in job['obr']['md5sum']]
+        case = OpenFOAMCase(case_path, job)
+
+        md5summed_files_target = set([f.rsplit('/', 1)[1] for f in case.config_file_tree])
+        md5summed_files_actual = [key_to_path(file.rsplit('/', 1)[1]) for file in job['obr'].get('md5sum', [])]
+
         for fname in md5summed_files_actual:
             if fname in md5summed_files_target:
                 md5summed_files_target.remove(fname)
-    assert len(md5summed_files_target) == 0
+        assert len(md5summed_files_target) == 0
