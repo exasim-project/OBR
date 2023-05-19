@@ -241,7 +241,10 @@ class OpenFOAMCase(BlockMesh):
         """
         if "md5sum" not in self.job.doc["obr"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum = self.job.doc["obr"]["md5sum"].get(path)
+        current_md5sum, last_modified = self.job.doc["obr"]["md5sum"].get(path)
+        if os.path.getmtime(path) == last_modified:
+            # if modification dates dont differ, the md5sums wont, either
+            return False
         md5sum = check_output(["md5sum", path], text=True)
         return current_md5sum != md5sum
 
@@ -267,4 +270,5 @@ class OpenFOAMCase(BlockMesh):
             signac_friendly_path = path_to_key(
                 str(case_path)
             )  # signac does not allow . inside paths or job.doc keys
-            self.job.doc["obr"]["md5sum"][signac_friendly_path] = md5sum.split()[0]
+            last_modified = os.path.getmtime(case_file)
+            self.job.doc["obr"]["md5sum"][signac_friendly_path] = (md5sum.split()[0], last_modified)
