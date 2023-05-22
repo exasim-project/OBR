@@ -76,10 +76,16 @@ class OpenFOAMCase(BlockMesh):
         self.job = job
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
-        self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
-        self.decomposeParDict = File(
-            folder=self.system_folder, file="decomposeParDict", job=job, optional=True
-        )
+        # FIXME fvSchemes does not exist when using this class in post hooks?
+        if Path(self.system_folder / "fvSchemes").exists():
+            self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
+        # decomposeParDict might not exist in some test cases
+        if Path(self.system_folder / "decomposeParDict").exists():
+            self.decomposeParDict = File(
+                folder=self.system_folder, file="decomposeParDict", job=job, optional=True
+            )
+        self.file_dict: dict[str, File] = dict()
+        self.config_file_tree
 
     @property
     def path(self):
