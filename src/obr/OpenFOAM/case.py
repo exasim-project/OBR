@@ -134,7 +134,7 @@ class OpenFOAMCase(BlockMesh):
         return self.path / "0"
 
     @property
-    def time_folder(self) -> list[str]:
+    def time_folder(self) -> list[Path]:
         """Returns all timestep folder"""
 
         def is_time(s: str) -> bool:
@@ -145,7 +145,9 @@ class OpenFOAMCase(BlockMesh):
                 return False
 
         _, fs, _ = next(os.walk(self.path))
-        return [self.path / f for f in fs if is_time(f)]
+        ret = [self.path / f for f in fs if is_time(f)]
+        ret.sort()
+        return ret
 
     @property
     def init_p(self):
