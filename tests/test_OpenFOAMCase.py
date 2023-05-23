@@ -43,11 +43,12 @@ def test_OpenFOAMCaseProperties(set_up_of_case):
     assert of_case.zero_folder == set_up_of_case / "0"
     assert of_case.blockMeshDict == of_case.system_folder / "blockMeshDict"
 
-    times = ["0", "1e-06", "2", "3.0"]
+    times = ["1e-06", "2", "3.0"]
     for time_folder in times:
         check_output(
             ["cp", "-r", str(of_case.zero_folder), str(of_case.path / time_folder)]
         )
+    times = ["0"] + times
 
     assert of_case.time_folder == [set_up_of_case / time for time in times]
 
