@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import errno
+import shutil
 from typing import Union, Generator, Tuple, Any
 import os
 from pathlib import Path
@@ -93,7 +94,10 @@ class OpenFOAMCase(BlockMesh):
         # decomposeParDict might not exist in some test cases
         if Path(self.system_folder / "decomposeParDict").exists():
             self.decomposeParDict = File(
-                folder=self.system_folder, file="decomposeParDict", job=job, optional=True
+                folder=self.system_folder,
+                file="decomposeParDict",
+                job=job,
+                optional=True,
             )
         self.file_dict: dict[str, File] = dict()
         self.config_file_tree
@@ -131,8 +135,17 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def time_folder(self) -> list[str]:
-        """TODO FIXME"""
-        return [self.path / "0"]
+        """Returns all timestep folder"""
+
+        def is_time(s: str) -> bool:
+            try:
+                float(s)
+                return True
+            except:
+                return False
+
+        _, fs, _ = next(os.walk(self.path))
+        return [self.path / f for f in fs if is_time(f)]
 
     @property
     def init_p(self):
@@ -174,8 +187,7 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def config_file_tree(self) -> list[str]:
-        """Iterates through case file tree and returns a list of paths to non-symlinked files.
-        """
+        """Iterates through case file tree and returns a list of paths to non-symlinked files."""
         for file, rel_path in self.config_files_in_folder(self.system_folder):
             self.file_dict[rel_path] = file
         for file, rel_path in self.config_files_in_folder(self.constant_folder):
@@ -281,4 +293,26 @@ class OpenFOAMCase(BlockMesh):
                 str(case_path)
             )  # signac does not allow . inside paths or job.doc keys
             last_modified = os.path.getmtime(case_file)
-            self.job.doc["obr"]["md5sum"][signac_friendly_path] = (md5sum.split()[0], last_modified)
+            self.job.doc["obr"]["md5sum"][signac_friendly_path] = (
+                md5sum.split()[0],
+                last_modified,
+            )
+
+    def refineMesh(self, args: dict):
+        """ """
+        if args.get("mapFields"):
+            for p in self.time_folder:
+                shutil.rmtree(p)
+
+        modifies_file(self.polyMesh)
+        if args.get("adapt_timestep", True):
+            modifies_file(self.controlDict.path)
+            deltaT = float(self.controlDict.get("deltaT"))
+            self.controlDict.set({"deltaT": deltaT / 2.0})
+        self._exec_operation(["refineMesh", "-overwrite"])
+
+        if args.get("mapFields"):
+            base = str(self.path / f"../../{args['base_id']}/case")
+            self._exec_operation(
+                ["mapFields", base, "-consistent", "-sourceTime", "latestTime"]
+            )

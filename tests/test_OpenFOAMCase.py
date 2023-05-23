@@ -21,15 +21,13 @@ def set_up_of_case(tmpdir):
         shutil.copytree(src, dst)
         return dst
 
-    of_dir = Path('~/OpenFOAM/OpenFOAM-10')
+    of_dir = Path("~/OpenFOAM/OpenFOAM-10")
     if of_dir.exists():
         shutil.copytree(of_dir, tmpdir)
     else:
         of_dir = Path(tmpdir)
         url = "https://github.com/OpenFOAM/OpenFOAM-10.git"
-        Repo.clone_from(url=url, to_path=tmpdir, multi_options=['--depth 1'])
-
-
+        Repo.clone_from(url=url, to_path=tmpdir, multi_options=["--depth 1"])
 
     rval = of_dir / "tutorials" / lid_driven_cavity
     return rval
@@ -44,6 +42,12 @@ def test_OpenFOAMCaseProperties(set_up_of_case):
     assert of_case.system_folder == set_up_of_case / "system"
     assert of_case.zero_folder == set_up_of_case / "0"
     assert of_case.blockMeshDict == of_case.system_folder / "blockMeshDict"
+
+    times = ["1e-06", "2", "3.0"]
+    for time_folder in times:
+        check_output(["cp", "-r", of_case.zero_folder, of_case.path / time_folder])
+
+    assert of_case.time_folder == [set_up_of_case / time for time in times]
 
 
 def test_OpenFOAMCaseControlDictGetter(set_up_of_case):

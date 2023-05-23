@@ -110,25 +110,6 @@ class BlockMesh(_Base):
             return None
         return check_output(["md5sum", str(fn)], text=True)
 
-    def refineMesh(self, args: dict):
-        """ """
-        if args.get("mapFields"):
-            for p in self.time_folder:
-                shutil.rmtree(p)
-
-        modifies_file(self.polyMesh)
-        if args.get("adapt_timestep", True):
-            modifies_file(self.controlDict.path)
-            deltaT = float(self.controlDict.get("deltaT"))
-            self.controlDict.set({"deltaT": deltaT / 2.0})
-        self._exec_operation(["refineMesh", "-overwrite"])
-
-        if args.get("mapFields"):
-            base = str(self.path / f"../../{args['base_id']}/case")
-            self._exec_operation(
-                ["mapFields", base, "-consistent", "-sourceTime", "latestTime"]
-            )
-
     def modifyBlockMesh(self, args: dict):
         modifies_file(self.blockMeshDict)
         blocks = args["modifyBlock"]
