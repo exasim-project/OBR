@@ -45,7 +45,9 @@ def test_OpenFOAMCaseProperties(set_up_of_case):
 
     times = ["0", "1e-06", "2", "3.0"]
     for time_folder in times:
-        check_output(["cp", "-r", of_case.zero_folder, of_case.path / time_folder])
+        check_output(
+            ["cp", "-r", str(of_case.zero_folder), str(of_case.path / time_folder)]
+        )
 
     assert of_case.time_folder == [set_up_of_case / time for time in times]
 
