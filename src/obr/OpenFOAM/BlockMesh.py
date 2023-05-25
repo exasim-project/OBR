@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     class OpenFOAMCase:
         constant_folder: Any
         controlDict: Any
+        path: Any
+        time_folder: Any
         system_folder: Any
         _exec_operation: Any
 

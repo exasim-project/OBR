@@ -26,6 +26,16 @@ from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
 
 
+def filter_jobs_by_query(project, queries_str):
+    if queries_str:
+        queries = input_to_queries(queries_str)
+        sel_jobs = query_impl(project, queries, output=False)
+        jobs = [j for j in project if j.id in sel_jobs]
+    else:
+        jobs = [j for j in project]
+    return jobs
+
+
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
@@ -65,12 +75,7 @@ def submit(ctx, **kwargs):
     partition = kwargs.get("partition")
     account = kwargs.get("account")
 
-    if queries_str:
-        queries = input_to_queries(queries_str)
-        sel_jobs = query_impl(project, queries, output=False)
-        jobs = [j for j in project if j.id in sel_jobs]
-    else:
-        jobs = [j for j in project]
+    jobs = filter_jobs_by_query(project, queries_str)
 
     # OpenFOAMProject().main()
     # print(dir(project.operations["runParallelSolver"]))
@@ -139,12 +144,7 @@ def run(ctx, **kwargs):
 
     project = OpenFOAMProject().init_project()
     queries_str = kwargs.get("query")
-    queries = input_to_queries(queries_str)
-    if queries:
-        sel_jobs = query_impl(project, queries, output=False)
-        jobs = [j for j in project if j.id in sel_jobs]
-    else:
-        jobs = [j for j in project]
+    jobs = filter_jobs_by_query(project, queries_str)
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
@@ -209,6 +209,26 @@ def status(ctx, **kwargs):
 
     project = OpenFOAMProject.get_project()
     project.print_status(detailed=kwargs["detailed"], pretty=True)
+
+
+@cli.command()
+@click.option("-f", "--folder")
+@click.option("-l", "--log", is_flag=True)
+@click.pass_context
+def archive(ctx, **kwargs):
+    project = OpenFOAMProject().init_project()
+    queries_str = kwargs.get("query")
+    jobs = filter_jobs_by_query(project, queries_str)
+
+    target_folder = kwargs.get("folder")
+    for job in jobs:
+        root, _, files = next(os.walk(Path(job.path) / "case"))
+        for file in files:
+            log_file = Path(root) / file
+            target_file = Path(target_folder) / job.id / "case" / file
+
+            if file.endswith("log"):
+                print(log_file, target_file)
 
 
 @cli.command()
