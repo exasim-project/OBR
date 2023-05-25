@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 from subprocess import check_output
-from ..core.core import execute, path_to_key
+from ..core.core import execute
 from .labels import owns_mesh, final, finished
 from obr.OpenFOAM.case import OpenFOAMCase
 import CaseOrigins

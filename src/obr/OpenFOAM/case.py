@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import errno
 from typing import Union, Generator, Tuple, Any
 import os
 from pathlib import Path

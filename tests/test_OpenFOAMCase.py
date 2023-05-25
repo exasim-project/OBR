@@ -4,7 +4,6 @@ import os
 import pytest
 from pathlib import Path
 import shutil
-from subprocess import check_output
 from git.repo import Repo
 
 

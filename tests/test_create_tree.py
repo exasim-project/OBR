@@ -4,8 +4,6 @@ from obr.signac_wrapper.operations import OpenFOAMProject
 import pytest
 import os
 
-from subprocess import check_output
-
 
 @pytest.fixture
 def emmit_test_config():
