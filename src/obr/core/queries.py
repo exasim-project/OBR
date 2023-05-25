@@ -3,6 +3,8 @@ from typing import Any
 from copy import deepcopy
 import re
 
+import pandas as pd
+
 
 @dataclass
 class query_result:
@@ -31,16 +33,16 @@ class Query:
         }
         self.predicate_op = predicate_map[self.predicate]
 
+        if self.value == None:
+            if self.predicate_op(self.key, key) and not self.state:
+                self.state = {key: value}
         # a value specific value has been requested
-        if not (self.value == None):
+        else:
             if (
                 self.predicate_op(self.value, value)
                 and self.key == key
                 and not self.state
             ):
-                self.state = {key: value}
-        else:
-            if self.predicate_op(self.key, key) and not self.state:
                 self.state = {key: value}
 
     def match(self):
@@ -72,6 +74,7 @@ def execute_query(query, key, value, latest_only=True, track_keys=list) -> Query
 
     signac_attr_dict_str = "JSONAttrDict"
 
+    # call execute query recursively for sub dictionaries
     if isinstance(value, dict) or type(value).__name__ == signac_attr_dict_str:
         track_keys.append(key)
         sub_results = [
@@ -174,6 +177,43 @@ def query_to_dict(
     Flattens list of jobs to a dictionary with merged statepoints and job document first
     """
     return query_flat_jobs(flatten_jobs(jobs), queries, output, latest_only, strict)
+
+
+def query_to_records(
+    jobs: list, queries: list[Query], output=False, latest_only=True, strict=False
+) -> list[dict]:
+    """Given a list jobs find all jobs for which a query matches
+
+    Flattens list of jobs to a dictionary with merged statepoints and job document first
+    """
+    query_results = query_flat_jobs(
+        flatten_jobs(jobs), queries, output, latest_only, strict
+    )
+    ret = []
+    for q in query_results:
+        for r in q.result:
+            r.update({"jobid": q.id})
+            ret.append(r)
+    return ret
+
+
+def query_to_dataframe(
+    jobs: list,
+    queries: list[Query],
+    latest_only=True,
+    strict: bool = False,
+    index: list[str] = [],
+) -> list[dict]:
+    """Given a list jobs find all jobs for which a query matches
+
+    Flattens list of jobs to a dictionary with merged statepoints and job document first
+    """
+    ret = pd.DataFrame.from_records(
+        query_to_records(jobs, queries, latest_only=True, strict=strict)
+    )
+    if index:
+        return ret.set_index(index).sort_index()
+    return ret
 
 
 def query_impl(
