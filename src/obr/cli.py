@@ -18,13 +18,13 @@ import click
 import yaml  # type: ignore[import]
 import os
 import time
-
+from pathlib import Path
 from .signac_wrapper.labels import *
 from .signac_wrapper.operations import *
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
-
+from signac.contrib.job import Job
 
 def filter_jobs_by_query(project, queries_str):
     if queries_str:
@@ -212,20 +212,25 @@ def status(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("-f", "--folder")
+@click.option("-f", "--folder", required=True)
 @click.option("-l", "--log", is_flag=True)
+@click.option("-q", "--query")
 @click.pass_context
 def archive(ctx, **kwargs):
-    project = OpenFOAMProject().init_project()
+    project : OpenFOAMProject = OpenFOAMProject().init_project()
     queries_str = kwargs.get("query")
-    jobs = filter_jobs_by_query(project, queries_str)
+    jobs: list[Job] = filter_jobs_by_query(project, queries_str)
 
     target_folder = kwargs.get("folder")
     for job in jobs:
-        root, _, files = next(os.walk(Path(job.path) / "case"))
+        case_path = Path(job.path) / "case"
+        if not case_path.exists():
+            # otherwise, the subsequent `next()` could throw a stopIteration Exception
+            continue
+        root, _, files = next(os.walk(case_path))
         for file in files:
             log_file = Path(root) / file
-            target_file = Path(target_folder) / job.id / "case" / file
+            target_file = Path(target_folder).joinpath(str(job.id), "case", file)
 
             if file.endswith("log"):
                 print(log_file, target_file)
