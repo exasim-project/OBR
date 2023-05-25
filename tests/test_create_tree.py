@@ -40,11 +40,10 @@ def test_create_tree(tmpdir, emmit_test_config):
     )
 
     workspace_dir = tmpdir / "workspace"
-    base_view_dir = tmpdir / "view"
 
     assert workspace_dir.exists() == True
 
-    root, folder, files = next(os.walk(workspace_dir))
+    _, folder, _ = next(os.walk(workspace_dir))
 
     assert len(folder) == 1
     for fold in folder:
@@ -57,8 +56,6 @@ def test_create_tree(tmpdir, emmit_test_config):
 def test_call_generate_tree(tmpdir, emmit_test_config):
     project = OpenFOAMProject.init_project(root=tmpdir)
     workspace_dir = tmpdir / "workspace"
-    base_view_dir = tmpdir / "view"
-    _, folder_before, _ = next(os.walk(workspace_dir))
 
     operation = {
         "operation": "controlDict",

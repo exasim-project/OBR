@@ -170,8 +170,6 @@ def needs_init_dependent(job):
         if job.doc.get("init_dependent"):
             #    print("already init", job.id)
             return True
-        project = OpenFOAMProject.get_project(root=job.path + "/../..")
-        # print("project", job.path, project)
         base_id = job.doc.get("base_id")
 
         base_path = Path(job.path) / ".." / base_id / "case"
