@@ -46,8 +46,7 @@ def is_case(job):
 
 
 def operation_complete(job, operation):
-    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success
-    """
+    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
     if job.doc.get("state") == "ready":
         return True
     else:
@@ -108,8 +107,7 @@ def base_case_is_ready(job):
 
 
 def _link_path(base: Path, dst: Path, copy_instead_link: bool):
-    """creates file tree under dst with same folder structure as base but all files are relative symlinks
-    """
+    """creates file tree under dst with same folder structure as base but all files are relative symlinks"""
     # ensure dst path exists
     check_output(["mkdir", "-p", str(dst)])
 
@@ -263,8 +261,7 @@ def dispatch_pre_hooks(operation_name, job):
 
 
 def dispatch_post_hooks(operation_name, job):
-    """Forwards to `execute_post_build`, performs md5sum calculation of case files and finishes with `end_job_state`
-    """
+    """Forwards to `execute_post_build`, performs md5sum calculation of case files and finishes with `end_job_state`"""
     execute_post_build(operation_name, job)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     case.perform_post_md5sum_calculations()
