@@ -1,7 +1,4 @@
-**[Workflow specification](#Workflow_specification)** |
-**[Usage](#Usage)** |
-**[Example](#Example)**
-
+**[Documentation](https://obr.readthedocs.io/)**
 ---
 # OBR - OpenFOAM Benchmark Runner
 ![Tests](https://github.com/hpsim/obr/actions/workflows/tests.yml/badge.svg)
