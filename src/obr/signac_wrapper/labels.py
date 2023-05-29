@@ -25,8 +25,10 @@ def check_mesh(job):
     """Check whether all mesh files are files (owning) or symlinks (non-owning)
 
     TODO check also for .obr files for state of operation"""
-    return "success" == job.doc.get("obr", {}).get("checkMesh", {}).get("state")
-
+    checkMeshList = job.doc.get("obr", {}).get("checkMesh", [])
+    if checkMeshList == []:
+        return False
+    return checkMeshList[0].get('state') == 'success'
 
 @FlowProject.label
 def unitialised(job):
