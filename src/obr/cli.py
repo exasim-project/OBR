@@ -120,7 +120,7 @@ def submit(ctx, **kwargs):
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-o", "--operations", default="")
-@click.option("-j", "--job")
+@click.option("-j", "--job", help="Specify an ID to run only a single corresponding job.")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
 @click.option("-a", "--aggregate", is_flag=True)
@@ -140,6 +140,12 @@ def run(ctx, **kwargs):
         jobs = [j for j in project if j.id in sel_jobs]
     else:
         jobs = [j for j in project]
+
+    if (job_id := kwargs.get("job")):
+        jobs = list(filter(lambda j: j.id == job_id, jobs))
+        if len(jobs) == 0:
+            print(f'No job for {job_id=} found. Will run nothing.')
+            return
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
