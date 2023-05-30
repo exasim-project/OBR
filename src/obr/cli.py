@@ -119,8 +119,19 @@ def submit(ctx, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-o", "--operations", default="", required=True, help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.")
-@click.option("-l", "--list-operations", is_flag=True, help="Prints all available operations and returns.")
+@click.option(
+    "-o",
+    "--operations",
+    default="",
+    required=True,
+    help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.",
+)
+@click.option(
+    "-l",
+    "--list-operations",
+    is_flag=True,
+    help="Prints all available operations and returns.",
+)
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
@@ -135,11 +146,11 @@ def run(ctx, **kwargs):
 
     project = OpenFOAMProject().init_project()
 
-    if '--help' == kwargs.get('operations'):
+    if "--help" == kwargs.get("operations"):
         project.print_operations()
         return
 
-    if kwargs.get('list_operations'):
+    if kwargs.get("list_operations"):
         project.print_operations()
         return
 
@@ -223,6 +234,7 @@ def operations(ctx, **kwargs):
 
     project = OpenFOAMProject.get_project()
     project.print_operations()
+
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
