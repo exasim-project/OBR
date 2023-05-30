@@ -29,16 +29,4 @@ A set of operations can be passed after the `-o` flag.
 It is important to note, that there can be no whitespace in between. Otherwise, 
 the `runParallelSolver` will be parsed as separate commandline argument.
 
-Currently, the viable operations are as follows:
-- apply
-- archive, 
-- blockMesh
-- checkMesh 
-- controlDict, 
-- decomposePar
-- fetchCase
-- fvSolution
-- refineMesh 
-- runParallelSolver
-- setKeyValuePair
-- shell
+To list all available operations, run `obr run --list-operations` or [`obr operations`](#obr-operations).

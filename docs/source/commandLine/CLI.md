@@ -12,3 +12,5 @@
 ```
 ```{include} submit.md
 ```
+```{include} operations.md
+```

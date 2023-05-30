@@ -18,7 +18,10 @@ import CaseOrigins
 
 
 class OpenFOAMProject(flow.FlowProject):
-    pass
+    def print_operations(self):
+        ops = sorted(self.operations.keys())
+        print('Available operations are:\n\t', '\n\t '.join(ops))
+        return
 
 
 generate = OpenFOAMProject.make_group(name="generate")

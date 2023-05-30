@@ -120,6 +120,7 @@ def submit(ctx, **kwargs):
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-o", "--operations", default="")
+@click.option("-l", "--list-operations", is_flag=True, help="Prints all available operations and returns.")
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
@@ -133,6 +134,11 @@ def run(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
+
+    if kwargs.get('list_operations'):
+        project.print_operations()
+        return
+
     queries_str = kwargs.get("query")
     queries = input_to_queries(queries_str)
     if queries:
@@ -203,6 +209,16 @@ def status(ctx, **kwargs):
     project = OpenFOAMProject.get_project()
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
+
+@cli.command()
+@click.option("-f", "--folder", default=".")
+@click.pass_context
+def operations(ctx, **kwargs):
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+
+    project = OpenFOAMProject.get_project()
+    project.print_operations()
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
