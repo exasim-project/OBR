@@ -119,7 +119,7 @@ def submit(ctx, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-o", "--operations", default="")
+@click.option("-o", "--operations", default="", required=True, help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.")
 @click.option("-l", "--list-operations", is_flag=True, help="Prints all available operations and returns.")
 @click.option("-j", "--job")
 @click.option("--args", default="")
