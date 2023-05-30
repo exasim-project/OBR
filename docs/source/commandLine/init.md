@@ -13,3 +13,5 @@ Options:
   --verbose INTEGER      set verbosity
   --help                 Show this message and exit.
 ```
+
+Make sure to have openfoam sourced. 
