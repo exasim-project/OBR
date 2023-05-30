@@ -135,6 +135,10 @@ def run(ctx, **kwargs):
 
     project = OpenFOAMProject().init_project()
 
+    if '--help' == kwargs.get('operations'):
+        project.print_operations()
+        return
+
     if kwargs.get('list_operations'):
         project.print_operations()
         return
