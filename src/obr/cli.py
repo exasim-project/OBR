@@ -19,6 +19,7 @@ import yaml  # type: ignore[import]
 import os
 import time
 
+from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
@@ -28,7 +29,7 @@ from .core.queries import input_to_queries, query_impl
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
-def cli(ctx, debug):
+def cli(ctx, debug: bool):
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
@@ -90,7 +91,7 @@ def submit(ctx, **kwargs):
     if bundling_key:
         bundling_values = get_values(jobs, bundling_key)
         for bundle_value in bundling_values:
-            jobs = [j for j in project if bundle_value in list(j.sp().values())]
+            jobs: list[Job] = [j for j in project if bundle_value in list(j.sp().values())]
             print(f"[OBR] submit bundle {bundle_value} of {len(jobs)} jobs")
             print(
                 "[OBR] submission response",
@@ -136,9 +137,9 @@ def run(ctx, **kwargs):
     queries = input_to_queries(queries_str)
     if queries:
         sel_jobs = query_impl(project, queries, output=False)
-        jobs = [j for j in project if j.id in sel_jobs]
+        jobs: list[Job] = [j for j in project if j.id in sel_jobs]
     else:
-        jobs = [j for j in project]
+        jobs: list[Job] = [j for j in project]
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args")

@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from copy import deepcopy
 import re
+from obr.signac_wrapper.operations import OpenFOAMProject
+
 
 
 @dataclass
@@ -64,7 +66,7 @@ def input_to_queries(inp: str) -> list[Query]:
     return [input_to_query(x) for x in inp_lst]
 
 
-def execute_query(query, key, value, latest_only=True, track_keys=list) -> Query:
+def execute_query(query: Query, key, value, latest_only=True, track_keys=list) -> Query:
     if isinstance(value, list) and latest_only and value:
         value = value[-1]
     # descent one level down, statepoints and job documents might contain
@@ -90,7 +92,7 @@ def execute_query(query, key, value, latest_only=True, track_keys=list) -> Query
     return query
 
 
-def flatten_jobs(jobs: list) -> dict:
+def flatten_jobs(jobs: OpenFOAMProject) -> dict:
     """convert a list of jobs to a dictionary"""
     docs: dict = {}
 
@@ -106,7 +108,7 @@ def flatten_jobs(jobs: list) -> dict:
 
 
 def query_flat_jobs(
-    jobs: dict, queries: list[Query], output, latest_only, strict
+    jobs: dict[str, dict], queries: list[Query], output, latest_only, strict
 ) -> list[query_result]:
     """
     Parameters:
@@ -167,7 +169,7 @@ def query_flat_jobs(
 
 
 def query_to_dict(
-    jobs: list, queries: list[Query], output=False, latest_only=True, strict=False
+    jobs: OpenFOAMProject, queries: list[Query], output=False, latest_only=True, strict=False
 ) -> list[query_result]:
     """Given a list jobs find all jobs for which a query matches
 
@@ -177,7 +179,7 @@ def query_to_dict(
 
 
 def query_impl(
-    jobs: list, queries: list[Query], output=False, latest_only=True
+    jobs: OpenFOAMProject, queries: list[Query], output=False, latest_only=True
 ) -> list[str]:
     """Performs a query and returns corresponding job.ids"""
     res = query_to_dict(jobs, queries, output, latest_only)

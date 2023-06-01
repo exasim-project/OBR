@@ -8,6 +8,7 @@ from ..core.core import execute
 from .labels import owns_mesh, final, finished
 from obr.OpenFOAM.case import OpenFOAMCase
 import CaseOrigins
+from signac.contrib.job import Job
 
 
 # TODO operations should get an id/hash so that we can log success
@@ -29,7 +30,7 @@ class JobCache:
     def __init__(self, jobs):
         self.d = {j.id: j for j in jobs}
 
-    def search_parent(self, job, key):
+    def search_parent(self, job: Job, key):
         base_id = job.doc.get("base_id")
         if not base_id:
             return
@@ -40,12 +41,12 @@ class JobCache:
             return self.search_parent(self.d[base_id], key)
 
 
-def is_case(job):
+def is_case(job: Job) -> bool:
     has_ctrlDict = job.isfile("case/system/controlDict")
     return has_ctrlDict
 
 
-def operation_complete(job, operation):
+def operation_complete(job: Job, operation) -> bool:
     """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success
     """
     if job.doc.get("state") == "ready":
@@ -67,7 +68,7 @@ def operation_complete(job, operation):
     #     return False
 
 
-def basic_eligible(job, operation):
+def basic_eligible(job: Job, operation) -> bool:
     """Dispatches to standard checks if operations are eligible for given job
 
     this includes:
@@ -96,7 +97,7 @@ def basic_eligible(job, operation):
     return True
 
 
-def base_case_is_ready(job):
+def base_case_is_ready(job: Job):
     """Checks whether the parent of the given job is ready
 
     TODO rename to parent_job_is_ready
@@ -154,7 +155,7 @@ def _link_path(base: Path, dst: Path, copy_instead_link: bool):
                     )
 
 
-def needs_init_dependent(job):
+def needs_init_dependent(job: Job):
     """check if this job has been already linked to
 
     The default strategy is to link all files. If a file is modified
@@ -181,7 +182,7 @@ def needs_init_dependent(job):
         return False
 
 
-def get_args(job, args):
+def get_args(job: Job, args)->dict:
     """operation can get args either via function call or it statepoint
     if no args are passed via function the args from the statepoint are taken
 
@@ -197,7 +198,7 @@ def get_args(job, args):
         return args
 
 
-def execute_operation(job, operation_name, operations):
+def execute_operation(job: Job, operation_name, operations):
     """check wether an operation is requested
 
     operation can be simple operations defined by a keyword like blockMesh
@@ -218,7 +219,7 @@ def execute_operation(job, operation_name, operations):
     return True
 
 
-def execute_post_build(operation_name, job):
+def execute_post_build(operation_name, job: Job):
     """check wether an operation is requested
 
     operation can be simple operations defined by a keyword like blockMesh
@@ -228,7 +229,7 @@ def execute_post_build(operation_name, job):
     execute_operation(job, operation_name, operations)
 
 
-def execute_pre_build(operation_name, job):
+def execute_pre_build(operation_name, job: Job):
     """check wether an operation is requested
 
     operation can be simple operations defined by a keyword like blockMesh
@@ -238,7 +239,7 @@ def execute_pre_build(operation_name, job):
     execute_operation(job, operation_name, operations)
 
 
-def start_job_state(_, job):
+def start_job_state(_, job: Job):
     current_state = job.doc.get("state")
     if not current_state:
         job.doc["state"] = "started"
@@ -249,18 +250,18 @@ def start_job_state(_, job):
     return True
 
 
-def end_job_state(_, job):
+def end_job_state(_, job: Job):
     job.doc["state"] = "ready"
     return True
 
 
-def dispatch_pre_hooks(operation_name, job):
+def dispatch_pre_hooks(operation_name, job: Job):
     """just forwards to start_job_state and execute_pre_build"""
     start_job_state(operation_name, job)
     execute_pre_build(operation_name, job)
 
 
-def dispatch_post_hooks(operation_name, job):
+def dispatch_post_hooks(operation_name, job: Job):
     """Forwards to `execute_post_build`, performs md5sum calculation of case files and finishes with `end_job_state`
     """
     execute_post_build(operation_name, job)
@@ -269,7 +270,7 @@ def dispatch_post_hooks(operation_name, job):
     end_job_state(operation_name, job)
 
 
-def set_failure(operation_name, error, job):
+def set_failure(operation_name, error, job: Job):
     """just forwards to start_job_state and execute_pre_build"""
     job.doc["state"] = "failure"
 
@@ -281,7 +282,7 @@ def set_failure(operation_name, error, job):
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "controlDict"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "controlDict"))
 @OpenFOAMProject.operation
-def controlDict(job, args={}):
+def controlDict(job: Job, args={}):
     """sets up the controlDict"""
     # TODO gets args either from function arguments if function
     # was called directly from a pre/post build or from sp
@@ -297,7 +298,7 @@ def controlDict(job, args={}):
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "blockMesh"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "blockMesh"))
 @OpenFOAMProject.operation
-def blockMesh(job, args={}):
+def blockMesh(job: Job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
 
@@ -319,7 +320,7 @@ def blockMesh(job, args={}):
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "shell"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "shell"))
 @OpenFOAMProject.operation
-def shell(job, args={}):
+def shell(job: Job, args={}):
     args = get_args(job, args)
     # if called from post build args are just a string
     if isinstance(args, dict):
@@ -337,7 +338,7 @@ def shell(job, args={}):
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "fvSolution"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "fvSolution"))
 @OpenFOAMProject.operation
-def fvSolution(job, args={}):
+def fvSolution(job: Job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
 
@@ -349,12 +350,12 @@ def fvSolution(job, args={}):
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "setKeyValuePair"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "setKeyValuePair"))
 @OpenFOAMProject.operation
-def setKeyValuePair(job, args={}):
+def setKeyValuePair(job: Job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).setKeyValuePair(args)
 
 
-def has_mesh(job):
+def has_mesh(job: Job) -> bool:
     """Check whether all mesh files are files (owning) or symlinks (non-owning)
 
     TODO check also for .obr files for state of operation"""
@@ -375,7 +376,7 @@ def has_mesh(job):
 @OpenFOAMProject.pre(has_mesh)
 @OpenFOAMProject.post(lambda job: operation_complete(job, "decomposePar"))
 @OpenFOAMProject.operation
-def decomposePar(job, args={}):
+def decomposePar(job: Job, args={}):
     args = get_args(job, args)
 
     # TODO
@@ -422,7 +423,7 @@ def decomposePar(job, args={}):
 @OpenFOAMProject.pre(lambda job: not bool(job.doc.get("base_id")))
 @OpenFOAMProject.post(is_case)
 @OpenFOAMProject.operation
-def fetchCase(job, args={}):
+def fetchCase(job: Job, args={}):
     args = get_args(job, args)
 
     case_type = job.sp()["type"]
@@ -430,7 +431,7 @@ def fetchCase(job, args={}):
     fetch_case_handler.init(job=job)
 
 
-def is_locked(job):
+def is_locked(job: Job) -> bool:
     """Cases that are already started are set to tmp_lock
     dont try to execute them
     """
@@ -445,7 +446,7 @@ def is_locked(job):
 @OpenFOAMProject.pre(has_mesh)
 @OpenFOAMProject.post(lambda job: operation_complete(job, "refineMesh"))
 @OpenFOAMProject.operation
-def refineMesh(job, args={}):
+def refineMesh(job: Job, args={}):
     args = get_args(job, args)
     for _ in range(args.get("value")):
         OpenFOAMCase(str(job.path) + "/case", job).refineMesh(args)
@@ -454,7 +455,7 @@ def refineMesh(job, args={}):
 @OpenFOAMProject.pre(base_case_is_ready)
 @OpenFOAMProject.pre(owns_mesh)
 @OpenFOAMProject.operation
-def checkMesh(job, args={}):
+def checkMesh(job: Job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
@@ -467,7 +468,7 @@ def checkMesh(job, args={}):
     job.doc["obr"]["nCells"] = int(cells)
 
 
-def get_number_of_procs(job) -> int:
+def get_number_of_procs(job: Job) -> int:
     np = int(job.sp().get("numberSubDomains", 0))
     if np:
         return np
@@ -489,7 +490,7 @@ def get_values(jobs: list, key: str) -> set:
 @OpenFOAMProject.operation(
     cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
 )
-def runParallelSolver(job, args={}):
+def runParallelSolver(job: Job, args={}):
     from datetime import datetime
 
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
@@ -522,7 +523,7 @@ def runParallelSolver(job, args={}):
 
 
 @OpenFOAMProject.operation
-def archive(job, args={}):
+def archive(job: Job, args={}):
     root, _, files = next(os.walk(Path(job.path) / "case"))
     fp = os.environ.get("OBR_CALL_ARGS")
     for fn in files:
