@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 from subprocess import check_output
-from ..core.core import execute, path_to_key
+from ..core.core import execute
 from .labels import *
 from obr.OpenFOAM.case import OpenFOAMCase
 import CaseOrigins
@@ -261,10 +261,8 @@ def dispatch_pre_hooks(operation_name, job):
 
 
 def dispatch_post_hooks(operation_name, job):
-    """Forwards to `execute_post_build`, performs md5sum calculation of case files and finishes with `end_job_state`"""
+    """just forwards to start_job_state and execute_pre_build"""
     execute_post_build(operation_name, job)
-    case = OpenFOAMCase(str(job.path) + "/case", job)
-    case.perform_post_md5sum_calculations()
     end_job_state(operation_name, job)
 
 
@@ -504,6 +502,9 @@ def runParallelSolver(job, args={}):
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    if not job.doc.get("obr"):
+        job.doc["obr"] = {}
+
     res = job.doc["obr"].get(solver, [])
     res.append(
         {
@@ -543,6 +544,9 @@ def runSerialSolver(job, args={}):
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    if not job.doc.get("obr"):
+        job.doc["obr"] = {}
+
     res = job.doc["obr"].get(solver, [])
     res.append(
         {
