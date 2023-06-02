@@ -20,7 +20,7 @@ import CaseOrigins
 class OpenFOAMProject(flow.FlowProject):
     def print_operations(self):
         ops = sorted(self.operations.keys())
-        print('Available operations are:\n\t', '\n\t '.join(ops))
+        print("Available operations are:\n\t", "\n\t ".join(ops))
         return
 
 
