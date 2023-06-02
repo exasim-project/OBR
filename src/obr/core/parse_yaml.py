@@ -28,7 +28,7 @@ def read_yaml(kwargs: dict) -> str:
 
 def add_includes(yaml_location: Path, config_str: str) -> str:
     """Replace {{include.filename}} by the content of that file"""
-    includes = re.findall("([ \t]*)\${{include.([_/\w.]*)}}", config_str)
+    includes = re.findall(r"([ \t]*)\${{include.([_/\w.]*)}}", config_str)
     for ws, fn in includes:
         # if fn startswith a single dot here it is left from the re.findall
         # and means include.. thus we add the dot again
@@ -43,7 +43,7 @@ def add_includes(yaml_location: Path, config_str: str) -> str:
 
 
 def parse_variables(in_str: str, args: dict, domain: str) -> str:
-    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
         if not args.get(inst, ""):
             print(f"warning {inst} not defined")

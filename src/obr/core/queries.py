@@ -62,7 +62,7 @@ def input_to_query(inp: str) -> Query:
 
 def input_to_queries(inp: str) -> list[Query]:
     """Convert a json string to list of queries"""
-    inp_lst = re.findall("{[\w:\"'0-9,. ]*}", inp)
+    inp_lst = re.findall(r"{[\w:\"'0-9,. ]*}", inp)
     return [input_to_query(x) for x in inp_lst]
 
 

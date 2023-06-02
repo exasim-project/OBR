@@ -20,7 +20,7 @@ import os
 import time
 
 from signac.contrib.job import Job
-from .signac_wrapper.operations import OpenFOAMProject
+from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
