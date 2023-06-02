@@ -92,7 +92,10 @@ class OpenFOAMCase(BlockMesh):
         # decomposeParDict might not exist in some test cases
         if Path(self.system_folder / "decomposeParDict").exists():
             self.decomposeParDict = File(
-                folder=self.system_folder, file="decomposeParDict", job=job, optional=True
+                folder=self.system_folder,
+                file="decomposeParDict",
+                job=job,
+                optional=True,
             )
         self.file_dict: dict[str, File] = dict()
         self.config_file_tree
@@ -168,8 +171,7 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def config_file_tree(self) -> list[str]:
-        """Iterates through case file tree and returns a list of paths to non-symlinked files.
-        """
+        """Iterates through case file tree and returns a list of paths to non-symlinked files."""
         for file, rel_path in self.config_files_in_folder(self.system_folder):
             self.file_dict[rel_path] = file
         for file, rel_path in self.config_files_in_folder(self.constant_folder):
@@ -275,4 +277,7 @@ class OpenFOAMCase(BlockMesh):
                 str(case_path)
             )  # signac does not allow . inside paths or job.doc keys
             last_modified = os.path.getmtime(case_file)
-            self.job.doc["obr"]["md5sum"][signac_friendly_path] = (md5sum.split()[0], last_modified)
+            self.job.doc["obr"]["md5sum"][signac_friendly_path] = (
+                md5sum.split()[0],
+                last_modified,
+            )

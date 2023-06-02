@@ -109,8 +109,7 @@ def base_case_is_ready(job: Job):
 
 
 def _link_path(base: Path, dst: Path, copy_instead_link: bool):
-    """creates file tree under dst with same folder structure as base but all files are relative symlinks
-    """
+    """creates file tree under dst with same folder structure as base but all files are relative symlinks"""
     # ensure dst path exists
     check_output(["mkdir", "-p", str(dst)])
 
