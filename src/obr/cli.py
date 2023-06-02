@@ -41,7 +41,8 @@ def cli(ctx, debug):
 @click.option(
     "-p", "--pretend", is_flag=True, help="Set flag to only print submission script"
 )
-@click.option("-o", "--operation")
+@click.option("-o", "--operations", default="", required=True, help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.")
+@click.option("-l", "--list-operations", is_flag=True, help="Prints all available operations and returns.")
 @click.option("--query", default=None, help="")
 @click.option("--bundling_key", default=None, help="")
 @click.option("-p", "--partition", default="cpuonly")
@@ -59,6 +60,21 @@ def submit(ctx, **kwargs):
 
     project = OpenFOAMProject().init_project()
     project._entrypoint = {"executable": "", "path": "obr"}
+
+    operations = kwargs.get('operations', "").split(',')
+    # list available operations if none are specified or given the click option or an incorrect op is given
+    if not operations:
+        print('No operation(s) specified.')
+        project.print_operations()
+        print('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
+        return
+    elif any((false_op := op) not in project.operations for op in operations):
+        print(f'Specified operation {false_op} is not a valid operation.')
+        project.print_operations()
+        return
+    elif kwargs.get('list_operations'):
+        project.print_operations()
+        return
 
     queries_str = kwargs.get("query")
     bundling_key = kwargs.get("bundling_key")
@@ -135,11 +151,18 @@ def run(ctx, **kwargs):
 
     project = OpenFOAMProject().init_project()
 
-    if '--help' == kwargs.get('operations'):
+    operations = kwargs.get('operations', "").split(',')
+    # list available operations if none are specified or given the click option or an incorrect op is given
+    if not operations:
+        print('No operation(s) specified.')
+        project.print_operations()
+        print('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
+        return
+    elif any((false_op := op) not in project.operations for op in operations):
+        print(f'Specified operation {false_op} is not a valid operation.')
         project.print_operations()
         return
-
-    if kwargs.get('list_operations'):
+    elif kwargs.get('list_operations'):
         project.print_operations()
         return
 
@@ -165,14 +188,14 @@ def run(ctx, **kwargs):
     if not kwargs.get("aggregate"):
         project.run(
             jobs=jobs,  # project.groupby("doc.is_base"),
-            names=kwargs.get("operations").split(","),
+            names=operations,
             progress=True,
             np=kwargs.get("tasks", -1),
         )
     else:
         # calling for aggregates does not work with jobs
         project.run(
-            names=kwargs.get("operations").split(","),
+            names=operations,
             np=kwargs.get("tasks", -1),
         )
     print("[OBR] completed all operations")
@@ -213,16 +236,6 @@ def status(ctx, **kwargs):
     project = OpenFOAMProject.get_project()
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
-
-@cli.command()
-@click.option("-f", "--folder", default=".")
-@click.pass_context
-def operations(ctx, **kwargs):
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-
-    project = OpenFOAMProject.get_project()
-    project.print_operations()
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
