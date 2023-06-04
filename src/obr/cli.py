@@ -26,6 +26,23 @@ from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
 
 
+def check_cli_operations(project: OpenFOAMProject, operations: list[str], list_operations: bool):
+    """ list available operations if none are specified or given the click option or an incorrect op is given"""
+    if list_operations:
+        project.print_operations()
+        return False
+    elif not operations:
+        print('No operation(s) specified.')
+        project.print_operations()
+        print('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
+        return False
+    elif any((false_op := op) not in project.operations for op in operations):
+        print(f'Specified operation {false_op} is not a valid operation.')
+        project.print_operations()
+        return False
+    return True
+
+
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
@@ -62,18 +79,8 @@ def submit(ctx, **kwargs):
     project._entrypoint = {"executable": "", "path": "obr"}
 
     operations = kwargs.get('operations', "").split(',')
-    # list available operations if none are specified or given the click option or an incorrect op is given
-    if not operations:
-        print('No operation(s) specified.')
-        project.print_operations()
-        print('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
-        return
-    elif any((false_op := op) not in project.operations for op in operations):
-        print(f'Specified operation {false_op} is not a valid operation.')
-        project.print_operations()
-        return
-    elif kwargs.get('list_operations'):
-        project.print_operations()
+    list_operations = kwargs.get('list_operations')
+    if not check_cli_operations(project, operations, list_operations):
         return
 
     queries_str = kwargs.get("query")
@@ -163,18 +170,8 @@ def run(ctx, **kwargs):
     project = OpenFOAMProject().init_project()
 
     operations = kwargs.get('operations', "").split(',')
-    # list available operations if none are specified or given the click option or an incorrect op is given
-    if not operations:
-        print('No operation(s) specified.')
-        project.print_operations()
-        print('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
-        return
-    elif any((false_op := op) not in project.operations for op in operations):
-        print(f'Specified operation {false_op} is not a valid operation.')
-        project.print_operations()
-        return
-    elif kwargs.get('list_operations'):
-        project.print_operations()
+    list_operations = kwargs.get('list_operations')
+    if not check_cli_operations(project, operations, list_operations):
         return
 
     queries_str = kwargs.get("query")
