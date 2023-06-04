@@ -58,8 +58,19 @@ def cli(ctx, debug):
 @click.option(
     "-p", "--pretend", is_flag=True, help="Set flag to only print submission script"
 )
-@click.option("-o", "--operations", default="", required=True, help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.")
-@click.option("-l", "--list-operations", is_flag=True, help="Prints all available operations and returns.")
+@click.option(
+    "-o",
+    "--operations",
+    default="",
+    required=True,
+    help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.",
+)
+@click.option(
+    "-l",
+    "--list-operations",
+    is_flag=True,
+    help="Prints all available operations and returns.",
+)
 @click.option("--query", default=None, help="")
 @click.option("--bundling_key", default=None, help="")
 @click.option("-p", "--partition", default="cpuonly")
@@ -78,8 +89,8 @@ def submit(ctx, **kwargs):
     project = OpenFOAMProject().init_project()
     project._entrypoint = {"executable": "", "path": "obr"}
 
-    operations = kwargs.get('operations', "").split(',')
-    list_operations = kwargs.get('list_operations')
+    operations = kwargs.get("operations", "").split(",")
+    list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
 
@@ -169,8 +180,8 @@ def run(ctx, **kwargs):
 
     project = OpenFOAMProject().init_project()
 
-    operations = kwargs.get('operations', "").split(',')
-    list_operations = kwargs.get('list_operations')
+    operations = kwargs.get("operations", "").split(",")
+    list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
 
