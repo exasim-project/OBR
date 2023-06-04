@@ -26,6 +26,23 @@ from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
 
 
+def check_cli_operations(project: OpenFOAMProject, operations: list[str], list_operations: bool):
+    """ list available operations if none are specified or given the click option or an incorrect op is given"""
+    if list_operations:
+        project.print_operations()
+        return False
+    elif not operations:
+        print('No operation(s) specified.')
+        project.print_operations()
+        print('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
+        return False
+    elif any((false_op := op) not in project.operations for op in operations):
+        print(f'Specified operation {false_op} is not a valid operation.')
+        project.print_operations()
+        return False
+    return True
+
+
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
@@ -41,7 +58,19 @@ def cli(ctx, debug):
 @click.option(
     "-p", "--pretend", is_flag=True, help="Set flag to only print submission script"
 )
-@click.option("-o", "--operation")
+@click.option(
+    "-o",
+    "--operations",
+    default="",
+    required=True,
+    help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.",
+)
+@click.option(
+    "-l",
+    "--list-operations",
+    is_flag=True,
+    help="Prints all available operations and returns.",
+)
 @click.option("--query", default=None, help="")
 @click.option("--bundling_key", default=None, help="")
 @click.option("-p", "--partition", default="cpuonly")
@@ -59,6 +88,11 @@ def submit(ctx, **kwargs):
 
     project = OpenFOAMProject().init_project()
     project._entrypoint = {"executable": "", "path": "obr"}
+
+    operations = kwargs.get("operations", "").split(",")
+    list_operations = kwargs.get("list_operations")
+    if not check_cli_operations(project, operations, list_operations):
+        return
 
     queries_str = kwargs.get("query")
     bundling_key = kwargs.get("bundling_key")
@@ -119,7 +153,19 @@ def submit(ctx, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-o", "--operations", default="")
+@click.option(
+    "-o",
+    "--operations",
+    default="",
+    required=True,
+    help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.",
+)
+@click.option(
+    "-l",
+    "--list-operations",
+    is_flag=True,
+    help="Prints all available operations and returns.",
+)
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
@@ -133,6 +179,12 @@ def run(ctx, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
+
+    operations = kwargs.get("operations", "").split(",")
+    list_operations = kwargs.get("list_operations")
+    if not check_cli_operations(project, operations, list_operations):
+        return
+
     queries_str = kwargs.get("query")
     queries = input_to_queries(queries_str)
     if queries:
@@ -155,14 +207,14 @@ def run(ctx, **kwargs):
     if not kwargs.get("aggregate"):
         project.run(
             jobs=jobs,  # project.groupby("doc.is_base"),
-            names=kwargs.get("operations").split(","),
+            names=operations,
             progress=True,
             np=kwargs.get("tasks", -1),
         )
     else:
         # calling for aggregates does not work with jobs
         project.run(
-            names=kwargs.get("operations").split(","),
+            names=operations,
             np=kwargs.get("tasks", -1),
         )
     print("[OBR] completed all operations")
