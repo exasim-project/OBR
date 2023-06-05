@@ -27,10 +27,11 @@ jobs:
     - name: Test with pytest
       run: |
         coverage run -m pytest
+        coverage report
 
-    - name: Test with pytest
+    - name: Get total coverage
       run: |
-        export TOTAL=$(coverage report| tail -n 1|grep --only-matching "[0-9]*\%"|grep --only-matching "[0-9*]")
+        export TOTAL=$(coverage report|tail -n 1|grep --only-matching "[0-9]*\%"|grep --only-matching "[0-9*]")
         echo $TOTAL
         echo "COVERAGE=$TOTAL" >> $GITHUB_ENV
 
