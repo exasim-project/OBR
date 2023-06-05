@@ -29,7 +29,7 @@ from .core.queries import input_to_queries, query_impl
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
-def cli(ctx, debug: bool):
+def cli(ctx: click.Context, debug: bool):
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
@@ -53,7 +53,7 @@ def cli(ctx, debug: bool):
     help="Currently required to be in --key1 value --key2 value2 form",
 )
 @click.pass_context
-def submit(ctx, **kwargs):
+def submit(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
@@ -127,7 +127,7 @@ def submit(ctx, **kwargs):
 @click.option("--query", default="")
 @click.option("--args", default="")
 @click.pass_context
-def run(ctx, **kwargs):
+def run(ctx: click.Context, **kwargs):
     """Run specified operations"""
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
@@ -178,7 +178,7 @@ def run(ctx, **kwargs):
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.option("--verbose", default=0, help="set verbosity")
 @click.pass_context
-def init(ctx, **kwargs):
+def init(ctx: click.Context, **kwargs):
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
@@ -196,7 +196,7 @@ def init(ctx, **kwargs):
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
 @click.pass_context
-def status(ctx, **kwargs):
+def status(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
@@ -210,7 +210,7 @@ def status(ctx, **kwargs):
 @click.option("-a", "--all", is_flag=True)
 @click.option("-q", "--query")
 @click.pass_context
-def query(ctx, **kwargs):
+def query(ctx: click.Context, **kwargs):
     # TODO refactor
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
