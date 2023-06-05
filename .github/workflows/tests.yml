@@ -26,3 +26,20 @@ jobs:
         python -m pip install .
     - name: Test with pytest
       run: pytest
+
+
+    - name: Test with pytest
+      run: echo "COVERAGE=100" >> $GITHUB_ENV
+
+    - name: "Make coverage badge"
+      uses: schneegans/dynamic-badges-action@v1.4.0
+      with:
+        # GIST_TOKEN is a GitHub personal access token with scope "gist".
+        auth: ${{ secrets.GIST_TOKEN }}
+        gistID: 70b77e941a906fc3863661697ea8e864   # replace with your real Gist id.
+        filename: covbadge.json
+        label: Coverage
+        message: ${{ env.COVERAGE }}%
+        minColorRange: 50
+        maxColorRange: 90
+        valColorRange: ${{ env.COVERAGE }}
