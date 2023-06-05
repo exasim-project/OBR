@@ -57,6 +57,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        apt install -y pip
         python3 -m pip install --upgrade pip
         pip install pytest tox tox-gh-actions coverage
 
