@@ -47,8 +47,7 @@ def is_case(job: Job) -> bool:
 
 
 def operation_complete(job: Job, operation: str) -> bool:
-    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success
-    """
+    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
     if job.doc.get("state") == "ready":
         return True
     else:
@@ -262,8 +261,7 @@ def dispatch_pre_hooks(operation_name: str, job: Job):
 
 
 def dispatch_post_hooks(operation_name: str, job: Job):
-    """Forwards to `execute_post_build`, performs md5sum calculation of case files and finishes with `end_job_state`
-    """
+    """Forwards to `execute_post_build`, performs md5sum calculation of case files and finishes with `end_job_state`"""
     execute_post_build(operation_name, job)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     case.perform_post_md5sum_calculations()

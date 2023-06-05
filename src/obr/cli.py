@@ -91,7 +91,9 @@ def submit(ctx: click.Context, **kwargs):
     if bundling_key:
         bundling_values = get_values(jobs, bundling_key)
         for bundle_value in bundling_values:
-            jobs: list[Job] = [j for j in project if bundle_value in list(j.sp().values())]
+            jobs: list[Job] = [
+                j for j in project if bundle_value in list(j.sp().values())
+            ]
             print(f"[OBR] submit bundle {bundle_value} of {len(jobs)} jobs")
             print(
                 "[OBR] submission response",

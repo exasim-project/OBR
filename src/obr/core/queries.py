@@ -5,7 +5,6 @@ import re
 from obr.signac_wrapper.operations import OpenFOAMProject
 
 
-
 @dataclass
 class query_result:
     id: str = field()
@@ -169,7 +168,11 @@ def query_flat_jobs(
 
 
 def query_to_dict(
-    jobs: OpenFOAMProject, queries: list[Query], output=False, latest_only=True, strict=False
+    jobs: OpenFOAMProject,
+    queries: list[Query],
+    output=False,
+    latest_only=True,
+    strict=False,
 ) -> list[query_result]:
     """Given a list jobs find all jobs for which a query matches
 
