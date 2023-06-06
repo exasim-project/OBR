@@ -547,7 +547,7 @@ def runParallelSolver(job: Job, args={}) -> str:
 @simulate
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.operation(cmd=True)
-def runSerialSolver(job, args={}):
+def runSerialSolver(job: Job, args={}):
     env_run_template = os.environ.get("OBR_SERIAL_RUN_CMD")
     solver_cmd = (
         env_run_template
