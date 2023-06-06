@@ -58,23 +58,18 @@ def logged_execute(cmd, path, doc):
         log = ret
         state = "success"
     except subprocess.SubprocessError as e:
-        print(
-            "SubprocessError:",
-            __file__,
-            __name__,
-            e,
-            " check: 'obr find --state failure' for more info",
+        logging.error(
+            "SubprocessError:" + __file__ + __name__ + str(e) + " check: 'obr find --state failure' for more info",
         )
         log = e.output.decode("utf-8")
         state = "failure"
     except FileNotFoundError as e:
-        print(__file__, __name__, e)
+        logging.error(__file__ + __name__ + str(e))
         log = cmd + " not found"
         state = "failure"
     except Exception as e:
-        logging.error(e)
-        print(__file__, __name__, e)
-        print("General Execption", __file__, __name__, e, e.output)
+        logging.error(__file__ + __name__ + str(e))
+        logging.error("General Execption" + __file__ + __name__ + str(e) + e.output)
         log = ret
         state = "failure"
 
@@ -117,7 +112,7 @@ def logged_func(func, doc, **kwargs):
         func(**kwargs)
         state = "success"
     except Exception as e:
-        print("Failure", __file__, __name__, func.__name__, kwargs, e)
+        logging.error("Failure" + __file__ + __name__ + func.__name__ + kwargs + str(e))
         state = "failure"
 
     res = d.get(cmd_str, [])
