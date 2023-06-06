@@ -10,7 +10,7 @@ jobs:
         uses: rickstaa/action-black@v1
         id: action_black
         with:
-          black_args: "."
+          black_args: ". --check"
       - name: Install dependencies for demo Python project
         run: |
           python -m pip install --upgrade pip
