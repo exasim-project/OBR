@@ -147,6 +147,22 @@ class OpenFOAMCase(BlockMesh):
         return True
 
     @property
+    def time_folder(self) -> list[Path]:
+        """Returns all timestep folder"""
+
+        def is_time(s: str) -> bool:
+            try:
+                float(s)
+                return True
+            except:
+                return False
+
+        _, fs, _ = next(os.walk(self.path))
+        ret = [self.path / f for f in fs if is_time(f)]
+        ret.sort()
+        return ret
+
+    @property
     def processor_folder(self) -> list[Path]:
         if not self.is_decomposed:
             return []
