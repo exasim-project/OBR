@@ -98,7 +98,7 @@ def submit(ctx: click.Context, **kwargs):
     project._entrypoint = {"executable": "", "path": "obr"}
 
     operations = kwargs.get("operations", "").split(",")
-    list_operations: bool = kwargs.get("list_operations")
+    list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
 
