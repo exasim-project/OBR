@@ -4,8 +4,10 @@ version = "0.1.0"
 
 dependencies = [
     "click",
-	"signac==1.8.0",
-	"signac-flow==0.23.0",
+    "PyYAML",
+    "signac==1.8.0",
+    "signac-flow==0.23.0",
+    "GitPython==3.1.31",
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
 ]
 
@@ -13,8 +15,12 @@ dependencies = [
 doc = [
     "sphinx~=4.2.0",
     "sphinx-autoapi",
-    "myst_parser",
+    "myst_parser"
+]
+test = [
     "pytest",
+    "coverage",
+    "gitpython"
 ]
 
 [tool.black]

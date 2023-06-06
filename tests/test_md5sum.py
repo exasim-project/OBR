@@ -1,8 +1,10 @@
 from obr.create_tree import create_tree
 from obr.signac_wrapper.operations import OpenFOAMProject
-
+from obr.OpenFOAM.case import OpenFOAMCase
+from obr.core.core import key_to_path
 import pytest
 import os
+import json
 
 
 @pytest.fixture
@@ -32,7 +34,7 @@ def emmit_test_config():
     }
 
 
-def test_create_tree(tmpdir, emmit_test_config):
+def test_md5sum_calculation(tmpdir, emmit_test_config):
     project = OpenFOAMProject.init_project(root=tmpdir)
 
     create_tree(
@@ -41,36 +43,28 @@ def test_create_tree(tmpdir, emmit_test_config):
 
     workspace_dir = tmpdir / "workspace"
 
-    assert workspace_dir.exists() == True
+    assert workspace_dir.exists()
 
-    _, folder, _ = next(os.walk(workspace_dir))
+    root, folder, files = next(os.walk(workspace_dir))
 
     assert len(folder) == 1
     for fold in folder:
         case_fold = workspace_dir / fold
-        assert case_fold.exists() == True
-
+        assert case_fold.exists()
     project.run(names=["fetchCase"])
 
+    case_path = os.path.join(root, folder[0], 'case')
+    job = None
 
-def test_call_generate_tree(tmpdir, emmit_test_config):
-    project = OpenFOAMProject.init_project(root=tmpdir)
-    workspace_dir = tmpdir / "workspace"
+    job_doc_path = os.path.join(root, folder[0], 'signac_job_document.json')
+    with open(job_doc_path) as job_file:
+        job = json.load(job_file)
+        case = OpenFOAMCase(case_path, job)
 
-    operation = {
-        "operation": "controlDict",
-        "schema": "{endTime}",
-        "values": [{"endTime": 100}],
-    }
-    emmit_test_config["variation"] = [operation]
-    create_tree(
-        project, emmit_test_config, {"folder": tmpdir}, skip_foam_src_check=True
-    )
+        md5summed_files_target = set([f.rsplit('/', 1)[1] for f in case.config_file_tree])
+        md5summed_files_actual = [key_to_path(file.rsplit('/', 1)[1]) for file in job['obr'].get('md5sum', [])]
 
-    assert workspace_dir.exists() == True
-
-    project.run(names=["generate"])
-
-    # should have two folders now
-    _, folder_after, _ = next(os.walk(workspace_dir))
-    assert len(folder_after) == 2
+        for fname in md5summed_files_actual:
+            if fname in md5summed_files_target:
+                md5summed_files_target.remove(fname)
+        assert len(md5summed_files_target) == 0

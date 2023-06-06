@@ -1,10 +1,11 @@
 from obr.OpenFOAM.case import OpenFOAMCase
+from subprocess import check_output
 
 import os
 import pytest
 from pathlib import Path
 import shutil
-from subprocess import check_output
+from git.repo import Repo
 
 
 @pytest.fixture
@@ -20,24 +21,16 @@ def set_up_of_case(tmpdir):
         shutil.copytree(src, dst)
         return dst
 
-    check_output(
-        [
-            "git",
-            "clone",
-            "--depth",
-            "1",
-            "--filter=blob:none",
-            "--sparse",
-            "https://github.com/OpenFOAM/OpenFOAM-10.git",
-        ],
-        cwd=tmpdir,
-    )
+    of_dir = Path("~/OpenFOAM/OpenFOAM-10")
+    if of_dir.exists():
+        shutil.copytree(of_dir, tmpdir)
+    else:
+        of_dir = Path(tmpdir)
+        url = "https://github.com/OpenFOAM/OpenFOAM-10.git"
+        Repo.clone_from(url=url, to_path=tmpdir, multi_options=["--depth 1"])
 
-    of_dir = tmpdir / "OpenFOAM-10"
-
-    check_output(["git", "sparse-checkout", "set", "tutorials"], cwd=of_dir)
-
-    return of_dir / "tutorials" / lid_driven_cavity
+    rval = of_dir / "tutorials" / lid_driven_cavity
+    return rval
 
 
 def test_OpenFOAMCaseProperties(set_up_of_case):
@@ -49,6 +42,16 @@ def test_OpenFOAMCaseProperties(set_up_of_case):
     assert of_case.system_folder == set_up_of_case / "system"
     assert of_case.zero_folder == set_up_of_case / "0"
     assert of_case.blockMeshDict == of_case.system_folder / "blockMeshDict"
+
+    times = ["1e-06", "2", "3.0"]
+    for time_folder in times:
+        check_output(
+            ["cp", "-r", str(of_case.zero_folder), str(of_case.path / time_folder)]
+        )
+    times = ["0"] + times
+    times.sort()
+
+    assert of_case.time_folder == [set_up_of_case / time for time in times]
 
 
 def test_OpenFOAMCaseControlDictGetter(set_up_of_case):
@@ -81,4 +84,4 @@ def test_OpenFOAMCaseSetter(set_up_of_case):
     of_case.controlDict.set({"startTime": 10})
     assert of_case.controlDict.get("startTime") == 10
 
-    assert of_case.is_decomposed == False
+    assert of_case.is_decomposed is False

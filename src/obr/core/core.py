@@ -6,9 +6,15 @@ import hashlib
 from pathlib import Path
 from subprocess import check_output
 import logging
+from typing import Union
+
+# these are to be replaced with each other
+SIGNAC_PATH_TOKEN = "_dot_"
+PATH_TOKEN = "."
+
 
 def parse_variables_impl(in_str, args, domain):
-    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
         in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
     return in_str
@@ -17,6 +23,17 @@ def parse_variables_impl(in_str, args, domain):
 def parse_variables(in_str):
     in_str = parse_variables_impl(in_str, os.environ, "env")
     return in_str
+
+
+def path_to_key(path: Union[str, Path]) -> str:
+    """Signac throws errors if '.' are used in keys within JSONAttrDicts, which are often needed, for example in file names.
+    Thus, this function replaces . with _dot_"""
+    return str(path).replace(PATH_TOKEN, SIGNAC_PATH_TOKEN)
+
+
+def key_to_path(sign_path: Union[str, Path]) -> str:
+    """Counter function to `path_to_key`, allowing equal transformations."""
+    return str(sign_path).replace(SIGNAC_PATH_TOKEN, PATH_TOKEN)
 
 
 def logged_execute(cmd, path, doc):
@@ -30,7 +47,7 @@ def logged_execute(cmd, path, doc):
     check_output(["mkdir", "-p", ".obr_store"], cwd=path)
     d = doc.get("obr", {})
     cmd_str = " ".join(cmd)
-    cmd_str = cmd_str.replace(".", "_dot_").split()
+    cmd_str = path_to_key(cmd_str).split()  # replace dots in cmd_str with _dot_'s
     if len(cmd_str) > 1:
         flags = cmd_str[1:]
     else:
