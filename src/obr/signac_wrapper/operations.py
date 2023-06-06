@@ -2,12 +2,12 @@
 import flow
 import os
 import sys
+import obr.core.caseOrigins as caseOrigins
 from pathlib import Path
 from subprocess import check_output
 from ..core.core import execute
 from .labels import owns_mesh, final, finished
 from obr.OpenFOAM.case import OpenFOAMCase
-import CaseOrigins
 from signac.contrib.job import Job
 from typing import Union, Literal
 
@@ -428,8 +428,8 @@ def fetchCase(job: Job, args={}):
     args = get_args(job, args)
 
     case_type = job.sp()["type"]
-    fetch_case_handler = getattr(CaseOrigins, case_type)(args)
-    fetch_case_handler.init(job=job)
+    fetch_case_handler = getattr(caseOrigins, case_type)(**args)
+    fetch_case_handler.init(path=job.path)
 
 
 def is_locked(job: Job) -> bool:
