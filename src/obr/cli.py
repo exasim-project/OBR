@@ -26,18 +26,19 @@ from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
 import logging
 
+
 def check_cli_operations(project: OpenFOAMProject, operations: list[str], list_operations: bool):
     """ list available operations if none are specified or given the click option or an incorrect op is given"""
     if list_operations:
         project.print_operations()
         return False
     elif not operations:
-        print('No operation(s) specified.')
+        logging.info('No operation(s) specified.')
         project.print_operations()
-        print('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
+        logging.info('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
         return False
     elif any((false_op := op) not in project.operations for op in operations):
-        print(f'Specified operation {false_op} is not a valid operation.')
+        logging.info(f'Specified operation {false_op} is not a valid operation.')
         project.print_operations()
         return False
     return True
@@ -206,12 +207,6 @@ def run(ctx: click.Context, **kwargs):
     # print(agg._aggregates_by_id)
     # jobs = project.groups["generate"]
     # print(list(project.groupby("doc.is_base")))
-
-    # check if provided operation(s) is/are invalid
-    given_operations = kwargs.get('operations').replace(' ', '').split(',')
-    if not project.operations_are_valid(given_operations):
-        logging.error('Given Operations are invalid, exiting.')
-        return
 
     if not kwargs.get("aggregate"):
         project.run(

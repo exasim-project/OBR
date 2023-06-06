@@ -2,6 +2,7 @@ import re
 import os
 import urllib.request
 from pathlib import Path
+import logging
 
 
 def read_yaml(kwargs: dict) -> str:
@@ -46,7 +47,7 @@ def parse_variables(in_str: str, args: dict, domain: str) -> str:
     ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
         if not args.get(inst, ""):
-            print(f"warning {inst} not defined")
+            logging.warning(f"warning {inst} not defined")
         in_str = in_str.replace(
             "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
         )
@@ -55,5 +56,5 @@ def parse_variables(in_str: str, args: dict, domain: str) -> str:
         try:
             in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
         except:
-            print(in_str, inst)
+            logging.error(in_str, inst)
     return in_str
