@@ -67,6 +67,7 @@ jobs:
     - name: Test with pytest
       run: |
         export FOAM_ETC=/root/OpenFOAM/openfoam/etc/
+        export FOAM_TUTORIALS=/root/OpenFOAM/openfoam/tutorials
         export PATH=/root/OpenFOAM/user-v2212/platforms/linux64GccDPInt32Opt/bin:/root/OpenFOAM/openfoam/site/2212/platforms/linux64GccDPInt32Opt/bin:/root/OpenFOAM/openfoam/platforms/linux64GccDPInt32Opt/bin:/root/OpenFOAM/openfoam/bin:/root/OpenFOAM/openfoam/wmake:$PATH
         export LD_LIBRARY_PATH=/root/OpenFOAM/user-v2212/platforms/linux64GccDPInt32Opt/lib:/root/OpenFOAM/openfoam/site/2212/platforms/linux64GccDPInt32Opt/lib:/root/OpenFOAM/openfoam/platforms/linux64GccDPInt32Opt/lib/sys-openmpi:/root/OpenFOAM/openfoam/platforms/linux64GccDPInt32Opt/lib:/root/OpenFOAM/openfoam/ThirdParty/platforms/linux64Gcc/fftw-3.3.10/lib64:/root/OpenFOAM/openfoam/ThirdParty/platforms/linux64Gcc/CGAL-4.14.3/lib64:/root/OpenFOAM/openfoam/ThirdParty/platforms/linux64Gcc/boost_1_74_0/lib64:/usr/lib/x86_64-linux-gnu/openmpi/lib:/root/OpenFOAM/openfoam/platforms/linux64GccDPInt32Opt/lib/dummy
         obr init --config tests/cavity.yaml
