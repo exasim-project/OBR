@@ -90,8 +90,13 @@ class OpenFOAMCase(BlockMesh):
             self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
         # decomposeParDict might not exist in some test cases
         if not Path(self.system_folder / "decomposeParDict").exists():
-            with open(Path(self.system_folder / "decomposeParDict")) as fh:
-                fh.write(self.controlDict.of_comment_header)
+            with open(Path(self.system_folder / "decomposeParDict"), "a") as fh:
+                # call get to trigger read
+                self.controlDict.update()
+                fh.write("".join(self.controlDict.of_comment_header))
+                fh.write("".join(self.controlDict.of_header))
+                fh.write("\n")
+
         self.decomposeParDict = File(
             folder=self.system_folder,
             file="decomposeParDict",
