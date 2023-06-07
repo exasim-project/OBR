@@ -26,18 +26,20 @@ from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
 
 
-def check_cli_operations(project: OpenFOAMProject, operations: list[str], list_operations: bool):
-    """ list available operations if none are specified or given the click option or an incorrect op is given"""
+def check_cli_operations(
+    project: OpenFOAMProject, operations: list[str], list_operations: bool
+):
+    """list available operations if none are specified or given the click option or an incorrect op is given"""
     if list_operations:
         project.print_operations()
         return False
     elif not operations:
-        print('No operation(s) specified.')
+        print("No operation(s) specified.")
         project.print_operations()
-        print('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
+        print("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
         return False
     elif any((false_op := op) not in project.operations for op in operations):
-        print(f'Specified operation {false_op} is not a valid operation.')
+        print(f"Specified operation {false_op} is not a valid operation.")
         project.print_operations()
         return False
     return True
