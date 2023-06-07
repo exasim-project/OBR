@@ -30,6 +30,8 @@ def check_cli_operations(
     project: OpenFOAMProject, operations: list[str], list_operations: bool
 ):
     """list available operations if none are specified or given the click option or an incorrect op is given"""
+    if operations == ["generate"]:
+        return True
     if list_operations:
         project.print_operations()
         return False
@@ -65,7 +67,11 @@ def cli(ctx: click.Context, debug: bool):
     "--operations",
     default="",
     required=True,
-    help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.",
+    help=(
+        "Specify the operation(s) to run. Pass multiple operations after -o, separated"
+        " by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list"
+        " available operations."
+    ),
 )
 @click.option(
     "-l",
@@ -127,15 +133,15 @@ def submit(ctx: click.Context, **kwargs):
     if bundling_key:
         bundling_values = get_values(jobs, bundling_key)
         for bundle_value in bundling_values:
-            jobs: list[Job] = [
+            selected_jobs: list[Job] = [
                 j for j in project if bundle_value in list(j.sp().values())
             ]
-            print(f"[OBR] submit bundle {bundle_value} of {len(jobs)} jobs")
+            print(f"[OBR] submit bundle {bundle_value} of {len(selected_jobs)} jobs")
             print(
                 "[OBR] submission response",
                 project.submit(
-                    jobs=jobs,
-                    bundle_size=len(jobs),
+                    jobs=selected_jobs,
+                    bundle_size=len(selected_jobs),
                     names=[kwargs.get("operation")],
                     **cluster_args,
                 ),
@@ -162,7 +168,11 @@ def submit(ctx: click.Context, **kwargs):
     "--operations",
     default="",
     required=True,
-    help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.",
+    help=(
+        "Specify the operation(s) to run. Pass multiple operations after -o, separated"
+        " by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list"
+        " available operations."
+    ),
 )
 @click.option(
     "-l",
@@ -191,11 +201,12 @@ def run(ctx: click.Context, **kwargs):
 
     queries_str = kwargs.get("query")
     queries = input_to_queries(queries_str)
+    jobs: list[Job] = []
     if queries:
         sel_jobs = query_impl(project, queries, output=False)
-        jobs: list[Job] = [j for j in project if j.id in sel_jobs]
+        jobs = [j for j in project if j.id in sel_jobs]
     else:
-        jobs: list[Job] = [j for j in project]
+        jobs = [j for j in project]
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args")

@@ -53,16 +53,20 @@ def test_md5sum_calculation(tmpdir, emmit_test_config):
         assert case_fold.exists()
     project.run(names=["fetchCase"])
 
-    case_path = os.path.join(root, folder[0], 'case')
+    case_path = os.path.join(root, folder[0], "case")
     job = None
 
-    job_doc_path = os.path.join(root, folder[0], 'signac_job_document.json')
+    job_doc_path = os.path.join(root, folder[0], "signac_job_document.json")
     with open(job_doc_path) as job_file:
         job = json.load(job_file)
         case = OpenFOAMCase(case_path, job)
 
-        md5summed_files_target = set([f.rsplit('/', 1)[1] for f in case.config_file_tree])
-        md5summed_files_actual = [key_to_path(file.rsplit('/', 1)[1]) for file in job['obr'].get('md5sum', [])]
+        md5summed_files_target = set(
+            [f.rsplit("/", 1)[1] for f in case.config_file_tree]
+        )
+        md5summed_files_actual = [
+            key_to_path(file.rsplit("/", 1)[1]) for file in job["obr"].get("md5sum", [])
+        ]
 
         for fname in md5summed_files_actual:
             if fname in md5summed_files_target:

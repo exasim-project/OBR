@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
+import os
+import re
 
 from typing import Union, Generator, Tuple, Any
-import os
 from pathlib import Path
 from subprocess import check_output
-import re
-from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
-
-from .BlockMesh import BlockMesh, calculate_simple_partition
-
 from Owls.parser.FoamDict import FileParser
+
+from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
+from .BlockMesh import BlockMesh, calculate_simple_partition
 
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
 (\||)\s*=========                 \|(\s*\||)
@@ -90,13 +89,15 @@ class OpenFOAMCase(BlockMesh):
         if Path(self.system_folder / "fvSchemes").exists():
             self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
         # decomposeParDict might not exist in some test cases
-        if Path(self.system_folder / "decomposeParDict").exists():
-            self.decomposeParDict = File(
-                folder=self.system_folder,
-                file="decomposeParDict",
-                job=job,
-                optional=True,
-            )
+        if not Path(self.system_folder / "decomposeParDict").exists():
+            with open(Path(self.system_folder / "decomposeParDict")) as fh:
+                fh.write(self.controlDict.of_comment_header)
+        self.decomposeParDict = File(
+            folder=self.system_folder,
+            file="decomposeParDict",
+            job=job,
+            optional=True,
+        )
         self.file_dict: dict[str, File] = dict()
         self.config_file_tree
 
@@ -187,7 +188,8 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def config_file_tree(self) -> list[str]:
-        """Iterates through case file tree and returns a list of paths to non-symlinked files."""
+        """Iterates through case file tree and returns a list of paths to non-symlinked files.
+        """
         for file, rel_path in self.config_files_in_folder(self.system_folder):
             self.file_dict[rel_path] = file
         for file, rel_path in self.config_files_in_folder(self.constant_folder):
