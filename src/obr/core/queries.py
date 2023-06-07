@@ -5,6 +5,7 @@ import re
 from obr.signac_wrapper.operations import OpenFOAMProject
 import logging
 
+
 @dataclass
 class query_result:
     id: str = field()

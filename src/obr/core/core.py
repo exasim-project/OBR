@@ -59,7 +59,11 @@ def logged_execute(cmd, path, doc):
         state = "success"
     except subprocess.SubprocessError as e:
         logging.error(
-            "SubprocessError:" + __file__ + __name__ + str(e) + " check: 'obr find --state failure' for more info",
+            "SubprocessError:"
+            + __file__
+            + __name__
+            + str(e)
+            + " check: 'obr find --state failure' for more info",
         )
         log = e.output.decode("utf-8")
         state = "failure"

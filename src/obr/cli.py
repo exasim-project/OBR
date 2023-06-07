@@ -27,18 +27,21 @@ from .core.queries import input_to_queries, query_impl
 import logging
 
 
-def check_cli_operations(project: OpenFOAMProject, operations: list[str], list_operations: bool):
-    """ list available operations if none are specified or given the click option or an incorrect op is given"""
+def check_cli_operations(
+    project: OpenFOAMProject, operations: list[str], list_operations: bool
+):
+    """list available operations if none are specified or given the click option or an incorrect op is given
+    """
     if list_operations:
         project.print_operations()
         return False
     elif not operations:
-        logging.info('No operation(s) specified.')
+        logging.info("No operation(s) specified.")
         project.print_operations()
-        logging.info('Syntax: obr run [-o|--operation] <operation>(,<operation>)+')
+        logging.info("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
         return False
     elif any((false_op := op) not in project.operations for op in operations):
-        logging.info(f'Specified operation {false_op} is not a valid operation.')
+        logging.info(f"Specified operation {false_op} is not a valid operation.")
         project.print_operations()
         return False
     return True
@@ -64,7 +67,11 @@ def cli(ctx: click.Context, debug: bool):
     "--operations",
     default="",
     required=True,
-    help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.",
+    help=(
+        "Specify the operation(s) to run. Pass multiple operations after -o, separated"
+        " by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list"
+        " available operations."
+    ),
 )
 @click.option(
     "-l",
@@ -130,24 +137,24 @@ def submit(ctx: click.Context, **kwargs):
                 j for j in project if bundle_value in list(j.sp().values())
             ]
             logging.info(f"[OBR] submit bundle {bundle_value} of {len(jobs)} jobs")
-            print(
-                "[OBR] submission response",
+            ret_submit = (
                 project.submit(
                     jobs=jobs,
                     bundle_size=len(jobs),
                     names=[kwargs.get("operation")],
                     **cluster_args,
-                ),
+                )
+                or ""
             )
+            logging.info("[OBR] submission response" + str(ret_submit))
             time.sleep(15)
     else:
         logging.info(f"[OBR] submitting {len(jobs)} individual jobs")
-        print(
-            project.submit(
-                names=[kwargs.get("operation")],
-                **cluster_args,
-            )
+        ret_submit = project.submit(
+            names=[kwargs.get("operation")],
+            **cluster_args,
         )
+        logging.info(ret_submit)
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
@@ -161,7 +168,11 @@ def submit(ctx: click.Context, **kwargs):
     "--operations",
     default="",
     required=True,
-    help="Specify the operation(s) to run. Pass multiple operations after -o, separated by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list available operations.",
+    help=(
+        "Specify the operation(s) to run. Pass multiple operations after -o, separated"
+        " by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list"
+        " available operations."
+    ),
 )
 @click.option(
     "-l",
@@ -226,7 +237,10 @@ def run(ctx: click.Context, **kwargs):
 
 @cli.command()
 @click.option(
-    "-f", "--folder", default=".", help="Where to create the worspace and view. Default: '.' "
+    "-f",
+    "--folder",
+    default=".",
+    help="Where to create the worspace and view. Default: '.' ",
 )
 @click.option("-e", "--execute", default=False)
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
@@ -277,7 +291,10 @@ def query(ctx: click.Context, **kwargs):
 
 
 def main():
-    logging.basicConfig(format=f'[{__name__}:%(lineno)d]\t%(levelname)7s: %(message)s', level=logging.INFO)
+    logging.basicConfig(
+        format=f"[{__name__}:%(lineno)d]\t%(levelname)7s: %(message)s",
+        level=logging.INFO,
+    )
     cli(obj={})
 
 
