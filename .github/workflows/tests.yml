@@ -65,7 +65,7 @@ jobs:
       run: |
         python3 -m pip install .
 
-    - name: Test with pytest
+    - name: Run obr
       run: |
         export FOAM_ETC=/root/OpenFOAM/openfoam/etc/
         export FOAM_TUTORIALS=/root/OpenFOAM/openfoam/tutorials
@@ -75,3 +75,11 @@ jobs:
         obr run -o fetchCase
         obr run -o generate
         obr run -o runSerialSolver -t 1
+        obr status
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: integration_test
+        path: ${{github.workspace}}
