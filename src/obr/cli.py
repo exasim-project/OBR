@@ -137,7 +137,9 @@ def submit(ctx: click.Context, **kwargs):
             selected_jobs: list[Job] = [
                 j for j in project if bundle_value in list(j.sp().values())
             ]
-            logging.info(f"[OBR] submit bundle {bundle_value} of {len(selected_jobs)} jobs")
+            logging.info(
+                f"[OBR] submit bundle {bundle_value} of {len(selected_jobs)} jobs"
+            )
             ret_submit = (
                 project.submit(
                     jobs=selected_jobs,
