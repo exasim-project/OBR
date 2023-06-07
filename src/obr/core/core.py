@@ -13,7 +13,7 @@ PATH_TOKEN = "."
 
 
 def parse_variables_impl(in_str, args, domain):
-    ocurrances = re.findall(r"\${{" + domain + "\.(\w+)}}", in_str)
+    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
         in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
     return in_str

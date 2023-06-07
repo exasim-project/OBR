@@ -15,8 +15,12 @@ dependencies = [
 doc = [
     "sphinx~=4.2.0",
     "sphinx-autoapi",
-    "myst_parser",
+    "myst_parser"
+]
+test = [
     "pytest",
+    "coverage",
+    "gitpython"
 ]
 
 [tool.black]

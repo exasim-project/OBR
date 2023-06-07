@@ -19,17 +19,38 @@ import yaml  # type: ignore[import]
 import os
 import time
 
-from .signac_wrapper.labels import *
-from .signac_wrapper.operations import *
+from signac.contrib.job import Job
+from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
 
 
+def check_cli_operations(
+    project: OpenFOAMProject, operations: list[str], list_operations: bool
+):
+    """list available operations if none are specified or given the click option or an incorrect op is given"""
+    if operations == ["generate"]:
+        return True
+    if list_operations:
+        project.print_operations()
+        return False
+    elif not operations:
+        print("No operation(s) specified.")
+        project.print_operations()
+        print("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
+        return False
+    elif any((false_op := op) not in project.operations for op in operations):
+        print(f"Specified operation {false_op} is not a valid operation.")
+        project.print_operations()
+        return False
+    return True
+
+
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
-def cli(ctx, debug):
+def cli(ctx: click.Context, debug: bool):
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
@@ -41,7 +62,23 @@ def cli(ctx, debug):
 @click.option(
     "-p", "--pretend", is_flag=True, help="Set flag to only print submission script"
 )
-@click.option("-o", "--operation")
+@click.option(
+    "-o",
+    "--operations",
+    default="",
+    required=True,
+    help=(
+        "Specify the operation(s) to run. Pass multiple operations after -o, separated"
+        " by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list"
+        " available operations."
+    ),
+)
+@click.option(
+    "-l",
+    "--list-operations",
+    is_flag=True,
+    help="Prints all available operations and returns.",
+)
 @click.option("--query", default=None, help="")
 @click.option("--bundling_key", default=None, help="")
 @click.option("-p", "--partition", default="cpuonly")
@@ -53,12 +90,17 @@ def cli(ctx, debug):
     help="Currently required to be in --key1 value --key2 value2 form",
 )
 @click.pass_context
-def submit(ctx, **kwargs):
+def submit(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
     project._entrypoint = {"executable": "", "path": "obr"}
+
+    operations = kwargs.get("operations", "").split(",")
+    list_operations = kwargs.get("list_operations")
+    if not check_cli_operations(project, operations, list_operations):
+        return
 
     queries_str = kwargs.get("query")
     bundling_key = kwargs.get("bundling_key")
@@ -91,13 +133,15 @@ def submit(ctx, **kwargs):
     if bundling_key:
         bundling_values = get_values(jobs, bundling_key)
         for bundle_value in bundling_values:
-            jobs = [j for j in project if bundle_value in list(j.sp().values())]
-            print(f"[OBR] submit bundle {bundle_value} of {len(jobs)} jobs")
+            selected_jobs: list[Job] = [
+                j for j in project if bundle_value in list(j.sp().values())
+            ]
+            print(f"[OBR] submit bundle {bundle_value} of {len(selected_jobs)} jobs")
             print(
                 "[OBR] submission response",
                 project.submit(
-                    jobs=jobs,
-                    bundle_size=len(jobs),
+                    jobs=selected_jobs,
+                    bundle_size=len(selected_jobs),
                     names=[kwargs.get("operation")],
                     **cluster_args,
                 ),
@@ -119,7 +163,23 @@ def submit(ctx, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-o", "--operations", default="")
+@click.option(
+    "-o",
+    "--operations",
+    default="",
+    required=True,
+    help=(
+        "Specify the operation(s) to run. Pass multiple operations after -o, separated"
+        " by commata (NO space), e.g. obr run -o shell,apply. Run with --help to list"
+        " available operations."
+    ),
+)
+@click.option(
+    "-l",
+    "--list-operations",
+    is_flag=True,
+    help="Prints all available operations and returns.",
+)
 @click.option("-j", "--job", help="Specify an ID to run only a single corresponding job.")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
@@ -127,14 +187,21 @@ def submit(ctx, **kwargs):
 @click.option("--query", default="")
 @click.option("--args", default="")
 @click.pass_context
-def run(ctx, **kwargs):
+def run(ctx: click.Context, **kwargs):
     """Run specified operations"""
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
+
+    operations = kwargs.get("operations", "").split(",")
+    list_operations = kwargs.get("list_operations")
+    if not check_cli_operations(project, operations, list_operations):
+        return
+
     queries_str = kwargs.get("query")
     queries = input_to_queries(queries_str)
+    jobs: list[Job] = []
     if queries:
         sel_jobs = query_impl(project, queries, output=False)
         jobs = [j for j in project if j.id in sel_jobs]
@@ -161,14 +228,14 @@ def run(ctx, **kwargs):
     if not kwargs.get("aggregate"):
         project.run(
             jobs=jobs,  # project.groupby("doc.is_base"),
-            names=kwargs.get("operations").split(","),
+            names=operations,
             progress=True,
             np=kwargs.get("tasks", -1),
         )
     else:
         # calling for aggregates does not work with jobs
         project.run(
-            names=kwargs.get("operations").split(","),
+            names=operations,
             np=kwargs.get("tasks", -1),
         )
     print("[OBR] completed all operations")
@@ -184,7 +251,7 @@ def run(ctx, **kwargs):
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.option("--verbose", default=0, help="set verbosity")
 @click.pass_context
-def init(ctx, **kwargs):
+def init(ctx: click.Context, **kwargs):
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
@@ -202,7 +269,7 @@ def init(ctx, **kwargs):
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
 @click.pass_context
-def status(ctx, **kwargs):
+def status(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
@@ -216,7 +283,7 @@ def status(ctx, **kwargs):
 @click.option("-a", "--all", is_flag=True)
 @click.option("-q", "--query")
 @click.pass_context
-def query(ctx, **kwargs):
+def query(ctx: click.Context, **kwargs):
     # TODO refactor
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])

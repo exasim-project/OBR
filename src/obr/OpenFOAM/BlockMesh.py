@@ -29,9 +29,6 @@ def calculate_simple_partition(nSubDomains, decomp):
 
     """
 
-    domains = lambda x: x[0] * x[1] * x[2]
-    remainder = lambda x: nSubDomains - domains(x)
-
     def next_position(x):
         if x[0] == x[1]:
             return 0
