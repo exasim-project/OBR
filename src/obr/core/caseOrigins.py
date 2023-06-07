@@ -1,9 +1,11 @@
-from os import environ
+from os import environ, strerror
 from os.path import expandvars
+from errno import ENOENT
 from distutils.dir_util import copy_tree
 from pathlib import Path
 from typing import Union
 from subprocess import check_output
+
 
 
 class CaseOnDisk:
@@ -16,6 +18,9 @@ class CaseOnDisk:
         if isinstance(origin, str):
             origin = expandvars(origin)
         self.path = Path(origin).expanduser()
+        if not self.path.exists():
+            raise FileNotFoundError(
+                errno.ENOENT, strerror(errno.ENOENT), self.path)
 
     def init(self, path):
         copy_tree(str(self.path), str(Path(path) / "case"))
