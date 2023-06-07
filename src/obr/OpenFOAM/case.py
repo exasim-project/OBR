@@ -103,6 +103,12 @@ class OpenFOAMCase(BlockMesh):
             job=job,
             optional=True,
         )
+
+        # 
+        if not self.zero_folder.exists() and (self.path / "0.orig").exists():
+            shutil.copytree(self.path / "0.orig", self.zero_folder)
+
+
         self.file_dict: dict[str, File] = dict()
         self.config_file_tree
 
@@ -193,8 +199,7 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def config_file_tree(self) -> list[str]:
-        """Iterates through case file tree and returns a list of paths to non-symlinked files.
-        """
+        """Iterates through case file tree and returns a list of paths to non-symlinked files."""
         for file, rel_path in self.config_files_in_folder(self.system_folder):
             self.file_dict[rel_path] = file
         for file, rel_path in self.config_files_in_folder(self.constant_folder):
