@@ -28,7 +28,8 @@ def check_mesh(job):
     checkMeshList = job.doc.get("obr", {}).get("checkMesh", [])
     if checkMeshList == []:
         return False
-    return checkMeshList[0].get('state') == 'success'
+    return checkMeshList[0].get("state") == "success"
+
 
 @FlowProject.label
 def unitialised(job):
