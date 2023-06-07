@@ -10,6 +10,7 @@ from .labels import owns_mesh, final, finished
 from obr.OpenFOAM.case import OpenFOAMCase
 from signac.contrib.job import Job
 from typing import Union, Literal
+from datetime import datetime
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -486,13 +487,12 @@ def get_values(jobs: list, key: str) -> set:
     return set(values)
 
 
-@simulate
-@OpenFOAMProject.pre(final)
-@OpenFOAMProject.operation(
-    cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
-)
-def runParallelSolver(job: Job, args={}) -> str:
-    from datetime import datetime
+def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
+    """Builds the cli command to run a OpenFOAM application"""
+
+    skip_job = os.environ.get("OBR_JOB")
+    if skip_job and not str(job.id) == skip_job:
+        return "true"
 
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
@@ -502,6 +502,9 @@ def runParallelSolver(job: Job, args={}) -> str:
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    if not job.doc.get("obr"):
+        job.doc["obr"] = {}
+
     res = job.doc["obr"].get(solver, [])
     res.append(
         {
@@ -520,7 +523,38 @@ def runParallelSolver(job: Job, args={}) -> str:
         "timestamp": timestamp,
         "np": get_number_of_procs(job),
     }
-    return os.environ.get("OBR_RUN_CMD").format(**cli_args) + "|| true"
+    return cmd_format.format(**cli_args) + "|| true"
+
+
+@simulate
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.operation(
+    cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
+)
+def runParallelSolver(job: Job, args={}) -> str:
+    env_run_template = os.environ.get("OBR_RUN_CMD")
+    solver_cmd = (
+        env_run_template
+        if env_run_template
+        else (
+            "mpirun -np {np} {solver} -case {path}/case >"
+            " {path}/case/{solver}_{timestamp}.log 2>&1"
+        )
+    )
+    return run_cmd_builder(job, solver_cmd, args)
+
+
+@simulate
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.operation(cmd=True)
+def runSerialSolver(job: Job, args={}):
+    env_run_template = os.environ.get("OBR_SERIAL_RUN_CMD")
+    solver_cmd = (
+        env_run_template
+        if env_run_template
+        else "{solver} -case {path}/case > {path}/case/{solver}_{timestamp}.log 2>&1"
+    )
+    return run_cmd_builder(job, solver_cmd, args)
 
 
 @OpenFOAMProject.operation

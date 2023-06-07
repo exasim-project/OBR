@@ -5,7 +5,7 @@ on:
   - pull_request
 
 jobs:
-  test:
+  unit-test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -26,7 +26,7 @@ jobs:
         python -m pip install .
     - name: Test with pytest
       run: |
-        coverage run -m pytest
+        coverage run -m pytest -m "not integtest"
         coverage report
 
     - name: Get total coverage
@@ -47,3 +47,39 @@ jobs:
         minColorRange: 50
         maxColorRange: 90
         valColorRange: ${{ env.COVERAGE }}
+
+  integration-test:
+    runs-on: ubuntu-latest
+    container: greole/ofbase
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt install -y pip
+        python3 -m pip install --upgrade pip
+
+    - name: Install package
+      run: |
+        python3 -m pip install .
+
+    - name: Run obr
+      run: |
+        export FOAM_ETC=/root/OpenFOAM/openfoam/etc/
+        export FOAM_TUTORIALS=/root/OpenFOAM/openfoam/tutorials
+        export PATH=/root/OpenFOAM/user-v2212/platforms/linux64GccDPInt32Opt/bin:/root/OpenFOAM/openfoam/site/2212/platforms/linux64GccDPInt32Opt/bin:/root/OpenFOAM/openfoam/platforms/linux64GccDPInt32Opt/bin:/root/OpenFOAM/openfoam/bin:/root/OpenFOAM/openfoam/wmake:$PATH
+        export LD_LIBRARY_PATH=/root/OpenFOAM/user-v2212/platforms/linux64GccDPInt32Opt/lib:/root/OpenFOAM/openfoam/site/2212/platforms/linux64GccDPInt32Opt/lib:/root/OpenFOAM/openfoam/platforms/linux64GccDPInt32Opt/lib/sys-openmpi:/root/OpenFOAM/openfoam/platforms/linux64GccDPInt32Opt/lib:/root/OpenFOAM/openfoam/ThirdParty/platforms/linux64Gcc/fftw-3.3.10/lib64:/root/OpenFOAM/openfoam/ThirdParty/platforms/linux64Gcc/CGAL-4.14.3/lib64:/root/OpenFOAM/openfoam/ThirdParty/platforms/linux64Gcc/boost_1_74_0/lib64:/usr/lib/x86_64-linux-gnu/openmpi/lib:/root/OpenFOAM/openfoam/platforms/linux64GccDPInt32Opt/lib/dummy
+        obr init --config tests/cavity.yaml
+        obr run -o fetchCase
+        obr run -o generate
+        obr run -o runSerialSolver -t 1
+        obr status
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: integration_test
+        path: ${{github.workspace}}
