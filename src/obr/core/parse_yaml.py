@@ -56,5 +56,5 @@ def parse_variables(in_str: str, args: dict, domain: str) -> str:
         try:
             in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
         except:
-            logging.error(in_str, inst)
+            logging.error(in_str + inst)
     return in_str
