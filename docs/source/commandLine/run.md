@@ -11,7 +11,7 @@ Options:
   -o, --operations TEXT  Specify the operation(s) to run. Pass multiple
                          operations after -o, separated by commata (NO space),
                          e.g. obr run -o shell,apply.  [required]
-  -j, --job TEXT
+  -j, --job TEXT         Specify an ID to run only a single corresponding job.
   --args TEXT
   -t, --tasks INTEGER
   -a, --aggregate
