@@ -13,7 +13,7 @@ Options:
                          e.g. obr run -o shell,apply. Run with --help to list
                          available operations.  [required]
   -l, --list-operations  Prints all available operations and returns.
-  -j, --job TEXT         Specify an ID to run only a single corresponding job.
+  -j, --job TEXT
   --args TEXT
   -t, --tasks INTEGER
   -a, --aggregate

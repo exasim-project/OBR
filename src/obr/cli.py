@@ -180,7 +180,7 @@ def submit(ctx: click.Context, **kwargs):
     is_flag=True,
     help="Prints all available operations and returns.",
 )
-@click.option("-j", "--job", help="Specify an ID to run only a single corresponding job.")
+@click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
 @click.option("-a", "--aggregate", is_flag=True)
@@ -207,12 +207,6 @@ def run(ctx: click.Context, **kwargs):
         jobs = [j for j in project if j.id in sel_jobs]
     else:
         jobs = [j for j in project]
-
-    if (job_id := kwargs.get("job")):
-        jobs = list(filter(lambda j: j.id == job_id, jobs))
-        if len(jobs) == 0:
-            print(f'No job for {job_id=} found. Will run nothing.')
-            return
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
