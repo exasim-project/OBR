@@ -13,18 +13,14 @@ def owns_procs(job):
 
 @FlowProject.label
 def owns_mesh(job):
-    """Check whether all mesh files are files (owning) or symlinks (non-owning)
-
-    TODO check also for .obr files for state of operation"""
+    """Check whether all mesh files are files (owning) or symlinks (non-owning)"""
     fn = Path(job.path) / "case/constant/polyMesh/points"
     return fn.exists() and not fn.is_symlink()
 
 
 @FlowProject.label
 def check_mesh(job):
-    """Check whether all mesh files are files (owning) or symlinks (non-owning)
-
-    TODO check also for .obr files for state of operation"""
+    """Check whether checkMesh was performed correctly."""
     checkMeshList = job.doc.get("obr", {}).get("checkMesh", [])
     if checkMeshList == []:
         return False
