@@ -39,12 +39,7 @@ def flatten(d, parent_key="", sep="/"):
 
 def get_path_from(operation: dict, value) -> str:
     if not operation.get("schema"):
-        logging.error(
-            """Error Schema missing for
-
-Set schema to allow creating views
-        """
-        )
+        logging.error("Error Schema missing for Set schema to allow creating views")
         raise KeyError
 
     return operation["schema"].format(**flatten(value)) + "/"
