@@ -43,7 +43,8 @@ def get_path_from(operation: dict, value) -> str:
             """Error Schema missing for
 
 Set schema to allow creating views
-        """)
+        """
+        )
         raise KeyError
 
     return operation["schema"].format(**flatten(value)) + "/"
