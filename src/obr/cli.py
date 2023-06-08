@@ -137,7 +137,7 @@ def submit(ctx: click.Context, **kwargs):
             selected_jobs: list[Job] = [
                 j for j in project if bundle_value in list(j.sp().values())
             ]
-            logging.info(f"[OBR] submit bundle {bundle_value} of {len(selected_jobs)} jobs")
+            logging.info(f"submit bundle {bundle_value} of {len(selected_jobs)} jobs")
             ret_submit = (
                 project.submit(
                     jobs=selected_jobs,
@@ -147,10 +147,10 @@ def submit(ctx: click.Context, **kwargs):
                 )
                 or ""
             )
-            logging.info("[OBR] submission response" + str(ret_submit))
+            logging.info("submission response" + str(ret_submit))
             time.sleep(15)
     else:
-        logging.info(f"[OBR] submitting {len(jobs)} individual jobs")
+        logging.info(f"submitting {len(jobs)} individual jobs")
         ret_submit = project.submit(
             names=[kwargs.get("operation")],
             **cluster_args,
@@ -234,7 +234,7 @@ def run(ctx: click.Context, **kwargs):
             names=operations,
             np=kwargs.get("tasks", -1),
         )
-    logging.info("[OBR] completed all operations")
+    logging.info("completed all operations")
 
 
 @cli.command()
@@ -261,7 +261,7 @@ def init(ctx: click.Context, **kwargs):
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     create_tree(project, config, kwargs)
 
-    logging.info("[OBR] successfully initialised")
+    logging.info("successfully initialised")
 
 
 @cli.command()

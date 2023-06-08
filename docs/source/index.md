@@ -62,7 +62,7 @@ Within the context of the `micro_benchmarks` example, simply run
 
     obr init --folder . --config assets/scaling.yaml
 
-OBR should now print a low of configuration, followed by `[OBR] successfully initialized`.
+OBR should now print a low of configuration, followed by `INFO: successfully initialized`.
 
 ### 2. Running a tree
 

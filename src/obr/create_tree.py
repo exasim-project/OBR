@@ -228,7 +228,7 @@ def create_tree(
     skip_foam_src_check: bool = False,
 ):
     if not skip_foam_src_check and not os.environ.get("FOAM_ETC"):
-        logging.error("[OBR] Error OpenFOAM not sourced")
+        logging.error("Error OpenFOAM not sourced")
         sys.exit(-1)
 
     # Add base case
