@@ -24,6 +24,7 @@ from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
+import logging
 
 
 def check_cli_operations(
@@ -36,12 +37,12 @@ def check_cli_operations(
         project.print_operations()
         return False
     elif not operations:
-        print("No operation(s) specified.")
+        logging.info("No operation(s) specified.")
         project.print_operations()
-        print("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
+        logging.info("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
         return False
     elif any((false_op := op) not in project.operations for op in operations):
-        print(f"Specified operation {false_op} is not a valid operation.")
+        logging.info(f"Specified operation {false_op} is not a valid operation.")
         project.print_operations()
         return False
     return True
@@ -136,25 +137,25 @@ def submit(ctx: click.Context, **kwargs):
             selected_jobs: list[Job] = [
                 j for j in project if bundle_value in list(j.sp().values())
             ]
-            print(f"[OBR] submit bundle {bundle_value} of {len(selected_jobs)} jobs")
-            print(
-                "[OBR] submission response",
+            logging.info(f"submit bundle {bundle_value} of {len(selected_jobs)} jobs")
+            ret_submit = (
                 project.submit(
                     jobs=selected_jobs,
                     bundle_size=len(selected_jobs),
                     names=[kwargs.get("operation")],
                     **cluster_args,
-                ),
+                )
+                or ""
             )
+            logging.info("submission response" + str(ret_submit))
             time.sleep(15)
     else:
-        print(f"[OBR] submitting {len(jobs)} individual jobs")
-        print(
-            project.submit(
-                names=[kwargs.get("operation")],
-                **cluster_args,
-            )
+        logging.info(f"submitting {len(jobs)} individual jobs")
+        ret_submit = project.submit(
+            names=[kwargs.get("operation")],
+            **cluster_args,
         )
+        logging.info(ret_submit)
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
@@ -219,6 +220,7 @@ def run(ctx: click.Context, **kwargs):
     # print(agg._aggregates_by_id)
     # jobs = project.groups["generate"]
     # print(list(project.groupby("doc.is_base")))
+
     if not kwargs.get("aggregate"):
         project.run(
             jobs=jobs,  # project.groupby("doc.is_base"),
@@ -232,15 +234,18 @@ def run(ctx: click.Context, **kwargs):
             names=operations,
             np=kwargs.get("tasks", -1),
         )
-    print("[OBR] completed all operations")
+    logging.info("completed all operations")
 
 
 @cli.command()
 @click.option(
-    "-f", "--folder", default=".", help="Where to create the worspace and view"
+    "-f",
+    "--folder",
+    default=".",
+    help="Where to create the worspace and view. Default: '.' ",
 )
 @click.option("-e", "--execute", default=False)
-@click.option("-c", "--config", help="Path to configuration file.")
+@click.option("-c", "--config", required=True, help="Path to configuration file.")
 @click.option("-t", "--tasks", default=-1, help="Number of tasks to run concurrently.")
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.option("--verbose", default=0, help="set verbosity")
@@ -251,12 +256,12 @@ def init(ctx: click.Context, **kwargs):
     config = yaml.safe_load(config_str)
 
     if kwargs.get("verbose", 0) >= 1:
-        print(config)
+        logging.info(config)
 
     project = OpenFOAMProject.init_project(root=kwargs["folder"])
     create_tree(project, config, kwargs)
 
-    print("[OBR] successfully initialised")
+    logging.info("successfully initialised")
 
 
 @cli.command()
@@ -266,7 +271,6 @@ def init(ctx: click.Context, **kwargs):
 def status(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
-
     project = OpenFOAMProject.get_project()
     project.print_status(detailed=kwargs["detailed"], pretty=True)
 
@@ -275,7 +279,7 @@ def status(ctx: click.Context, **kwargs):
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
-@click.option("-q", "--query")
+@click.option("-q", "--query", required=True)
 @click.pass_context
 def query(ctx: click.Context, **kwargs):
     # TODO refactor
@@ -289,6 +293,10 @@ def query(ctx: click.Context, **kwargs):
 
 
 def main():
+    logging.basicConfig(
+        format=f"[{__name__}:%(lineno)d]\t%(levelname)7s: %(message)s",
+        level=logging.INFO,
+    )
     cli(obj={})
 
 

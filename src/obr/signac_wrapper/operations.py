@@ -11,6 +11,7 @@ from obr.OpenFOAM.case import OpenFOAMCase
 from signac.contrib.job import Job
 from typing import Union, Literal
 from datetime import datetime
+import logging
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -22,7 +23,7 @@ from datetime import datetime
 class OpenFOAMProject(flow.FlowProject):
     def print_operations(self):
         ops = sorted(self.operations.keys())
-        print("Available operations are:\n\t", "\n\t ".join(ops))
+        logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
 
@@ -91,11 +92,13 @@ def basic_eligible(job: Job, operation: str) -> bool:
     ):
         # For Debug purposes
         if False:
-            print(f"check if job {job.id} is eligible is False")
-            print("is_locked should be False", is_locked(job))
-            print("base case is ready should be True", base_case_is_ready(job))
-            print("needs_init_dependent should be True", needs_init_dependent(job))
-            print("is_case should be True", is_case(job))
+            logging.info(f"check if job {job.id} is eligible is False")
+            logging.info("is_locked should be False", is_locked(job))
+            logging.info("base case is ready should be True", base_case_is_ready(job))
+            logging.info(
+                "needs_init_dependent should be True", needs_init_dependent(job)
+            )
+            logging.info("is_case should be True", is_case(job))
         return False
     return True
 
@@ -171,7 +174,7 @@ def needs_init_dependent(job: Job) -> bool:
     copy_instead_link = job.sp().get("operation") == "shell"
     if job.doc.get("base_id"):
         if job.doc.get("init_dependent"):
-            #    print("already init", job.id)
+            #    logging.info("already init", job.id)
             return True
         base_id = job.doc.get("base_id")
 
@@ -216,7 +219,7 @@ def execute_operation(job: Job, operation_name: str, operations) -> Literal[True
                 func = list(operation.keys())[0]
                 getattr(sys.modules[__name__], func)(job, operation.get(func))
         except Exception as e:
-            print(e)
+            logging.error(e)
             job.doc["state"] == "failure"
     return True
 
@@ -259,7 +262,6 @@ def end_job_state(_, job: Job) -> Literal[True]:
 
 def dispatch_pre_hooks(operation_name: str, job: Job):
     """just forwards to start_job_state and execute_pre_build"""
-    print(type(operation_name))
     start_job_state(operation_name, job)
     execute_pre_build(operation_name, job)
 

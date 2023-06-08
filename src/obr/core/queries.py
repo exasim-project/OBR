@@ -3,6 +3,7 @@ from typing import Any
 from copy import deepcopy
 import re
 from obr.signac_wrapper.operations import OpenFOAMProject
+import logging
 
 
 @dataclass
@@ -188,7 +189,7 @@ def query_impl(
     res = query_to_dict(jobs, queries, output, latest_only)
     if output:
         for r in res:
-            print(r)
+            logging.info(r)
 
     query_ids = []
     for id_ in res:
