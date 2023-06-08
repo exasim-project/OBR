@@ -294,7 +294,7 @@ def query(ctx: click.Context, **kwargs):
 
 def main():
     logging.basicConfig(
-        format=f"[{__name__}:%(lineno)d]\t%(levelname)7s: %(message)s",
+        format="[%(filename)s:%(lineno)d]\t%(levelname)7s: %(message)s",
         level=logging.INFO,
     )
     cli(obj={})
