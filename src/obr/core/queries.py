@@ -4,6 +4,7 @@ from copy import deepcopy
 import re
 from obr.signac_wrapper.operations import OpenFOAMProject
 import logging
+from signac.contrib.job import Job
 
 
 @dataclass
@@ -196,3 +197,14 @@ def query_impl(
         query_ids.append(id_.id)
 
     return query_ids
+
+
+def filter_jobs_by_query(project, queries_str) -> list[Job]:
+    jobs: list[Job]
+    if queries_str:
+        queries = input_to_queries(queries_str)
+        sel_jobs = query_impl(project, queries, output=False)
+        jobs = [j for j in project if j.id in sel_jobs]
+    else:
+        jobs = [j for j in project]
+    return jobs
