@@ -23,7 +23,8 @@ from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl
+from .core.queries import input_to_queries, query_impl, filter_jobs_by_query
+from pathlib import Path
 import logging
 
 
@@ -290,6 +291,30 @@ def query(ctx: click.Context, **kwargs):
     queries_str = kwargs.get("query")
     queries = input_to_queries(queries_str)
     query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
+
+
+@cli.command()
+@click.option("-f", "--folder", required=True, type=str)
+@click.option("-l", "--log", is_flag=True)
+@click.option("-q", "--query", default="")
+@click.pass_context
+def archive(ctx: click.Context, **kwargs):
+    project = OpenFOAMProject().init_project()
+    queries_str = kwargs.get("query")
+    jobs = filter_jobs_by_query(project, queries_str)
+
+    target_folder: str = kwargs.get("folder", ".")
+    for job in jobs:
+        case_folder = Path(job.path) / "case"
+        if not case_folder.exists():
+            logging.info(f"Job with {job.id=} has no case folder.")
+            continue
+        root, _, files = next(os.walk(case_folder))
+        for file in files:
+            log_file = Path(root) / file
+            target_file = Path(target_folder) / str(job.id) / "case" / file
+            if file.endswith("log"):
+                print(log_file, target_file)
 
 
 def main():
