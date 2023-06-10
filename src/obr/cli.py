@@ -328,7 +328,7 @@ def query(ctx: click.Context, **kwargs):
         " automatically added."
     ),
 )
-@click.option("-l", "--log", required=False, is_flag=True)
+@click.option("-s", "--skip-logs", required=False, is_flag=True, help="If set, .log files will not be archived. This does not affect .log files passed via the --file option.")
 @click.option(
     "-a",
     "--file",
@@ -374,27 +374,33 @@ def archive(ctx: click.Context, **kwargs):
         logging.info(f"creating {path}")
         path.mkdir()
 
-    # iterate cases and copy log files into target repo
-    for job in jobs:
-        case_folder = Path(job.path) / "case"
+    skip = kwargs.get("skip_logs")
+    if not skip:
+        # iterate cases and copy log files into target repo
+        for job in jobs:
+            case_folder = Path(job.path) / "case"
 
-        if not case_folder.exists():
-            logging.info(f"Job with {job.id=} has no case folder.")
-            continue
+            if not case_folder.exists():
+                logging.info(f"Job with {job.id=} has no case folder.")
+                continue
 
-        root, _, files = next(os.walk(case_folder))
-        for file in files:
-            log_file = Path(root) / file
-            # TODO add some sort of validity and error checking to only copy files from jobs that ran successfully
-            if file.endswith("log"):
-                target_file = path / file
-                copy_to_archive(repo, use_github_repo, log_file, target_file)
+            root, _, files = next(os.walk(case_folder))
+            for file in files:
+                log_file = Path(root) / file
+                # TODO add some sort of validity and error checking to only copy files from jobs that ran successfully
+                if file.endswith("log"):
+                    target_file = path / file
+                    copy_to_archive(repo, use_github_repo, log_file, target_file)
 
     # copy CLI-passed files into data repo and add if possible
     extra_files: tuple[str] = kwargs.get("file", ())
     for file in extra_files:
         target_file = path / file
-        copy_to_archive(repo, use_github_repo, log_file, target_file)
+        f = Path(file)
+        if not f.exists():
+            logging.info(f"invalid path {f}. Skipping.")
+            continue
+        copy_to_archive(repo, use_github_repo, f, target_file)
 
     # commit and push
     # TODO switch back?
