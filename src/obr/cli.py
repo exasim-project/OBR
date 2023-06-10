@@ -328,7 +328,16 @@ def query(ctx: click.Context, **kwargs):
         " automatically added."
     ),
 )
-@click.option("-s", "--skip-logs", required=False, is_flag=True, help="If set, .log files will not be archived. This does not affect .log files passed via the --file option.")
+@click.option(
+    "-s",
+    "--skip-logs",
+    required=False,
+    is_flag=True,
+    help=(
+        "If set, .log files will not be archived. This does not affect .log files"
+        " passed via the --file option."
+    ),
+)
 @click.option(
     "-a",
     "--file",
