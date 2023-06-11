@@ -424,8 +424,11 @@ def archive(ctx: click.Context, **kwargs):
             f"Committing changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
             f" {message=} and remote name {repo.remote().name}"
         )
-        repo.index.commit(message, author=author, committer=author)
-        repo.git.push("origin", "-u", branch_name)
+        try:
+            repo.index.commit(message, author=author, committer=author)
+            repo.git.push("origin", "-u", branch_name)
+        except Exception as e:
+            logging.error(e)
 
 
 def main():
