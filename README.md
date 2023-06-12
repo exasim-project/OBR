@@ -7,6 +7,6 @@
 
 The OpenFOAM Benchmark Runner (OBR) is an experimental workflow manager for
 simple provisioning of complex parameter studies and reproducible simulations.
-A typical OpenFOAM workflow of seting up a case and various parameter
+A typical OpenFOAM workflow of setting up a case and various parameter
 manipulations can be defined using the yaml markup language. OBR is build on
 top of signac.

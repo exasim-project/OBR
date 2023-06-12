@@ -31,7 +31,7 @@ def test_includes(tmpdir, create_include_yaml):
     test_str = add_includes(tmpdir, test_str)
     assert "include_line0\ninclude_line1\n" == test_str
 
-    # preceeding ws will be added to all lines as indentation
+    # preceding ws will be added to all lines as indentation
     test_str = "\t${{include.test.yaml}}"
     test_str = add_includes(tmpdir, test_str)
     assert "\tinclude_line0\n\tinclude_line1\n" == test_str

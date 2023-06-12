@@ -20,7 +20,7 @@ class Query:
     state: dict = field(default_factory=dict)
     predicate: str = "eq"
     # If negate is set to true this Query must not match
-    # for a list of queries to be succesful
+    # for a list of queries to be successful
     sub_keys: list = field(default_factory=list)
     negate: bool = False
 
@@ -116,7 +116,7 @@ def query_flat_jobs(
     queries -- list of queries to run
     output -- Whether to print result to screen
     latest_only -- Take only latest value if resulting value is a list
-    strict -- needs all queries to be succesfull to return a result
+    strict -- needs all queries to be successful to return a result
     """
     ret = []
     for job_id, doc in jobs.items():
