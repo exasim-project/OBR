@@ -203,7 +203,6 @@ def query_impl(
 def query_to_records(
     jobs: OpenFOAMProject,
     queries: list[Query],
-    output=False,
     latest_only=True,
     strict=False,
 ) -> list[dict]:
@@ -212,7 +211,7 @@ def query_to_records(
     Flattens list of jobs to a dictionary with merged statepoints and job document first
     """
     query_results = query_flat_jobs(
-        flatten_jobs(jobs), queries, output, latest_only, strict
+        flatten_jobs(jobs), queries, False, latest_only, strict
     )
     ret = []
     for q in query_results:
