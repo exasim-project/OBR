@@ -362,9 +362,11 @@ def archive(ctx: click.Context, **kwargs):
     use_github_repo = False
     repo = None
     branch_name = None
+    previous_branch = None
     # check if given path is actually a github repository
     try:
         repo = Repo(path=target_folder)
+        previous_branch = repo.active_branch.name
         branch_name = "archive-" + (
             str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
         )
@@ -427,6 +429,8 @@ def archive(ctx: click.Context, **kwargs):
         try:
             repo.index.commit(message, author=author, committer=author)
             repo.git.push("origin", "-u", branch_name)
+            logging.info(f"Switching back to branch '{previous_branch}'")
+            repo.git.checkout(previous_branch)
         except Exception as e:
             logging.error(e)
 
