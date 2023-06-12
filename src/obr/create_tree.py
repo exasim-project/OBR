@@ -185,7 +185,7 @@ def setup_job_doc(job, base_id, operation, keys: list, value, reset=False):
     """Sets basic information in the job document"""
 
     # we compute an opertation hash since not all
-    # paramters go into the job statepoint
+    # parameters go into the job statepoint
     h = hashlib.new("md5")
     h.update((str(operation) + str(value)).encode())
     operation_hash = h.hexdigest()

@@ -75,7 +75,7 @@ def ready(job):
 @FlowProject.label
 def final(job):
     """jobs that dont have children/variations are considered to be final and
-    are thus eligable for execution"""
+    are thus eligible for execution"""
     if not unitialised(job):
         return not job.sp.get("has_child")
     else:
