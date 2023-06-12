@@ -35,9 +35,7 @@ def emit_test_config():
 def test_create_tree(tmpdir, emit_test_config):
     project = OpenFOAMProject.init_project(root=tmpdir)
 
-    create_tree(
-        project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True
-    )
+    create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
 
     workspace_dir = tmpdir / "workspace"
 
@@ -63,9 +61,7 @@ def test_call_generate_tree(tmpdir, emit_test_config):
         "values": [{"endTime": 100}],
     }
     emit_test_config["variation"] = [operation]
-    create_tree(
-        project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True
-    )
+    create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
 
     assert workspace_dir.exists() == True
 
