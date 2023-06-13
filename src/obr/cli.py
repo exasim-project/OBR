@@ -309,7 +309,15 @@ def query(ctx: click.Context, **kwargs):
 
 
 @cli.command()
-@click.option("--filter", type=str)
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key>=<value> value pair per occurence of --filter. For instance, obr"
+        " archive --filter solver=pisoFoam --filter preconditioner=IC"
+    ),
+)
 @click.option(
     "-f",
     "--folder",
