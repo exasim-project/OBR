@@ -414,7 +414,6 @@ def archive(ctx: click.Context, **kwargs):
         copy_to_archive(repo, use_github_repo, f, target_file)
 
     # commit and push
-    # TODO switch back?
     if use_github_repo and repo and branch_name:
         message = f"Add new logs -> {path}"
         author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
