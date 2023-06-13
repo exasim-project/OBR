@@ -3,8 +3,14 @@ from obr.core.queries import (
     execute_query,
     input_to_queries,
     query_flat_jobs,
+    query_to_dataframe,
+    Query,
 )
+from obr.signac_wrapper.operations import OpenFOAMProject
+from obr.create_tree import create_tree
 import pytest
+import os
+import pandas as pd
 
 
 def test_input_to_query():
@@ -98,3 +104,48 @@ def test_nested_results_with_lists(mock_job_dict):
     executed_query = execute_query(queries[0], 34567, mock_job_dict[34567], True, [])
     assert executed_query.state == {"time": 3}
     assert executed_query.sub_keys == [34567, "obr", "postProcessing", "machine_name"]
+
+
+@pytest.fixture
+def emit_test_config(tmpdir):
+    return {
+        "case": {
+            "type": "GitRepo",
+            "solver": "pisoFoam",
+            "url": "https://develop.openfoam.com/committees/hpc.git",
+            "folder": "Lid_driven_cavity-3d/S",
+            "commit": "f9594d16aa6993bb3690ec47b2ca624b37ea40cd",
+            "cache_folder": "None/S",
+            "post_build": [
+                {"shell": "cp system/fvSolution.fixedNORM system/fvSolution"},
+                {"controlDict": {"writeFormat": "binary", "libs": ["libOGL.so"]}},
+                {
+                    "fvSolution": {
+                        "set": "solvers/p",
+                        "clear": True,
+                        "tolerance": "1e-04",
+                        "relTol": 0,
+                        "maxIter": 3000,
+                    }
+                },
+            ],
+        },
+    }
+
+
+def test_query_to_df(tmpdir, emit_test_config, mock_job_dict):
+    os.chdir(tmpdir)
+
+    project = OpenFOAMProject.init_project(root=tmpdir)
+    create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
+    project.run(names=["fetchCase"])
+    base_query = [Query(key="solver", value="pisoFoam")]
+    df = query_to_dataframe(project, base_query)
+
+    correct_df = pd.DataFrame(
+        [["pisoFoam", "2c436d59c91a9ec68eaa0dcf70181cbf"]],
+        columns=["solver", "jobid"],
+    )
+    assert isinstance(df, pd.DataFrame)
+    assert df["solver"][0] == "pisoFoam"
+    assert df.equals(correct_df)
