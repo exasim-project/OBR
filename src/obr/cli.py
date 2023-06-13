@@ -23,8 +23,15 @@ from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl
+from .core.queries import input_to_queries, query_impl, filter_jobs_by_query
+from pathlib import Path
 import logging
+from subprocess import check_output
+from git.repo import Repo
+from git.util import Actor
+from git import InvalidGitRepositoryError
+from datetime import datetime
+from typing import Union
 
 
 def check_cli_operations(
@@ -46,6 +53,15 @@ def check_cli_operations(
         project.print_operations()
         return False
     return True
+
+
+def copy_to_archive(
+    repo: Union[Repo, None], use_github_repo: bool, log_file: Path, target_file: Path
+) -> None:
+    logging.info(f"will copy from {log_file} to {target_file}")
+    check_output(["cp", log_file, target_file])
+    if use_github_repo and repo:
+        repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
 
 
 @click.group()
@@ -290,6 +306,143 @@ def query(ctx: click.Context, **kwargs):
     queries_str = kwargs.get("query")
     queries = input_to_queries(queries_str)
     query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
+
+
+@cli.command()
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key>=<value> value pair per occurence of --filter. For instance, obr"
+        " archive --filter solver=pisoFoam --filter preconditioner=IC"
+    ),
+)
+@click.option(
+    "-f",
+    "--folder",
+    required=True,
+    default=".",
+    type=str,
+    help="Path to OpenFOAMProject.",
+)
+@click.option(
+    "-r",
+    "--repo",
+    required=True,
+    type=str,
+    help=(
+        "Path to data repository. If this is a valid Github repository, files will be"
+        " automatically added."
+    ),
+)
+@click.option(
+    "-s",
+    "--skip-logs",
+    required=False,
+    is_flag=True,
+    help=(
+        "If set, .log files will not be archived. This does not affect .log files"
+        " passed via the --file option."
+    ),
+)
+@click.option(
+    "-a",
+    "--file",
+    required=False,
+    multiple=True,
+    help="Path(s) to non-logfile(s) to be also added to the repository.",
+)
+@click.pass_context
+def archive(ctx: click.Context, **kwargs):
+    if current_path := kwargs.get("folder", "."):
+        os.chdir(current_path)
+        current_path = Path(current_path).absolute()
+
+    # setup project and jobs
+    project = OpenFOAMProject().init_project()
+    filters = kwargs.get("filter")
+    jobs = filter_jobs_by_query(project, filters)
+
+    time = str(datetime.now()).replace(" ", "_")
+    target_folder: str = kwargs.get("repo", "")
+    use_github_repo = False
+    repo = None
+    branch_name = None
+    previous_branch = None
+    # check if given path is actually a github repository
+    try:
+        repo = Repo(path=target_folder)
+        previous_branch = repo.active_branch.name
+        branch_name = "archive-" + (
+            str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
+        )
+        use_github_repo = True
+        logging.info(f"checkout archive-{branch_name}")
+        repo.git.checkout("HEAD", b=branch_name)
+    except InvalidGitRepositoryError:
+        logging.warn(
+            f"Given directory {target_folder=} is not a github repository. Will only"
+            " copy files."
+        )
+
+    # setup target folder
+    path = Path(target_folder + f"/{time}")
+    if not path.exists():
+        logging.info(f"creating {path}")
+        path.mkdir()
+
+    skip = kwargs.get("skip_logs")
+    if not skip:
+        # iterate cases and copy log files into target repo
+        for job in jobs:
+            case_folder = Path(job.path) / "case"
+
+            if not case_folder.exists():
+                logging.info(f"Job with {job.id=} has no case folder.")
+                continue
+
+            root, _, files = next(os.walk(case_folder))
+            for file in files:
+                log_file = Path(root) / file
+                if log_file.is_relative_to(current_path):
+                    log_file = log_file.relative_to(current_path)
+                # TODO add some sort of validity and error checking to only copy files from jobs that ran successfully
+                if file.endswith("log"):
+                    target_file = path / file
+                    if target_file.is_relative_to(current_path):
+                        target_file = target_file.relative_to(current_path)
+                    copy_to_archive(repo, use_github_repo, log_file, target_file)
+
+    # copy CLI-passed files into data repo and add if possible
+    extra_files: tuple[str] = kwargs.get("file", ())
+    for file in extra_files:
+        target_file = path / file
+        f = Path(file)
+        if not f.exists():
+            logging.info(f"invalid path {f}. Skipping.")
+            continue
+        copy_to_archive(repo, use_github_repo, f, target_file)
+
+    # commit and push
+    if use_github_repo and repo and branch_name:
+        message = f"Add new logs -> {path}"
+        author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
+        logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
+        logging.info(
+            f'config: {repo.git.config("user.name"), repo.git.config("user.email")}'
+        )
+        logging.info(
+            f"Committing changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
+            f" {message=} and remote name {repo.remote().name}"
+        )
+        try:
+            repo.index.commit(message, author=author, committer=author)
+            repo.git.push("origin", "-u", branch_name)
+            logging.info(f"Switching back to branch '{previous_branch}'")
+            repo.git.checkout(previous_branch)
+        except Exception as e:
+            logging.error(e)
 
 
 def main():
