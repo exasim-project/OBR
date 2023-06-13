@@ -20,7 +20,7 @@ import os
 import time
 
 from signac.contrib.job import Job
-from .signac_wrapper.operations import OpenFOAMProject, get_values
+from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl, filter_jobs_by_query
@@ -397,9 +397,16 @@ def archive(ctx: click.Context, **kwargs):
         # iterate cases and copy log files into target repo
         for job in jobs:
             case_folder = Path(job.path) / "case"
-
             if not case_folder.exists():
                 logging.info(f"Job with {job.id=} has no case folder.")
+                continue
+
+            # skip if either the most recent obr action failed or the label is set to "not success"
+            case = OpenFOAMCase(str(case_folder), job)
+            if not case.was_successful():
+                logging.info(
+                    f"Skipping Job with {job.id=} due to recent failure states."
+                )
                 continue
 
             root, _, files = next(os.walk(case_folder))
@@ -407,7 +414,6 @@ def archive(ctx: click.Context, **kwargs):
                 log_file = Path(root) / file
                 if log_file.is_relative_to(current_path):
                     log_file = log_file.relative_to(current_path)
-                # TODO add some sort of validity and error checking to only copy files from jobs that ran successfully
                 if file.endswith("log"):
                     target_file = path / file
                     if target_file.is_relative_to(current_path):
