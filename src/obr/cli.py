@@ -347,10 +347,9 @@ def query(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-
-    files = kwargs.get("file")
+    if current_path := kwargs.get("folder", "."):
+        os.chdir(current_path)
+        current_path = Path(current_path).absolute()
 
     # setup project and jobs
     project = OpenFOAMProject().init_project()
@@ -398,9 +397,13 @@ def archive(ctx: click.Context, **kwargs):
             root, _, files = next(os.walk(case_folder))
             for file in files:
                 log_file = Path(root) / file
+                if log_file.is_relative_to(current_path):
+                    log_file = log_file.relative_to(current_path)
                 # TODO add some sort of validity and error checking to only copy files from jobs that ran successfully
                 if file.endswith("log"):
                     target_file = path / file
+                    if target_file.is_relative_to(current_path):
+                        target_file = target_file.relative_to(current_path)
                     copy_to_archive(repo, use_github_repo, log_file, target_file)
 
     # copy CLI-passed files into data repo and add if possible
