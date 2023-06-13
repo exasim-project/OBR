@@ -73,7 +73,7 @@ def logged_execute(cmd, path, doc):
         state = "failure"
     except Exception as e:
         logging.error(__file__ + __name__ + str(e))
-        logging.error("General Execption" + __file__ + __name__ + str(e) + e.output)
+        logging.error("General Exception" + __file__ + __name__ + str(e) + e.output)
         log = ret
         state = "failure"
 

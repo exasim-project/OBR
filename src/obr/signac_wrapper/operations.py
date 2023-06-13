@@ -204,7 +204,7 @@ def get_args(job: Job, args: Union[dict, str]) -> Union[dict, str]:
 
 
 def execute_operation(job: Job, operation_name: str, operations) -> Literal[True]:
-    """check wether an operation is requested
+    """check whether an operation is requested
 
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
@@ -225,7 +225,7 @@ def execute_operation(job: Job, operation_name: str, operations) -> Literal[True
 
 
 def execute_post_build(operation_name: str, job: Job):
-    """check wether an operation is requested
+    """check whether an operation is requested
 
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
@@ -235,7 +235,7 @@ def execute_post_build(operation_name: str, job: Job):
 
 
 def execute_pre_build(operation_name: str, job: Job):
-    """check wether an operation is requested
+    """check whether an operation is requested
 
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary

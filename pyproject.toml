@@ -8,6 +8,7 @@ dependencies = [
     "signac==1.8.0",
     "signac-flow==0.23.0",
     "GitPython==3.1.31",
+    "pandas",
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
 ]
 

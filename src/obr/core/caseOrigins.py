@@ -23,7 +23,7 @@ class CaseOnDisk:
 
 class OpenFOAMTutorialCase(CaseOnDisk):
     """Copies an OpenFOAM case from the FOAM_TUTORIALS folder
-    needs a dict specifing:
+    needs a dict specifying:
     """
 
     def __init__(self, domain: str, solver: str, case: str, **args_dict):

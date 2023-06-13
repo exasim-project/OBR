@@ -5,6 +5,7 @@ import re
 from obr.signac_wrapper.operations import OpenFOAMProject
 import logging
 from signac.contrib.job import Job
+import pandas as pd
 
 
 @dataclass
@@ -21,7 +22,7 @@ class Query:
     state: dict = field(default_factory=dict)
     predicate: str = "eq"
     # If negate is set to true this Query must not match
-    # for a list of queries to be succesful
+    # for a list of queries to be successful
     sub_keys: list = field(default_factory=list)
     negate: bool = False
 
@@ -117,7 +118,7 @@ def query_flat_jobs(
     queries -- list of queries to run
     output -- Whether to print result to screen
     latest_only -- Take only latest value if resulting value is a list
-    strict -- needs all queries to be succesfull to return a result
+    strict -- needs all queries to be successful to return a result
     """
     ret = []
     for job_id, doc in jobs.items():
@@ -197,6 +198,46 @@ def query_impl(
         query_ids.append(id_.id)
 
     return query_ids
+
+
+def query_to_records(
+    jobs: OpenFOAMProject,
+    queries: list[Query],
+    latest_only=True,
+    strict=False,
+) -> list[dict]:
+    """Given a list jobs find all jobs for which a query matches
+
+    Flattens list of jobs to a dictionary with merged statepoints and job document first
+    """
+    query_results = query_flat_jobs(
+        flatten_jobs(jobs), queries, False, latest_only, strict
+    )
+    ret = []
+    for q in query_results:
+        for r in q.result:
+            r.update({"jobid": q.id})
+            ret.append(r)
+    return ret
+
+
+def query_to_dataframe(
+    jobs: OpenFOAMProject,
+    queries: list[Query],
+    latest_only=True,
+    strict: bool = False,
+    index: list[str] = [],
+) -> pd.DataFrame:
+    """Given a list jobs find all jobs for which a query matches
+
+    Flattens list of jobs to a dictionary with merged statepoints and job document first
+    """
+    ret = pd.DataFrame.from_records(
+        query_to_records(jobs, queries, latest_only=latest_only, strict=strict)
+    )
+    if index:
+        return ret.set_index(index).sort_index()
+    return ret
 
 
 def filter_jobs_by_query(project, queries_str) -> list[Job]:
