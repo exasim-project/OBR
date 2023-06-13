@@ -6,10 +6,11 @@ from pathlib import Path
 from subprocess import check_output
 import re
 from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
-
+from signac.contrib.job import Job
 from .BlockMesh import BlockMesh, calculate_simple_partition
-
+from datetime import datetime
 from Owls.parser.FoamDict import FileParser
+import logging
 
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
 (\||)\s*=========                 \|(\s*\||)
@@ -83,7 +84,7 @@ class OpenFOAMCase(BlockMesh):
 
     def __init__(self, path, job):
         self.path_ = Path(path)
-        self.job = job
+        self.job: Job = job
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
         # FIXME fvSchemes does not exist when using this class in post hooks?
@@ -297,3 +298,35 @@ class OpenFOAMCase(BlockMesh):
                 md5sum.split()[0],
                 last_modified,
             )
+
+    def was_successful(self) -> bool:
+        """Returns True, if both its label and the last OBR operation returned successful, False otherwise."""
+        # check state of last obr operation
+        last_op_state = "Failure"
+        if "obr" not in self.job.doc:
+            logging.info(f"Job with {self.job.id} has no OBR key.")
+            # TODO possibly debatable if this should return false
+            return False
+        else:
+            # find last obr operation
+            last_time = datetime(1, 1, 1, 1, 1, 1)
+            for k, v in self.job.doc["obr"].items():
+                # skip md5sums
+                if k == "md5sum":
+                    continue
+
+                last_of_obr_op = v[-1]
+                if not (time := last_of_obr_op.get("timestamp", None)):
+                    continue
+
+                # timestamps are not standardized and can have to formats (in our case)
+                try:
+                    dt = datetime.strptime(time, "%Y-%m-%d_%H:%M:%S")
+                except ValueError:
+                    dt = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
+
+                if dt > last_time:
+                    last_time = dt
+                    last_op_state = last_of_obr_op["state"]
+        label_state = self.job.doc["state"]
+        return last_op_state == label_state == "success"
