@@ -314,7 +314,7 @@ def query(ctx: click.Context, **kwargs):
     type=str,
     multiple=True,
     help=(
-        "Pass a <key>=<value> value pair per occurence of --filter. For instance, obr"
+        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
         " archive --filter solver=pisoFoam --filter preconditioner=IC"
     ),
 )
