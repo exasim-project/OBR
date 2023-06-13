@@ -238,3 +238,14 @@ def query_to_dataframe(
     if index:
         return ret.set_index(index).sort_index()
     return ret
+
+
+def filter_jobs_by_query(project, queries_str) -> list[Job]:
+    jobs: list[Job]
+    if queries_str:
+        queries = input_to_queries(queries_str)
+        sel_jobs = query_impl(project, queries, output=False)
+        jobs = [j for j in project if j.id in sel_jobs]
+    else:
+        jobs = [j for j in project]
+    return jobs
