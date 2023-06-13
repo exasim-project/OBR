@@ -240,10 +240,19 @@ def query_to_dataframe(
     return ret
 
 
-def filter_jobs_by_query(project, queries_str) -> list[Job]:
+def filters_to_queries(filters: tuple[str]) -> list[Query]:
+    q: list[Query] = []
+    for filter in filters:
+        lhs, rhs = filter.split("=")
+        q.append(Query(key=lhs, value=rhs))
+    return q
+
+
+def filter_jobs_by_query(project, filter: tuple[str]) -> list[Job]:
     jobs: list[Job]
-    if queries_str:
-        queries = input_to_queries(queries_str)
+
+    if filter:
+        queries = filters_to_queries(filter)
         sel_jobs = query_impl(project, queries, output=False)
         jobs = [j for j in project if j.id in sel_jobs]
     else:
