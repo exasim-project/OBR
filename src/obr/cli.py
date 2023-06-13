@@ -361,7 +361,7 @@ def archive(ctx: click.Context, **kwargs):
 
     # setup project and jobs
     project = OpenFOAMProject().init_project()
-    filters = kwargs.get("filter")
+    filters: tuple[str] = kwargs.get("filter", ())
     jobs = filter_jobs_by_query(project, filters)
 
     time = str(datetime.now()).replace(" ", "_")
@@ -415,7 +415,7 @@ def archive(ctx: click.Context, **kwargs):
                 if log_file.is_relative_to(current_path):
                     log_file = log_file.relative_to(current_path)
                 if file.endswith("log"):
-                    target_file = path / file
+                    target_file = path
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
                     copy_to_archive(repo, use_github_repo, log_file, target_file)
@@ -423,12 +423,11 @@ def archive(ctx: click.Context, **kwargs):
     # copy CLI-passed files into data repo and add if possible
     extra_files: tuple[str] = kwargs.get("file", ())
     for file in extra_files:
-        target_file = path / file
         f = Path(file)
         if not f.exists():
             logging.info(f"invalid path {f}. Skipping.")
             continue
-        copy_to_archive(repo, use_github_repo, f, target_file)
+        copy_to_archive(repo, use_github_repo, f.absolute(), path)
 
     # commit and push
     if use_github_repo and repo and branch_name:
