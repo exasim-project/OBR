@@ -8,6 +8,7 @@ from subprocess import check_output
 from ..core.core import execute
 from .labels import owns_mesh, final, finished
 from obr.OpenFOAM.case import OpenFOAMCase
+from signac.contrib.project import JobsCursor
 from signac.contrib.job import Job
 from typing import Union, Literal
 from datetime import datetime
@@ -21,10 +22,33 @@ import logging
 
 
 class OpenFOAMProject(flow.FlowProject):
+    filtered_jobs = None
+    queried_jobs = None
+
     def print_operations(self):
         ops = sorted(self.operations.keys())
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
+
+    def get_jobs(self, filter=Union[None, dict[str, str]], queries=None):
+        self.filtered_jobs = self.filter_jobs(filters=filter)
+        resulting_jobs = self.query_jobs()
+        return resulting_jobs
+
+    def filter_jobs(self, filters: dict[str, str], output=True):
+        all_jobs: list[Job] = self.queried_jobs or self.find_jobs()
+        # chain filtering of jobs
+        for key, value in filters.items():
+            all_jobs = filter(lambda job: value in self.get_job_status(job)[key], all_jobs)
+        self.filtered_jobs = list(all_jobs)
+        if output:
+            for job in self.filtered_jobs:
+                print(f'Found Job with {job.id=}')
+
+    def query_jobs(self, query) -> list[Job]:
+        """return list of jobs as result of single `Query`."""
+        self.queried_jobs = self.filtered_jobs or self.find_jobs()
+        # TODO
 
 
 generate = OpenFOAMProject.make_group(name="generate")
