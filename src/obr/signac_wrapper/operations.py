@@ -279,6 +279,19 @@ def set_failure(operation_name: str, error, job: Job):
     job.doc["state"] = "failure"
 
 
+def copy_on_uses(args: dict, job: Job, path: str, target: str):
+    """copies the file specified in args['uses'] to path/target"""
+    if not args.get("uses"):
+        return
+    check_output(
+        [
+            "cp",
+            f"{Job.path}/case/{path}/{args['uses']}",
+            "{Job.path}/case/{path}/{target}",
+        ]
+    )
+
+
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
@@ -292,6 +305,7 @@ def controlDict(job: Job, args={}):
     # was called directly from a pre/post build or from sp
     # if this was a variation. In any case this could be a decorator
     args = get_args(job, args)
+    copy_on_uses(args, job, "system", "controlDict")
     OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
 
 
@@ -344,6 +358,7 @@ def shell(job: Job, args={}):
 @OpenFOAMProject.operation
 def fvSolution(job: Job, args={}):
     args = get_args(job, args)
+    copy_on_uses(args, job, "system", "controlDict")
     OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
 
 
