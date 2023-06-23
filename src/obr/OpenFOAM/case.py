@@ -8,7 +8,8 @@ import re
 from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
 
 from .BlockMesh import BlockMesh, calculate_simple_partition
-
+import logging
+from signac.contrib.job import Job
 from Owls.parser.FoamDict import FileParser
 
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
@@ -84,7 +85,11 @@ class OpenFOAMCase(BlockMesh):
     def __init__(self, path, job):
         self.path_ = Path(path)
         self.job = job
-        self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
+        controlDict_file = self.controlDict_file()
+
+        self.controlDict = File(
+            folder=self.system_folder, file=str(controlDict_file), job=job
+        )
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
         # FIXME fvSchemes does not exist when using this class in post hooks?
         if Path(self.system_folder / "fvSchemes").exists():
@@ -297,3 +302,18 @@ class OpenFOAMCase(BlockMesh):
                 md5sum.split()[0],
                 last_modified,
             )
+
+    def controlDict_file(self):
+        controlDict_filename = "controlDict"
+        if not isinstance(self.job, Job):
+            return controlDict_filename
+        for subdict in self.job.doc["post_build"]:
+            if not (controlDict := subdict.get("controlDict", None)):
+                continue
+            if not (file_name := controlDict.get("uses", None)):
+                # use default value, break
+                break
+            if not Path(self.system_folder / file_name).exists():
+                logging.warning("Specified controlDict does not exist in path.")
+            controlDict_filename = file_name
+        return controlDict_filename
