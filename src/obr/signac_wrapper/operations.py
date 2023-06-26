@@ -288,10 +288,11 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
     check_output(
         [
             "cp",
-            "{}/case/{}/{}".format(job.path,path,args['uses']),
-            "{}/case/{}/{}".format(job.path,path,target),
+            "{}/case/{}/{}".format(job.path, path, args["uses"]),
+            "{}/case/{}/{}".format(job.path, path, target),
         ]
     )
+    args.pop("uses")
 
 
 @generate
@@ -447,9 +448,19 @@ def decomposePar(job: Job, args={}):
 def fetchCase(job: Job, args={}):
     args = get_args(job, args)
 
+    if args.get("uses"):
+        uses = args.pop("uses")
+    else:
+        uses = []
+
     case_type = job.sp()["type"]
     fetch_case_handler = getattr(caseOrigins, case_type)(**args)
     fetch_case_handler.init(path=job.path)
+
+    for entry in uses:
+        for k,v in entry.items():
+            getattr(sys.modules[__name__], k)(job, {"uses": v})
+
 
 
 def is_locked(job: Job) -> bool:
