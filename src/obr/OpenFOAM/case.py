@@ -299,12 +299,13 @@ class OpenFOAMCase(BlockMesh):
                 last_modified,
             )
 
-    def was_successful(self) -> bool:
+    def was_successful(self, progress=False) -> bool:
         """Returns True, if both its label and the last OBR operation returned successful, False otherwise."""
         # check state of last obr operation
         last_op_state = "Failure"
         if "obr" not in self.job.doc:
-            logging.info(f"Job with {self.job.id} has no OBR key.")
+            if not progress:
+                logging.info(f"Job with {self.job.id} has no OBR key.")
             # TODO possibly debatable if this should return false
             return False
         else:

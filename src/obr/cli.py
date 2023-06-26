@@ -32,6 +32,7 @@ from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union
+from tqdm import tqdm
 
 
 def check_cli_operations(
@@ -56,9 +57,10 @@ def check_cli_operations(
 
 
 def copy_to_archive(
-    repo: Union[Repo, None], use_github_repo: bool, log_file: Path, target_file: Path
+    repo: Union[Repo, None], use_github_repo: bool, log_file: Path, target_file: Path, progress: bool = False
 ) -> None:
-    logging.info(f"will copy from {log_file} to {target_file}")
+    if not progress:
+        logging.info(f"will copy from {log_file} to {target_file}")
     check_output(["cp", log_file, target_file])
     if use_github_repo and repo:
         repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
@@ -353,6 +355,18 @@ def query(ctx: click.Context, **kwargs):
     multiple=True,
     help="Path(s) to non-logfile(s) to be also added to the repository.",
 )
+@click.option(
+    "-t",
+    "--tag",
+    required=False,
+    type=str,
+    help="Files fit for archival will be saved into <folder>/workspace/<job.id>/<tag>"
+)
+@click.option(
+    "-p",
+    "--progress",
+    is_flag=True,
+)
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     if current_path := kwargs.get("folder", "."):
@@ -364,6 +378,8 @@ def archive(ctx: click.Context, **kwargs):
     filters: tuple[str] = kwargs.get("filter", ())
     jobs = filter_jobs_by_query(project, filters)
 
+    progress = kwargs.get("progress")
+    print(progress)
     time = str(datetime.now()).replace(" ", "_")
     target_folder: str = kwargs.get("repo", "")
     use_github_repo = False
@@ -395,21 +411,23 @@ def archive(ctx: click.Context, **kwargs):
     skip = kwargs.get("skip_logs")
     if not skip:
         # iterate cases and copy log files into target repo
-        for job in jobs:
+        for job in tqdm(jobs, desc="Job Progress", position=0):
             case_folder = Path(job.path) / "case"
             if not case_folder.exists():
-                logging.info(f"Job with {job.id=} has no case folder.")
+                if not progress:
+                    logging.info(f"Job with {job.id=} has no case folder.")
                 continue
 
             # skip if either the most recent obr action failed or the label is set to "not success"
             case = OpenFOAMCase(str(case_folder), job)
-            if not case.was_successful():
-                logging.info(
-                    f"Skipping Job with {job.id=} due to recent failure states."
-                )
+            if not case.was_successful(progress):
+                if not progress:
+                    logging.info(
+                        f"Skipping Job with {job.id=} due to recent failure states."
+                    )
                 continue
-
             root, _, files = next(os.walk(case_folder))
+
             for file in files:
                 log_file = Path(root) / file
                 if log_file.is_relative_to(current_path):
@@ -418,7 +436,7 @@ def archive(ctx: click.Context, **kwargs):
                     target_file = path
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
-                    copy_to_archive(repo, use_github_repo, log_file, target_file)
+                    copy_to_archive(repo, use_github_repo, log_file, target_file, progress)
 
     # copy CLI-passed files into data repo and add if possible
     extra_files: tuple[str] = kwargs.get("file", ())
