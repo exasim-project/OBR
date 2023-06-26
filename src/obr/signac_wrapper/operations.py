@@ -112,6 +112,7 @@ def base_case_is_ready(job: Job) -> Union[bool, None]:
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
         parent_job = project.open_job(id=job.doc.get("base_id"))
         return parent_job.doc.get("state", "") == "ready"
+    return False
 
 
 def _link_path(base: Path, dst: Path, copy_instead_link: bool):
@@ -244,15 +245,13 @@ def execute_pre_build(operation_name: str, job: Job):
     execute_operation(job, operation_name, operations)
 
 
-def start_job_state(_, job: Job) -> Union[Literal[True], None]:
+def start_job_state(_, job: Job) -> None:
     current_state = job.doc.get("state")
     if not current_state:
         job.doc["state"] = "started"
-        return
-    if current_state == "started":
+    elif current_state == "started":
         # job has been started but not finished yet
         job.doc["state"] = "tmp_lock"
-    return True
 
 
 def end_job_state(_, job: Job) -> Literal[True]:
@@ -433,7 +432,9 @@ def decomposePar(job: Job, args={}):
 
     if found:
         for processor_path in dst_case.processor_folder:
-            _link_path(processor_path, target_case.path / processor_path.parts[-1])
+            _link_path(
+                processor_path, target_case.path / processor_path.parts[-1], True
+            )
     else:
         target_case.decomposePar(args)
 
