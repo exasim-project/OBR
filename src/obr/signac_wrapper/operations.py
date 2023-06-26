@@ -91,7 +91,7 @@ def basic_eligible(job: Job, operation: str) -> bool:
         or not is_case(job)
     ):
         # For Debug purposes
-        if False:
+        if False and (operation == job.sp().get("operation")):
             logging.info(f"check if job {job.id} is eligible is False")
             logging.info("is_locked should be False", is_locked(job))
             logging.info("base case is ready should be True", base_case_is_ready(job))
@@ -458,9 +458,8 @@ def fetchCase(job: Job, args={}):
     fetch_case_handler.init(path=job.path)
 
     for entry in uses:
-        for k,v in entry.items():
+        for k, v in entry.items():
             getattr(sys.modules[__name__], k)(job, {"uses": v})
-
 
 
 def is_locked(job: Job) -> bool:

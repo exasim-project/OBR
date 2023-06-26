@@ -28,8 +28,8 @@ class File(FileParser):
         self.job = kwargs["job"]
         kwargs["path"] = Path(self._folder) / self._file
         if not kwargs["path"].exists():
-            self.path=kwargs["path"]
-            self.missing = True # indicate that the file is currently missing
+            self.path = kwargs["path"]
+            self.missing = True  # indicate that the file is currently missing
             return
         super().__init__(**kwargs)
         self._md5sum = None
@@ -95,9 +95,7 @@ class OpenFOAMCase(BlockMesh):
         # decomposeParDict might not exist in some test cases
         if Path(self.system_folder / "decomposeParDict").exists():
             self.decomposeParDict = File(
-                folder=self.system_folder,
-                file="decomposeParDict",
-                job=job
+                folder=self.system_folder, file="decomposeParDict", job=job
             )
         self.file_dict: dict[str, File] = dict()
         self.config_file_tree
