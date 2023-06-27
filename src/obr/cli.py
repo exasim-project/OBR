@@ -56,10 +56,19 @@ def check_cli_operations(
 
 
 def copy_to_archive(
-    repo: Union[Repo, None], use_github_repo: bool, log_file: Path, target_file: Path
+    repo: Union[Repo, None], use_github_repo: bool, src_file: Path, target_file: Path
 ) -> None:
-    logging.info(f"will copy from {log_file} to {target_file}")
-    check_output(["cp", log_file, target_file])
+    """Copies files to archive repo"""
+    # ensure target directory exists()
+    target_path = target_file.parents[0]
+    if not target_path.exists():
+        target_path.mkdir(parents=True)
+    logging.info(f"will copy from {src_file} to {target_file}")
+    if src_file.is_symlink():
+        print(src_file)
+        src_file = os.path.realpath(src_file)
+        print("resolved", src_file)
+    check_output(["cp", src_file, target_file])
     if use_github_repo and repo:
         repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
 
@@ -355,6 +364,7 @@ def query(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
+    target_folder: Path = Path(kwargs.get("repo", "")).absolute()
     if current_path := kwargs.get("folder", "."):
         os.chdir(current_path)
         current_path = Path(current_path).absolute()
@@ -365,14 +375,13 @@ def archive(ctx: click.Context, **kwargs):
     jobs = filter_jobs_by_query(project, filters)
 
     time = str(datetime.now()).replace(" ", "_")
-    target_folder: str = kwargs.get("repo", "")
     use_github_repo = False
     repo = None
     branch_name = None
     previous_branch = None
     # check if given path is actually a github repository
     try:
-        repo = Repo(path=target_folder)
+        repo = Repo(path=str(target_folder), search_parent_directories=True)
         previous_branch = repo.active_branch.name
         branch_name = "archive-" + (
             str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
@@ -387,38 +396,48 @@ def archive(ctx: click.Context, **kwargs):
         )
 
     # setup target folder
-    path = Path(target_folder + f"/{time}")
-    if not path.exists():
-        logging.info(f"creating {path}")
-        path.mkdir()
+    if not target_folder.exists():
+        logging.info(f"creating {str(target_folder)}")
+        target_folder.mkdir()
 
     skip = kwargs.get("skip_logs")
     if not skip:
         # iterate cases and copy log files into target repo
         for job in jobs:
+            # copy signac state point
+            signac_statepoint = Path(job.path) / "signac_statepoint.json"
+            if not signac_statepoint.exists():
+                continue
+            else:
+                target_file = (
+                    target_folder / f"workspace/{job.id}/signac_statepoint.json"
+                )
+                print("DEBUG", target_folder, signac_statepoint)
+                copy_to_archive(repo, use_github_repo, signac_statepoint, target_file)
+
             case_folder = Path(job.path) / "case"
             if not case_folder.exists():
                 logging.info(f"Job with {job.id=} has no case folder.")
                 continue
 
             # skip if either the most recent obr action failed or the label is set to "not success"
-            case = OpenFOAMCase(str(case_folder), job)
-            if not case.was_successful():
-                logging.info(
-                    f"Skipping Job with {job.id=} due to recent failure states."
-                )
-                continue
+            # case = OpenFOAMCase(str(case_folder), job)
+            # if not case.was_successful():
+            #     logging.info(
+            #         f"Skipping Job with {job.id=} due to recent failure states."
+            #     )
+            #     continue
 
             root, _, files = next(os.walk(case_folder))
             for file in files:
-                log_file = Path(root) / file
-                if log_file.is_relative_to(current_path):
-                    log_file = log_file.relative_to(current_path)
+                src_file = Path(root) / file
+                if src_file.is_relative_to(current_path):
+                    src_file = src_file.relative_to(current_path)
                 if file.endswith("log"):
-                    target_file = path
+                    target_file = target_folder / f"workspace/{job.id}/case/{file}"
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
-                    copy_to_archive(repo, use_github_repo, log_file, target_file)
+                    copy_to_archive(repo, use_github_repo, src_file, target_file)
 
     # copy CLI-passed files into data repo and add if possible
     extra_files: tuple[str] = kwargs.get("file", ())
@@ -431,7 +450,7 @@ def archive(ctx: click.Context, **kwargs):
 
     # commit and push
     if use_github_repo and repo and branch_name:
-        message = f"Add new logs -> {path}"
+        message = f"Add new logs -> {str(target_folder)}"
         author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
         logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
         logging.info(
