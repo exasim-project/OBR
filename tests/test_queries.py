@@ -155,10 +155,9 @@ def get_project(tmpdir):
 
 
 def test_filters(get_project):
-
     queries_str = ""
     jobs = filter_jobs_by_query(get_project, queries_str)
     assert len(jobs) == 1
     queries_str = "{key: 'solver', value: 'pisoFoam'}"
     jobs = filter_jobs_by_query(get_project, queries_str)
-    assert jobs[0].sp.get('solver') == 'pisoFoam'
+    assert jobs[0].sp.get("solver") == "pisoFoam"

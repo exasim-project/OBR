@@ -39,11 +39,13 @@ class OpenFOAMProject(flow.FlowProject):
         all_jobs: list[Job] = self.queried_jobs or self.find_jobs()
         # chain filtering of jobs
         for key, value in filters.items():
-            all_jobs = filter(lambda job: value in self.get_job_status(job)[key], all_jobs)
+            all_jobs = filter(
+                lambda job: value in self.get_job_status(job)[key], all_jobs
+            )
         self.filtered_jobs = list(all_jobs)
         if output:
             for job in self.filtered_jobs:
-                print(f'Found Job with {job.id=}')
+                print(f"Found Job with {job.id=}")
 
     def query_jobs(self, query) -> list[Job]:
         """return list of jobs as result of single `Query`."""
