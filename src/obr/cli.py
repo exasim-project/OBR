@@ -379,9 +379,9 @@ def archive(ctx: click.Context, **kwargs):
     jobs = filter_jobs_by_query(project, filters)
 
     progress = kwargs.get("progress")
-    print(progress)
+    tag = kwargs.get("tag", "")
     time = str(datetime.now()).replace(" ", "_")
-    target_folder: str = kwargs.get("repo", "")
+    target_folder: str = kwargs.get("repo", "") 
     use_github_repo = False
     repo = None
     branch_name = None
@@ -403,7 +403,7 @@ def archive(ctx: click.Context, **kwargs):
         )
 
     # setup target folder
-    path = Path(target_folder + f"/{time}")
+    path = Path(target_folder) / "workspace"
     if not path.exists():
         logging.info(f"creating {path}")
         path.mkdir()
@@ -417,6 +417,8 @@ def archive(ctx: click.Context, **kwargs):
                 if not progress:
                     logging.info(f"Job with {job.id=} has no case folder.")
                 continue
+
+            path = path / f"{job.id}" / tag
 
             # skip if either the most recent obr action failed or the label is set to "not success"
             case = OpenFOAMCase(str(case_folder), job)
