@@ -65,9 +65,7 @@ def copy_to_archive(
         target_path.mkdir(parents=True)
     logging.info(f"will copy from {src_file} to {target_file}")
     if src_file.is_symlink():
-        print(src_file)
         src_file = os.path.realpath(src_file)
-        print("resolved", src_file)
     check_output(["cp", src_file, target_file])
     if use_github_repo and repo:
         repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
