@@ -406,7 +406,11 @@ def archive(ctx: click.Context, **kwargs):
             signac_statepoint = Path(job.path) / "signac_statepoint.json"
             if not signac_statepoint.exists():
                 continue
-            else:
+       target_file = (
+                   target_folder / f"workspace/{job.id}/signac_statepoint.json"
+               )
+       logging.debug(f"{target_folder}, {signac_statepoint}")
+       copy_to_archive(repo, use_github_repo, signac_statepoint, target_file)
                 target_file = (
                     target_folder / f"workspace/{job.id}/signac_statepoint.json"
                 )
