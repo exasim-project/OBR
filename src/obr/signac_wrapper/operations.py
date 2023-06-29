@@ -560,6 +560,34 @@ def runSerialSolver(job: Job, args={}):
 
 
 @OpenFOAMProject.operation
+def propagate_log(job: Job, args={}):
+    if base_id := job.doc.get("base_id"):
+        # check for log_files in base_id which are not present here
+        root, _, files = next(os.walk(Path(job.path) / f"../{base_id}/case"))
+        for file in files:
+            src = Path(root) / file
+            dst = Path(job.path) / file
+            if not file.endswith("log") or dst.exists():
+                continue
+            logging.debug(f"linking {src.resolve()} to {dst}")
+            check_output(
+                [
+                    "cp",
+                    str(src),
+                    str(dst),
+                ],
+            )
+            # check_output(
+            #     [
+            #         "ln",
+            #         "-s",
+            #         str(os.path.relpath(Path(root)/ file, dst / relative_path)),
+            #     ],
+            #     cwd=dst / relative_path,
+            # )
+
+
+@OpenFOAMProject.operation
 def archive(job: Job, args={}) -> Literal[True]:
     root, _, files = next(os.walk(Path(job.path) / "case"))
     fp = os.environ.get("OBR_CALL_ARGS")
