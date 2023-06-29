@@ -13,6 +13,7 @@ from signac.contrib.job import Job
 from typing import Union, Literal
 from datetime import datetime
 import logging
+from typing import Optional
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -22,35 +23,46 @@ import logging
 
 
 class OpenFOAMProject(flow.FlowProject):
-    filtered_jobs = None
-    queried_jobs = None
+    filtered_jobs = []
+    queried_jobs = []
 
     def print_operations(self):
         ops = sorted(self.operations.keys())
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
-    def get_jobs(self, filter=Union[None, dict[str, str]], queries=None):
+    def get_jobs(self, filter=Optional[dict[str, str]], queries=None):
+        if not isinstance(filter, dict):
+            filter = {}
         self.filtered_jobs = self.filter_jobs(filters=filter)
-        resulting_jobs = self.query_jobs()
+        resulting_jobs = self.query_jobs(None)
         return resulting_jobs
 
     def filter_jobs(self, filters: dict[str, str], output=True):
-        all_jobs: list[Job] = self.queried_jobs or self.find_jobs()
+        all_jobs = self.find_jobs()
         # chain filtering of jobs
         for key, value in filters.items():
+            # get_job_status returns a dictionary comprised of id, operations, and labels.
+            # passing a filter as, e.g., {"labels": "ready"} would then check if "ready" is included in the labels list.
+            # so in all_jobs are included all jobs that have this specific key-value pair
+            # TODO this will likely need to be improved upon, depending on the requested filter
             all_jobs = filter(
                 lambda job: value in self.get_job_status(job)[key], all_jobs
             )
-        self.filtered_jobs = list(all_jobs)
+        filtered_jobs: list[Job] = list(all_jobs)
         if output:
             for job in self.filtered_jobs:
                 print(f"Found Job with {job.id=}")
+        return filtered_jobs
 
     def query_jobs(self, query) -> list[Job]:
         """return list of jobs as result of single `Query`."""
-        self.queried_jobs = self.filtered_jobs or self.find_jobs()
-        # TODO
+        jobs_to_query = self.filtered_jobs or self.find_jobs()
+        # job ids -> requested values (key,value?). 
+        # if multiple queries, query -> {job : value} would also be a sensible option imho
+        return_values: dict[str, str] = dict()  
+        for job in jobs_to_query:
+            # scour jobs, save data in return_values and return (+log)
 
 
 generate = OpenFOAMProject.make_group(name="generate")
