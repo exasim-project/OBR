@@ -366,6 +366,12 @@ def query(ctx: click.Context, **kwargs):
     type=str,
     help="Specify prefix of branch name. Will checkout new branch with timestamp <tag>-<timestamp>.",
 )
+@click.option(
+    "--ammend",
+    required=False,
+    multiple=True,
+    help="Add to existing branch instead of creating new one.",
+)
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     target_folder: Path = Path(kwargs.get("repo", "")).absolute()
@@ -392,14 +398,29 @@ def archive(ctx: click.Context, **kwargs):
             str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
         )
         branch_name = f"{tag}-{time_stamp}"
-        use_github_repo = True
         logging.info(f"checkout {branch_name}")
         repo.git.checkout("HEAD", b=branch_name)
+        use_github_repo = True
     except InvalidGitRepositoryError:
         logging.warn(
             f"Given directory {target_folder=} is not a github repository. Will only"
             " copy files."
         )
+    if use_git_repo:
+        previous_branch = repo.active_branch.name
+        if branch := kwargs.get("ammend"):
+            use_github_repo = True
+            logging.info(f"checkout {branch_name}")
+            repo.git.checkout(branch_name)
+        else:
+            branch_name = "archive-" + (
+                str(datetime.now())
+                .rsplit(":", 1)[0]
+                .replace(" ", ":")
+                .replace(":", "_")
+            )
+            logging.info(f"checkout {branch_name}")
+            repo.git.checkout("HEAD", b=branch_name)
 
     # setup target folder
     if not target_folder.exists():
