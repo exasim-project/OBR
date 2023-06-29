@@ -367,7 +367,7 @@ def query(ctx: click.Context, **kwargs):
     help="Specify prefix of branch name. Will checkout new branch with timestamp <tag>-<timestamp>.",
 )
 @click.option(
-    "--ammend",
+    "--amend",
     required=False,
     multiple=True,
     help="Add to existing branch instead of creating new one.",
