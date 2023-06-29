@@ -406,23 +406,17 @@ def archive(ctx: click.Context, **kwargs):
             signac_statepoint = Path(job.path) / "signac_statepoint.json"
             if not signac_statepoint.exists():
                 continue
-       target_file = (
-                   target_folder / f"workspace/{job.id}/signac_statepoint.json"
-               )
-       logging.debug(f"{target_folder}, {signac_statepoint}")
-       copy_to_archive(repo, use_github_repo, signac_statepoint, target_file)
-                target_file = (
-                    target_folder / f"workspace/{job.id}/signac_statepoint.json"
-                )
-                print("DEBUG", target_folder, signac_statepoint)
-                copy_to_archive(repo, use_github_repo, signac_statepoint, target_file)
+            target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
+            logging.debug(f"{target_folder}, {signac_statepoint}")
+            target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
+            copy_to_archive(repo, use_github_repo, signac_statepoint, target_file)
 
             case_folder = Path(job.path) / "case"
             if not case_folder.exists():
                 logging.info(f"Job with {job.id=} has no case folder.")
                 continue
 
-# TODO: implement archival only of non-failed jobs
+            # TODO: implement archival only of non-failed jobs
             # skip if either the most recent obr action failed or the label is set to "not success"
             # case = OpenFOAMCase(str(case_folder), job)
             # if not case.was_successful():
