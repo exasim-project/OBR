@@ -418,6 +418,7 @@ def archive(ctx: click.Context, **kwargs):
                 logging.info(f"Job with {job.id=} has no case folder.")
                 continue
 
+# TODO: implement archival only of non-failed jobs
             # skip if either the most recent obr action failed or the label is set to "not success"
             # case = OpenFOAMCase(str(case_folder), job)
             # if not case.was_successful():
