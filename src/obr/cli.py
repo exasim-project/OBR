@@ -389,7 +389,9 @@ def archive(ctx: click.Context, **kwargs):
     try:
         repo = Repo(path=str(target_folder), search_parent_directories=True)
         previous_branch = repo.active_branch.name
-        time_stamp = str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
+        time_stamp = (
+            str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
+        )
         branch_name = f"{tag}-{time_stamp}"
         use_github_repo = True
         logging.info(f"checkout {tag}-{branch_name}")
