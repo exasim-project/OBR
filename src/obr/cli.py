@@ -385,13 +385,13 @@ def archive(ctx: click.Context, **kwargs):
     jobs = filter_jobs_by_query(project, filters)
 
     time = str(datetime.now()).replace(" ", "_")
-    use_github_repo = False
+    use_git_repo = False
     repo = None
     branch_name = None
     previous_branch = None
     tag = kwargs.get("tag", "archive")
     # check if given path is actually a github repository
-    use_github_repo = False
+    use_git_repo = False
     try:
         repo = Repo(path=str(target_folder), search_parent_directories=True)
         previous_branch = repo.active_branch.name
@@ -401,7 +401,7 @@ def archive(ctx: click.Context, **kwargs):
         branch_name = f"{tag}-{time_stamp}"
         logging.info(f"checkout {branch_name}")
         repo.git.checkout("HEAD", b=branch_name)
-        use_github_repo = True
+        use_git_repo = True
     except InvalidGitRepositoryError:
         logging.warn(
             f"Given directory {target_folder=} is not a github repository. Will only"
@@ -410,7 +410,7 @@ def archive(ctx: click.Context, **kwargs):
     if use_git_repo:
         previous_branch = repo.active_branch.name
         if branch := kwargs.get("amend"):
-            use_github_repo = True
+            use_git_repo = True
             logging.info(f"checkout {branch_name}")
             repo.git.checkout(branch_name)
         else:
