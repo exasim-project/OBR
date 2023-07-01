@@ -391,6 +391,7 @@ def archive(ctx: click.Context, **kwargs):
     previous_branch = None
     tag = kwargs.get("tag", "archive")
     # check if given path is actually a github repository
+    use_github_repo = False
     try:
         repo = Repo(path=str(target_folder), search_parent_directories=True)
         previous_branch = repo.active_branch.name
