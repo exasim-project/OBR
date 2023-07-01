@@ -408,7 +408,7 @@ def archive(ctx: click.Context, **kwargs):
         )
     if use_git_repo:
         previous_branch = repo.active_branch.name
-        if branch := kwargs.get("ammend"):
+        if branch := kwargs.get("amend"):
             use_github_repo = True
             logging.info(f"checkout {branch_name}")
             repo.git.checkout(branch_name)
