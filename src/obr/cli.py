@@ -361,10 +361,9 @@ def query(ctx: click.Context, **kwargs):
     help="Path(s) to non-logfile(s) to be also added to the repository.",
 )
 @click.option(
-    "-a",
     "--tag",
     required=False,
-    multiple=True,
+    multiple=False,
     help="Path(s) to non-logfile(s) to be also added to the repository.",
 )
 @click.pass_context
