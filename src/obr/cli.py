@@ -385,7 +385,6 @@ def archive(ctx: click.Context, **kwargs):
     jobs = filter_jobs_by_query(project, filters)
 
     time = str(datetime.now()).replace(" ", "_")
-    use_git_repo = False
     repo = None
     branch_name = None
     previous_branch = None
