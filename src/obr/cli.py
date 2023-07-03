@@ -370,6 +370,7 @@ def query(ctx: click.Context, **kwargs):
     "--amend",
     required=False,
     multiple=True,
+    type=str,
     help="Add to existing branch instead of creating new one.",
 )
 @click.pass_context
