@@ -393,7 +393,7 @@ def archive(ctx: click.Context, **kwargs):
         )
         branch_name = f"{tag}-{time_stamp}"
         use_github_repo = True
-        logging.info(f"checkout {tag}-{branch_name}")
+        logging.info(f"checkout {branch_name}")
         repo.git.checkout("HEAD", b=branch_name)
     except InvalidGitRepositoryError:
         logging.warn(
