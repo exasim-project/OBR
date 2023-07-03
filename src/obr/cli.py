@@ -21,7 +21,7 @@ import time
 
 from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values
-from .create_tree import create_tree
+from .create_tree import create_tree, update_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
 import logging
@@ -262,6 +262,29 @@ def init(ctx: click.Context, **kwargs):
     create_tree(project, config, kwargs)
 
     logging.info("successfully initialised")
+
+@cli.command()
+@click.option(
+    "-f",
+    "--folder",
+    default=".",
+    help="Where to create the worspace and view. Default: '.' ",
+)
+@click.option("-e", "--execute", default=False)
+@click.option("-c", "--config", required=True, help="Path to configuration file.")
+@click.pass_context
+def update(ctx: click.Context, **kwargs):
+    config_str = read_yaml(kwargs)
+    config_str = config_str.replace("\n\n", "\n")
+    config = yaml.safe_load(config_str)
+
+    if kwargs.get("verbose", 0) >= 1:
+        logging.info(config)
+
+    project = OpenFOAMProject.init_project(root=kwargs["folder"])
+    update_tree(project, config, kwargs)
+
+    logging.info("successfully updated")
 
 
 @cli.command()

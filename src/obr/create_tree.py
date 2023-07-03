@@ -86,9 +86,19 @@ def generate_view(
     if not id_path_mapping:
         return
 
+    def generate_view_path(job):
+        path = id_path_mapping.get(job.id)
+        if not path:
+            logging.error(f"failed to create path for job {job.id}")
+            logging.info(job.statepoint)
+            path =  f"failed_mapping/{job.id}"
+        return "view/" + path
+
+
+
     project.find_jobs(filter={"has_child": False}).export_to(
         str(workspace),
-        path=lambda job: "view/" + id_path_mapping[job.id],
+        path=generate_view_path,
         copytree=lambda src, dst: ln(src, dst),
     )
 
@@ -261,3 +271,39 @@ def create_tree(
         Path(arguments["folder"]) / "view",
         id_path_mapping,
     )
+
+
+def update_tree(
+    project: OpenFOAMProject,
+    config: dict,
+    arguments: dict,
+    skip_foam_src_check: bool = False,
+):
+    # Add base case
+    base_case_state = {"has_child": True}
+    base_case_state.update({k: v for k, v in config["case"].items()})
+    of_case = project.open_job(base_case_state)
+
+    setup_job_doc(
+        of_case, None, config["case"], keys=list(config["case"].keys()), value=[]
+    )
+
+    of_case.doc["state"] = "ready"
+    of_case.init()
+
+    operations: list = []
+    id_path_mapping = {of_case.id: "base/"}
+    operations = add_variations(
+        operations,
+        project,
+        config.get("variation", {}),
+        of_case,
+        id_path_mapping,
+    )
+
+    for job in project:
+        path = id_path_mapping.get(job.id)
+        if not path:
+            logging.info(f"found orphaned job {job.id} cleaning")
+            check_output(["rm", "-rf", job.path])
+
