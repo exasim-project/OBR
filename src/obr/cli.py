@@ -363,7 +363,7 @@ def query(ctx: click.Context, **kwargs):
 @click.option(
     "--tag",
     required=False,
-    type=str, 
+    type=str,
     help="Specify prefix of branch name. Will checkout new branch with timestamp <tag>-<timestamp>.",
 )
 @click.pass_context
