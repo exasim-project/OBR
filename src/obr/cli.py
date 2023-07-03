@@ -412,6 +412,10 @@ def archive(ctx: click.Context, **kwargs):
         if branch := kwargs.get("amend"):
             use_git_repo = True
             logging.info(f"checkout {branch_name}")
+            if not branch in repo.git.branch():
+                    # throw error, return 
+                    logging.error(f"Specified 'amend' branch does not exist. Current existing branches include {repo.git.branch()}.")
+                    return
             repo.git.checkout(branch_name)
         else:
             branch_name = "archive-" + (
