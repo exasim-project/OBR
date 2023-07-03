@@ -369,7 +369,7 @@ def query(ctx: click.Context, **kwargs):
 @click.option(
     "--amend",
     required=False,
-    multiple=True,
+    multiple=False,
     type=str,
     help="Add to existing branch instead of creating new one.",
 )
