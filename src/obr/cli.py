@@ -363,8 +363,8 @@ def query(ctx: click.Context, **kwargs):
 @click.option(
     "--tag",
     required=False,
-    multiple=False,
-    help="Path(s) to non-logfile(s) to be also added to the repository.",
+    type=str, 
+    help="Specify prefix of branch name. Will checkout new branch with timestamp <tag>-<timestamp>.",
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
