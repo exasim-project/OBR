@@ -258,7 +258,7 @@ def query_to_dataframe(
     return ret
 
 
-def filters_to_queries(filters: Iterable[str]) -> list[Query]:
+def build_filter_query(filters: Iterable[str]) -> list[Query]:
     q: list[Query] = []
     for filter in filters:
         for predicate in Predicates:
@@ -277,7 +277,7 @@ def filter_jobs(project, filter: Iterable[str]) -> list[Job]:
     jobs: list[Job]
 
     if filter:
-        queries = filters_to_queries(filter)
+        queries = build_filter_query(filter)
         sel_jobs = query_impl(project, queries, output=False)
         jobs = [j for j in project if j.id in sel_jobs]
     else:
