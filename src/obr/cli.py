@@ -23,7 +23,7 @@ from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl, filter_jobs_by_query
+from .core.queries import input_to_queries, query_impl, filter_jobs
 from pathlib import Path
 import logging
 from subprocess import check_output
@@ -353,6 +353,12 @@ def query(ctx: click.Context, **kwargs):
     multiple=True,
     help="Path(s) to non-logfile(s) to be also added to the repository.",
 )
+@click.option(
+    "--dry-run",
+    required=False,
+    is_flag=True,
+    help="If set, no files will be copied anywhere. For Debugging purposes."
+)
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     if current_path := kwargs.get("folder", "."):
@@ -362,8 +368,8 @@ def archive(ctx: click.Context, **kwargs):
     # setup project and jobs
     project = OpenFOAMProject().init_project()
     filters = kwargs.get("filter")
-    jobs = filter_jobs_by_query(project, filters)
-
+    jobs = project.filter_jobs(filters=filters)
+    dry_run = kwargs.get("dry_run", False)
     time = str(datetime.now()).replace(" ", "_")
     target_folder: str = kwargs.get("repo", "")
     use_github_repo = False
@@ -378,8 +384,11 @@ def archive(ctx: click.Context, **kwargs):
             str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
         )
         use_github_repo = True
-        logging.info(f"checkout archive-{branch_name}")
-        repo.git.checkout("HEAD", b=branch_name)
+        if not dry_run:
+            logging.info(f"checkout archive-{branch_name}")
+            repo.git.checkout("HEAD", b=branch_name)
+        else:
+            logging.info(f"Would check out new branch archive-{branch_name}")
     except InvalidGitRepositoryError:
         logging.warn(
             f"Given directory {target_folder=} is not a github repository. Will only"
@@ -389,8 +398,11 @@ def archive(ctx: click.Context, **kwargs):
     # setup target folder
     path = Path(target_folder + f"/{time}")
     if not path.exists():
-        logging.info(f"creating {path}")
-        path.mkdir()
+        if not dry_run:    
+            logging.info(f"creating {path}")
+            path.mkdir()
+        else:
+            logging.info(f"Would create {path}")
 
     skip = kwargs.get("skip_logs")
     if not skip:
@@ -412,7 +424,12 @@ def archive(ctx: click.Context, **kwargs):
                     target_file = path / file
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
+                    if dry_run:
+                        logging.info(f"Would copy from {log_file} to {target_file}")
+                        continue
                     copy_to_archive(repo, use_github_repo, log_file, target_file)
+    else:
+        logging.info("--skip-logs is set. Skipping archival of log files.")
 
     # copy CLI-passed files into data repo and add if possible
     extra_files: tuple[str] = kwargs.get("file", ())
@@ -422,10 +439,16 @@ def archive(ctx: click.Context, **kwargs):
         if not f.exists():
             logging.info(f"invalid path {f}. Skipping.")
             continue
+        if dry_run:
+            logging.info(f"Would copy from {f} to {target_file}")
+            continue
         copy_to_archive(repo, use_github_repo, f, target_file)
 
     # commit and push
     if use_github_repo and repo and branch_name:
+        if dry_run:
+            logging.info(f"Would now add log files to repo, commit and push to {branch_name}.")     
+            return
         message = f"Add new logs -> {path}"
         author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
         logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
