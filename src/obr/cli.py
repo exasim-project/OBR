@@ -23,7 +23,7 @@ from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl, filter_jobs
+from .core.queries import input_to_queries, query_impl 
 from pathlib import Path
 import logging
 from subprocess import check_output
@@ -97,6 +97,15 @@ def cli(ctx: click.Context, debug: bool):
     help="Prints all available operations and returns.",
 )
 @click.option("--query", default=None, help="")
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
+        " archive --filter solver=pisoFoam --filter preconditioner=IC"
+    ),
+)
 @click.option("--bundling_key", default=None, help="")
 @click.option("-p", "--partition", default="cpuonly")
 @click.option("--account", default="")
@@ -293,6 +302,15 @@ def status(ctx: click.Context, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
+        " archive --filter solver=pisoFoam --filter preconditioner=IC"
+    ),
+)
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
 @click.option("-q", "--query", required=True)
@@ -303,9 +321,10 @@ def query(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
-    queries_str = kwargs.get("query")
+    filters = kwargs.get("filter")
+    queries_str = kwargs.get("query", "")
     queries = input_to_queries(queries_str)
-    query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
+    project.get_jobs(filter=filters, query=queries)
 
 
 @cli.command()
@@ -357,7 +376,7 @@ def query(ctx: click.Context, **kwargs):
     "--dry-run",
     required=False,
     is_flag=True,
-    help="If set, no files will be copied anywhere. For Debugging purposes."
+    help="If set, no files will be copied anywhere. For Debugging purposes.",
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
@@ -398,7 +417,7 @@ def archive(ctx: click.Context, **kwargs):
     # setup target folder
     path = Path(target_folder + f"/{time}")
     if not path.exists():
-        if not dry_run:    
+        if not dry_run:
             logging.info(f"creating {path}")
             path.mkdir()
         else:
@@ -447,7 +466,9 @@ def archive(ctx: click.Context, **kwargs):
     # commit and push
     if use_github_repo and repo and branch_name:
         if dry_run:
-            logging.info(f"Would now add log files to repo, commit and push to {branch_name}.")     
+            logging.info(
+                f"Would now add log files to repo, commit and push to {branch_name}."
+            )
             return
         message = f"Add new logs -> {path}"
         author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
