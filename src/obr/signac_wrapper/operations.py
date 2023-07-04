@@ -8,12 +8,12 @@ from subprocess import check_output
 from ..core.core import execute
 from .labels import owns_mesh, final, finished
 from obr.OpenFOAM.case import OpenFOAMCase
-from signac.contrib.project import JobsCursor
 from signac.contrib.job import Job
 from typing import Union, Literal
 from datetime import datetime
 import logging
 from typing import Optional
+from obr.core.queries import filter_jobs, query_impl, Query
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -23,46 +23,26 @@ from typing import Optional
 
 
 class OpenFOAMProject(flow.FlowProject):
-    filtered_jobs = []
-    queried_jobs = []
-
     def print_operations(self):
         ops = sorted(self.operations.keys())
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
-    def get_jobs(self, filter=Optional[dict[str, str]], queries=None):
-        if not isinstance(filter, dict):
-            filter = {}
-        self.filtered_jobs = self.filter_jobs(filters=filter)
-        resulting_jobs = self.query_jobs(None)
-        return resulting_jobs
+    def get_jobs(self, filter=list[str], query: Optional[list[Query]] = None):
+        filtered_jobs = self.filter_jobs(filters=filter)
+        if query is not None:
+            self.query_jobs(filtered_jobs, query)
 
-    def filter_jobs(self, filters: dict[str, str], output=True):
-        all_jobs = self.find_jobs()
-        # chain filtering of jobs
-        for key, value in filters.items():
-            # get_job_status returns a dictionary comprised of id, operations, and labels.
-            # passing a filter as, e.g., {"labels": "ready"} would then check if "ready" is included in the labels list.
-            # so in all_jobs are included all jobs that have this specific key-value pair
-            # TODO this will likely need to be improved upon, depending on the requested filter
-            all_jobs = filter(
-                lambda job: value in self.get_job_status(job)[key], all_jobs
-            )
-        filtered_jobs: list[Job] = list(all_jobs)
+    def filter_jobs(self, filters: list[str], output=False):
+        filtered_jobs: list[Job] = filter_jobs(self, filters)
         if output:
-            for job in self.filtered_jobs:
+            for job in filtered_jobs:
                 print(f"Found Job with {job.id=}")
         return filtered_jobs
 
-    def query_jobs(self, query) -> list[Job]:
-        """return list of jobs as result of single `Query`."""
-        jobs_to_query = self.filtered_jobs or self.find_jobs()
-        # job ids -> requested values (key,value?). 
-        # if multiple queries, query -> {job : value} would also be a sensible option imho
-        return_values: dict[str, str] = dict()  
-        for job in jobs_to_query:
-            # scour jobs, save data in return_values and return (+log)
+    def query_jobs(self, jobs: list[Job], query: list[Query]) -> list[str]:
+        """return list of job ids as result of `Query`."""
+        return query_impl(jobs, query, output=True)
 
 
 generate = OpenFOAMProject.make_group(name="generate")
