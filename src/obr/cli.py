@@ -360,6 +360,12 @@ def query(ctx: click.Context, **kwargs):
     multiple=True,
     help="Path(s) to non-logfile(s) to be also added to the repository.",
 )
+@click.option(
+    "--tag",
+    required=False,
+    type=str,
+    help="Specify prefix of branch name. Will checkout new branch with timestamp <tag>-<timestamp>.",
+)
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     target_folder: Path = Path(kwargs.get("repo", "")).absolute()
@@ -377,15 +383,17 @@ def archive(ctx: click.Context, **kwargs):
     repo = None
     branch_name = None
     previous_branch = None
+    tag = kwargs.get("tag", "archive")
     # check if given path is actually a github repository
     try:
         repo = Repo(path=str(target_folder), search_parent_directories=True)
         previous_branch = repo.active_branch.name
-        branch_name = "archive-" + (
+        time_stamp = (
             str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
         )
+        branch_name = f"{tag}-{time_stamp}"
         use_github_repo = True
-        logging.info(f"checkout archive-{branch_name}")
+        logging.info(f"checkout {branch_name}")
         repo.git.checkout("HEAD", b=branch_name)
     except InvalidGitRepositoryError:
         logging.warn(
