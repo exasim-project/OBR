@@ -56,7 +56,7 @@ def check_cli_operations(
 
 
 def copy_to_archive(
-    repo: Union[Repo, None], use_github_repo: bool, src_file: Path, target_file: Path
+    repo: Union[Repo, None], use_git_repo: bool, src_file: Path, target_file: Path
 ) -> None:
     """Copies files to archive repo"""
     # ensure target directory exists()
@@ -65,9 +65,9 @@ def copy_to_archive(
         target_path.mkdir(parents=True)
     logging.info(f"will copy from {src_file} to {target_file}")
     if src_file.is_symlink():
-        src_file = os.path.realpath(src_file)
+        src_file = Path(os.path.realpath(src_file))
     check_output(["cp", src_file, target_file])
-    if use_github_repo and repo:
+    if use_git_repo and repo:
         repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
 
 
@@ -364,7 +364,10 @@ def query(ctx: click.Context, **kwargs):
     "--tag",
     required=False,
     type=str,
-    help="Specify prefix of branch name. Will checkout new branch with timestamp <tag>-<timestamp>.",
+    help=(
+        "Specify prefix of branch name. Will checkout new branch with timestamp"
+        " <tag>-<timestamp>."
+    ),
 )
 @click.option(
     "--amend",
@@ -415,7 +418,8 @@ def archive(ctx: click.Context, **kwargs):
             if not branch in repo.git.branch():
                 # throw error, return
                 logging.error(
-                    f"Specified 'amend' branch does not exist. Current existing branches include {repo.git.branch()}."
+                    "Specified 'amend' branch does not exist. Current existing"
+                    f" branches include {repo.git.branch()}."
                 )
                 return
             repo.git.checkout(branch_name)
@@ -445,7 +449,7 @@ def archive(ctx: click.Context, **kwargs):
             target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
             logging.debug(f"{target_folder}, {signac_statepoint}")
             target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
-            copy_to_archive(repo, use_github_repo, signac_statepoint, target_file)
+            copy_to_archive(repo, use_git_repo, signac_statepoint, target_file)
 
             case_folder = Path(job.path) / "case"
             if not case_folder.exists():
@@ -470,7 +474,7 @@ def archive(ctx: click.Context, **kwargs):
                     target_file = target_folder / f"workspace/{job.id}/case/{file}"
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
-                    copy_to_archive(repo, use_github_repo, src_file, target_file)
+                    copy_to_archive(repo, use_git_repo, src_file, target_file)
 
     # copy CLI-passed files into data repo and add if possible
     extra_files: tuple[str] = kwargs.get("file", ())
@@ -479,10 +483,10 @@ def archive(ctx: click.Context, **kwargs):
         if not f.exists():
             logging.info(f"invalid path {f}. Skipping.")
             continue
-        copy_to_archive(repo, use_github_repo, f.absolute(), path)
+        copy_to_archive(repo, use_git_repo, f.absolute())
 
     # commit and push
-    if use_github_repo and repo and branch_name:
+    if use_git_repo and repo and branch_name:
         message = f"Add new logs -> {str(target_folder)}"
         author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
         logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
