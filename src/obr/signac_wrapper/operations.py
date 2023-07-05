@@ -221,8 +221,8 @@ def execute_operation(job: Job, operation_name: str, operations) -> Literal[True
                 getattr(sys.modules[__name__], func)(job, operation.get(func))
         except Exception as e:
             tb = traceback.format_exc()
-            logging.error(e)
             logging.info(tb)
+            logging.error(e)
             job.doc["state"] == "failure"
     return True
 
