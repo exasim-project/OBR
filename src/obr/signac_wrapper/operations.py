@@ -13,7 +13,7 @@ from typing import Union, Literal
 from datetime import datetime
 import logging
 from typing import Optional
-from obr.core.queries import filter_jobs, query_impl, Query
+from obr.core.queries import filter_jobs, query_impl, input_to_queries, Query
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -28,13 +28,16 @@ class OpenFOAMProject(flow.FlowProject):
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
-    def get_jobs(self, filter=list[str], query: Optional[list[Query]] = None):
-        filtered_jobs = self.filter_jobs(filters=filter)
+    def get_jobs(self, filter=list[str], query: Optional[list[Query]] = None, output=False):
+        filtered_jobs = self.filter_jobs(filters=filter, output=output)
         if query is not None:
+            if isinstance(query, str):
+                query = input_to_queries(query)
             self.query_jobs(filtered_jobs, query)
+        return filtered_jobs
 
-    def filter_jobs(self, filters: list[str], output=False):
-        filtered_jobs: list[Job] = filter_jobs(self, filters)
+    def filter_jobs(self, filters: list[str], output: bool = False):
+        filtered_jobs: list[Job] = filter_jobs(self, filters, output)
         if output:
             for job in filtered_jobs:
                 print(f"Found Job with {job.id=}")

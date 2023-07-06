@@ -103,7 +103,7 @@ def cli(ctx: click.Context, debug: bool):
     multiple=True,
     help=(
         "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
-        " archive --filter solver=pisoFoam --filter preconditioner=IC"
+        " submit --filter solver=pisoFoam"
     ),
 )
 @click.option("--bundling_key", default=None, help="")
@@ -206,6 +206,15 @@ def submit(ctx: click.Context, **kwargs):
     is_flag=True,
     help="Prints all available operations and returns.",
 )
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
+        " run -o runParallelSolver --filter solver=pisoFoam"
+    ),
+)
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
@@ -226,13 +235,16 @@ def run(ctx: click.Context, **kwargs):
         return
 
     queries_str = kwargs.get("query")
-    queries = input_to_queries(queries_str)
-    jobs: list[Job] = []
-    if queries:
-        sel_jobs = query_impl(project, queries, output=False)
-        jobs = [j for j in project if j.id in sel_jobs]
-    else:
-        jobs = [j for j in project]
+    filters = kwargs.get("filter")
+    jobs = project.get_jobs(filter=filters, query=queries_str, output=True)
+    # NOTE One would rather filter the jobs, than query them .. right?
+    # queries = input_to_queries(queries_str)
+    # jobs: list[Job] = []
+    # if queries:
+    #     sel_jobs = query_impl(project, queries, output=False)
+    #     jobs = [j for j in project if j.id in sel_jobs]
+    # else:
+    #     jobs = [j for j in project]
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
@@ -308,12 +320,13 @@ def status(ctx: click.Context, **kwargs):
     multiple=True,
     help=(
         "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
-        " archive --filter solver=pisoFoam --filter preconditioner=IC"
+        " query --filter solver=pisoFoam --filter preconditioner=IC"
     ),
 )
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
 @click.option("-q", "--query", required=True)
+@click.option("-v", "--verbose", required=False, is_flag=True, help="Set for additional output.")
 @click.pass_context
 def query(ctx: click.Context, **kwargs):
     # TODO refactor
@@ -323,8 +336,9 @@ def query(ctx: click.Context, **kwargs):
     project = OpenFOAMProject.get_project()
     filters = kwargs.get("filter")
     queries_str = kwargs.get("query", "")
+    output = kwargs.get("verbose", False)
     queries = input_to_queries(queries_str)
-    project.get_jobs(filter=filters, query=queries)
+    project.get_jobs(filter=filters, query=queries, output=output)
 
 
 @cli.command()
