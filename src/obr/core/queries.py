@@ -7,6 +7,7 @@ from signac.contrib.job import Job
 import pandas as pd
 from typing import TYPE_CHECKING, Union
 from enum import Enum
+from pprint import pformat
 if TYPE_CHECKING:
     from obr.signac_wrapper.operations import OpenFOAMProject
 
@@ -51,15 +52,25 @@ class Query:
         self.predicate_op = predicate_map[self.predicate]
 
         # a value specific value has been requested
-        if not (self.value == None):
-            if (
-                self.predicate_op(self.value, value)
-                and self.key == key
-                and not self.state
-            ):
-                self.state = {key: value}
+        if self.value is not None and self.key == key:
+            try:
+                # convert value to target type to avoid TypeErrors
+                self.value = type(value)(self.value)
+                if (
+                    not self.state
+                    and self.predicate_op(self.value, value)
+                ):
+                    self.state = {key: value}
+            except TypeError as e:
+                # After the prior type conversion, this case should not happen anymore.
+                logging.error(f"{e}:")
+                logging.error(f"\tTried to compare {self.value}({type(self.value)}) and {value}({type(value)}) for {key=}.")
+            except ValueError as e:
+                # In case of a funky type conversion. Not expected behavior though.
+                logging.info(value)
+                logging.error(e)
         else:
-            if self.predicate_op(self.key, key) and not self.state:
+            if not self.state and self.predicate_op(self.key, key):
                 self.state = {key: value}
 
     def match(self):
@@ -209,7 +220,7 @@ def query_impl(
     res = query_to_dict(jobs, queries, output, latest_only)
     if output:
         for r in res:
-            logging.info(r)
+            logging.info(pformat(r))
 
     query_ids = []
     for id_ in res:
@@ -273,12 +284,12 @@ def build_filter_query(filters: Iterable[str]) -> list[Query]:
     return q
 
 
-def filter_jobs(project, filter: Iterable[str]) -> list[Job]:
+def filter_jobs(project, filter: Iterable[str], output: bool = False) -> list[Job]:
     jobs: list[Job]
 
     if filter:
         queries = build_filter_query(filter)
-        sel_jobs = query_impl(project, queries, output=False)
+        sel_jobs = query_impl(project, queries, output=output)
         jobs = [j for j in project if j.id in sel_jobs]
     else:
         jobs = [j for j in project]

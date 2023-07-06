@@ -161,3 +161,9 @@ def test_filters(get_project):
     queries_str = "{key: 'solver', value: 'pisoFoam'}"
     jobs = filter_jobs(get_project, queries_str)
     assert jobs[0].sp.get("solver") == "pisoFoam"
+
+
+def test_geq_predicate(get_project):
+    queries_str = "{key: 'maxIter', value: '2900', predicate:'geq'}"
+    jobs = filter_jobs(get_project, queries_str)
+    assert jobs[0].sp.get("post_build")[2].get("fvSolution").get("maxIter") == 3000
