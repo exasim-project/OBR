@@ -8,6 +8,7 @@ import pandas as pd
 from typing import TYPE_CHECKING, Union
 from enum import Enum
 from pprint import pformat
+
 if TYPE_CHECKING:
     from obr.signac_wrapper.operations import OpenFOAMProject
 
@@ -56,15 +57,15 @@ class Query:
             try:
                 # convert value to target type to avoid TypeErrors
                 self.value = type(value)(self.value)
-                if (
-                    not self.state
-                    and self.predicate_op(self.value, value)
-                ):
+                if not self.state and self.predicate_op(self.value, value):
                     self.state = {key: value}
             except TypeError as e:
                 # After the prior type conversion, this case should not happen anymore.
                 logging.error(f"{e}:")
-                logging.error(f"\tTried to compare {self.value}({type(self.value)}) and {value}({type(value)}) for {key=}.")
+                logging.error(
+                    f"\tTried to compare {self.value}({type(self.value)}) and"
+                    f" {value}({type(value)}) for {key=}."
+                )
             except ValueError as e:
                 # In case of a funky type conversion. Not expected behavior though.
                 logging.info(value)
@@ -280,7 +281,9 @@ def build_filter_query(filters: Iterable[str]) -> list[Query]:
                 q.append(Query(key=lhs, value=rhs))
                 break
         else:
-            logging.warning(f"No applicable predicate found in {filter=}. Will be ignored.")
+            logging.warning(
+                f"No applicable predicate found in {filter=}. Will be ignored."
+            )
     return q
 
 

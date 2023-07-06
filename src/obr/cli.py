@@ -23,7 +23,7 @@ from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl 
+from .core.queries import input_to_queries, query_impl
 from pathlib import Path
 import logging
 from subprocess import check_output
@@ -326,7 +326,9 @@ def status(ctx: click.Context, **kwargs):
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
 @click.option("-q", "--query", required=True)
-@click.option("-v", "--verbose", required=False, is_flag=True, help="Set for additional output.")
+@click.option(
+    "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
+)
 @click.pass_context
 def query(ctx: click.Context, **kwargs):
     # TODO refactor
