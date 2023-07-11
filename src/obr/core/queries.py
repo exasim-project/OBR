@@ -19,6 +19,9 @@ class query_result:
     result: list[dict] = field(default_factory=list[dict])
     sub_keys: list[list[str]] = field(default_factory=list[list[str]])
 
+    def __repr__(self) -> str:
+        return f"Job: {self.id}, result: {self.result}"
+
 
 class Predicates(Enum):
     eq = "=="
@@ -52,30 +55,41 @@ class Query:
 
         self.predicate_op = predicate_map[self.predicate]
 
-        # a value specific value has been requested
-        if self.value is not None and self.key == key:
-            try:
-                # convert value to target type to avoid TypeErrors
-                self.value = type(value)(self.value)
-                if not self.state and self.predicate_op(self.value, value):
-                    self.state = {key: value}
-            except TypeError as e:
-                # After the prior type conversion, this case should not happen anymore.
-                logging.error(f"{e}:")
-                logging.error(
-                    f"\tTried to compare {self.value}({type(self.value)}) and"
-                    f" {value}({type(value)}) for {key=}."
-                )
-            except ValueError as e:
-                # In case of a funky type conversion. Not expected behavior though.
-                logging.info(value)
-                logging.error(e)
-        else:
-            if not self.state and self.predicate_op(self.key, key):
+        # case: wrong key during iteration
+        if not self.key == key:
+            self.state = {}  # NOTE I would like a more explicit "False" but type hint prefers a dict
+            return
+
+        # case: nonexistant value, existing key
+        if self.value is None and key:
+            # Set the state to whatever the value is, as long as the key exists
+            self.state = {key: value}
+            return
+
+        # case: specific value, existant key
+        try:
+            # convert value to target type to avoid TypeErrors
+            self.value = type(value)(self.value)
+            if not self.state and self.predicate_op(value, self.value, ):
                 self.state = {key: value}
+        except TypeError as e:
+            # After the prior type conversion, this case should not happen anymore.
+            logging.error(f"{e}:")
+            logging.error(
+                f"\tTried to compare {self.value}({type(self.value)}) and"
+                f" {value}({type(value)}) for {key=}."
+            )
+        except ValueError as e:
+            # In case of a funky type conversion. Not expected behavior though.
+            logging.info(value)
+            logging.error(e)
 
     def match(self):
         return self.state
+    
+    def __repr__(self) -> str:
+        val = self.value or "Any"
+        return "{} {} {}:".format(self.key, Predicates[self.predicate].value, val)
 
 
 def input_to_query(inp: str) -> Query:
@@ -220,8 +234,14 @@ def query_impl(
     """Performs a query and returns corresponding job.ids"""
     res = query_to_dict(jobs, queries, output, latest_only)
     if output:
+        if len(queries) > 0:
+            q = queries[0]
+            if len(res) == 0:
+                logging.info(f"No results for Query {q}")
+            else:
+                logging.info(f"Query results for {q}:")
         for r in res:
-            logging.info(pformat(r))
+            logging.info(f"\t{r}")
 
     query_ids = []
     for id_ in res:
@@ -270,15 +290,23 @@ def query_to_dataframe(
     return ret
 
 
-def build_filter_query(filters: Iterable[str]) -> list[Query]:
+def build_filter_query(filters: Union[list[str], tuple[str]]) -> list[Query]:
     q: list[Query] = []
+
+    # query syntax
+    if not any([pred for pred in Predicates if pred.value in filters[0]]):
+        if not isinstance(filters, list):
+            filters = [filters]
+        return [input_to_query(f) for f in filters]
+
+    # filter syntax
     for filter in filters:
         for predicate in Predicates:
             # check if predicates like =, >, <=.. are in the filter
             if predicate.value in filter:
                 logging.info(f"Found predicate {predicate} in {filter=}")
                 lhs, rhs = filter.split(predicate.value)
-                q.append(Query(key=lhs, value=rhs))
+                q.append(Query(key=lhs, value=rhs, predicate=predicate.name))
                 break
         else:
             logging.warning(
@@ -288,6 +316,7 @@ def build_filter_query(filters: Iterable[str]) -> list[Query]:
 
 
 def filter_jobs(project, filter: Iterable[str], output: bool = False) -> list[Job]:
+    """`filter` is expected to be a list, string or other iterable of strings in the form of <key><predicate><value>"""
     jobs: list[Job]
 
     if filter:

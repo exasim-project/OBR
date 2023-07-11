@@ -154,16 +154,27 @@ def get_project(tmpdir):
 #     assert df.equals(correct_df)
 
 
-def test_filters(get_project):
-    queries_str = ""
-    jobs = filter_jobs(get_project, queries_str)
-    assert len(jobs) == 1
-    queries_str = "{key: 'solver', value: 'pisoFoam'}"
-    jobs = filter_jobs(get_project, queries_str)
-    assert jobs[0].sp.get("solver") == "pisoFoam"
+def test_filters(get_project: OpenFOAMProject):
+    filters = ["maxIter!=0"]
+    jobs = get_project.filter_jobs(filters, output=True)
+    assert len(jobs) > 0
 
 
-def test_geq_predicate(get_project):
+def test_predicates(get_project):
+    p = get_project
     queries_str = "{key: 'maxIter', value: '2900', predicate:'geq'}"
-    jobs = filter_jobs(get_project, queries_str)
+    jobs = filter_jobs(p, queries_str)
     assert jobs[0].sp.get("post_build")[2].get("fvSolution").get("maxIter") == 3000
+    queries_str = "{key: 'maxIter', value: '2900', predicate:'gt'}"
+    jobs = filter_jobs(p, queries_str)
+    assert jobs[0].sp.get("post_build")[2].get("fvSolution").get("maxIter") == 3000
+    queries_str = "{key: 'maxIter', value: '2900', predicate:'neq'}"
+    jobs = filter_jobs(p, queries_str)
+    assert jobs[0].sp.get("post_build")[2].get("fvSolution").get("maxIter") == 3000
+    queries_str = "{key: 'maxIter', value: '3100', predicate:'lt'}"
+    jobs = filter_jobs(p, queries_str)
+    assert jobs[0].sp.get("post_build")[2].get("fvSolution").get("maxIter") == 3000
+    queries_str = "{key: 'maxIter', value: '3100', predicate:'leq'}"
+    jobs = filter_jobs(p, queries_str)
+    assert jobs[0].sp.get("post_build")[2].get("fvSolution").get("maxIter") == 3000
+    
