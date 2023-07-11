@@ -60,13 +60,13 @@ class Query:
             self.state = {}  # NOTE I would like a more explicit "False" but type hint prefers a dict
             return
 
-        # case: nonexistant value, existing key
+        # case: nonexistent value, existing key
         if self.value is None and key:
             # Set the state to whatever the value is, as long as the key exists
             self.state = {key: value}
             return
 
-        # case: specific value, existant key
+        # case: specific value, existent key
         try:
             # convert value to target type to avoid TypeErrors
             self.value = type(value)(self.value)
