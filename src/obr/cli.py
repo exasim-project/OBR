@@ -394,6 +394,9 @@ def query(ctx: click.Context, **kwargs):
     is_flag=True,
     help="If set, no files will be copied anywhere. For Debugging purposes.",
 )
+@click.option(
+    "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
+)
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     if current_path := kwargs.get("folder", "."):
@@ -403,7 +406,8 @@ def archive(ctx: click.Context, **kwargs):
     # setup project and jobs
     project = OpenFOAMProject().init_project()
     filters = kwargs.get("filter")
-    jobs = project.filter_jobs(filters=filters)
+    verbose = kwargs.get("verbose", False)
+    jobs = project.filter_jobs(filters=filters, output=verbose)
     dry_run = kwargs.get("dry_run", False)
     time = str(datetime.now()).replace(" ", "_")
     target_folder: str = kwargs.get("repo", "")
