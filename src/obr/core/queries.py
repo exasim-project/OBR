@@ -7,7 +7,6 @@ from signac.contrib.job import Job
 import pandas as pd
 from typing import TYPE_CHECKING, Union
 from enum import Enum
-from pprint import pformat
 
 if TYPE_CHECKING:
     from obr.signac_wrapper.operations import OpenFOAMProject
