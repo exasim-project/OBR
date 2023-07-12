@@ -3,6 +3,7 @@ import flow
 import os
 import sys
 import obr.core.caseOrigins as caseOrigins
+import traceback
 from pathlib import Path
 from subprocess import check_output
 from ..core.core import execute
@@ -242,6 +243,8 @@ def execute_operation(job: Job, operation_name: str, operations) -> Literal[True
                 func = list(operation.keys())[0]
                 getattr(sys.modules[__name__], func)(job, operation.get(func))
         except Exception as e:
+            tb = traceback.format_exc()
+            logging.info(tb)
             logging.error(e)
             job.doc["state"] == "failure"
     return True
