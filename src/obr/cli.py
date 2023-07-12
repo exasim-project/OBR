@@ -56,15 +56,6 @@ def check_cli_operations(
     return True
 
 
-def copy_to_archive(
-    repo: Union[Repo, None], use_github_repo: bool, log_file: Path, target_file: Path
-) -> None:
-    logging.info(f"will copy from {log_file} to {target_file}")
-    check_output(["cp", log_file, target_file])
-    if use_github_repo and repo:
-        repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
-
-
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context

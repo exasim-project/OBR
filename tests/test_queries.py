@@ -177,4 +177,3 @@ def test_predicates(get_project):
     queries_str = "{key: 'maxIter', value: '3100', predicate:'leq'}"
     jobs = filter_jobs(p, queries_str)
     assert jobs[0].sp.get("post_build")[2].get("fvSolution").get("maxIter") == 3000
-    
