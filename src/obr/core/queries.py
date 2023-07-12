@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Union, Callable
+from typing import Any, Union, Callable, Iterable
 from copy import deepcopy
 import re
 import logging
