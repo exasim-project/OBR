@@ -57,7 +57,9 @@ class Query:
 
         # case: wrong key during iteration
         if not self.key == key:
-            self.state = {}  # NOTE I would like a more explicit "False" but type hint prefers a dict
+            self.state = (
+                {}
+            )  # NOTE I would like a more explicit "False" but type hint prefers a dict
             return
 
         # case: nonexistent value, existing key
@@ -70,7 +72,10 @@ class Query:
         try:
             # convert value to target type to avoid TypeErrors
             self.value = type(value)(self.value)
-            if not self.state and self.predicate_op(value, self.value, ):
+            if not self.state and self.predicate_op(
+                value,
+                self.value,
+            ):
                 self.state = {key: value}
         except TypeError as e:
             # After the prior type conversion, this case should not happen anymore.
@@ -86,7 +91,7 @@ class Query:
 
     def match(self):
         return self.state
-    
+
     def __repr__(self) -> str:
         val = self.value or "Any"
         return "{} {} {}:".format(self.key, Predicates[self.predicate].value, val)
@@ -316,7 +321,8 @@ def build_filter_query(filters: Union[list[str], tuple[str]]) -> list[Query]:
 
 
 def filter_jobs(project, filter: Iterable[str], output: bool = False) -> list[Job]:
-    """`filter` is expected to be a list, string or other iterable of strings in the form of <key><predicate><value>"""
+    """`filter` is expected to be a list, string or other iterable of strings in the form of <key><predicate><value>
+    """
     jobs: list[Job]
 
     if filter:

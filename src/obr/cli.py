@@ -37,7 +37,8 @@ from typing import Union
 def check_cli_operations(
     project: OpenFOAMProject, operations: list[str], list_operations: bool
 ):
-    """list available operations if none are specified or given the click option or an incorrect op is given"""
+    """list available operations if none are specified or given the click option or an incorrect op is given
+    """
     if operations == ["generate"]:
         return True
     if list_operations:
@@ -371,16 +372,7 @@ def query(ctx: click.Context, **kwargs):
         " automatically added."
     ),
 )
-@click.option(
-    "-s",
-    "--skip-logs",
-    required=False,
-    is_flag=True,
-    help=(
-        "If set, .log files will not be archived. This does not affect .log files"
-        " passed via the --file option."
-    ),
-)
+@click.option("-l", "--log", required=False, is_flag=True)
 @click.option(
     "-a",
     "--file",
@@ -443,45 +435,27 @@ def archive(ctx: click.Context, **kwargs):
         else:
             logging.info(f"Would create {path}")
 
-    skip = kwargs.get("skip_logs")
-    if not skip:
-        # iterate cases and copy log files into target repo
-        for job in jobs:
-            case_folder = Path(job.path) / "case"
+    # iterate cases and copy log files into target repo
+    for job in jobs:
+        case_folder = Path(job.path) / "case"
 
-            if not case_folder.exists():
-                logging.info(f"Job with {job.id=} has no case folder.")
-                continue
+        if not case_folder.exists():
+            logging.info(f"Job with {job.id=} has no case folder.")
+            continue
 
-            root, _, files = next(os.walk(case_folder))
-            for file in files:
-                log_file = Path(root) / file
-                if log_file.is_relative_to(current_path):
-                    log_file = log_file.relative_to(current_path)
-                # TODO add some sort of validity and error checking to only copy files from jobs that ran successfully
-                if file.endswith("log"):
-                    target_file = path / file
-                    if target_file.is_relative_to(current_path):
-                        target_file = target_file.relative_to(current_path)
-                    if dry_run:
-                        logging.info(f"Would copy from {log_file} to {target_file}")
-                        continue
-                    copy_to_archive(repo, use_github_repo, log_file, target_file)
-    else:
-        logging.info("--skip-logs is set. Skipping archival of log files.")
+        root, _, files = next(os.walk(case_folder))
+        for file in files:
+            log_file = Path(root) / file
+            # TODO add some sort of validity and error checking to only copy files from jobs that ran successfully
+            if file.endswith("log"):
+                target_file = path / file
+                copy_to_archive(repo, use_github_repo, log_file, target_file)
 
     # copy CLI-passed files into data repo and add if possible
     extra_files: tuple[str] = kwargs.get("file", ())
     for file in extra_files:
         target_file = path / file
-        f = Path(file)
-        if not f.exists():
-            logging.info(f"invalid path {f}. Skipping.")
-            continue
-        if dry_run:
-            logging.info(f"Would copy from {f} to {target_file}")
-            continue
-        copy_to_archive(repo, use_github_repo, f, target_file)
+        copy_to_archive(repo, use_github_repo, log_file, target_file)
 
     # commit and push
     if use_github_repo and repo and branch_name:
