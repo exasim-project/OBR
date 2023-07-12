@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Union, Callable
 from copy import deepcopy
 import re
 from obr.signac_wrapper.operations import OpenFOAMProject
@@ -227,14 +227,20 @@ def query_to_dataframe(
     latest_only=True,
     strict: bool = False,
     index: list[str] = [],
+    post_pro: Union[Callable, None] = None,
 ) -> pd.DataFrame:
     """Given a list jobs find all jobs for which a query matches
 
     Flattens list of jobs to a dictionary with merged statepoints and job document first
+    Args:
+        index: A list of strings defining which columns should be used as index
+        post_pro: Function to apply to the DataFrame before creating the index
     """
     ret = pd.DataFrame.from_records(
         query_to_records(jobs, queries, latest_only=latest_only, strict=strict)
     )
+    if post_pro:
+        ret = post_pro(ret)
     if index:
         return ret.set_index(index).sort_index()
     return ret
