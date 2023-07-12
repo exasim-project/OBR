@@ -37,8 +37,7 @@ from typing import Union
 def check_cli_operations(
     project: OpenFOAMProject, operations: list[str], list_operations: bool
 ):
-    """list available operations if none are specified or given the click option or an incorrect op is given
-    """
+    """list available operations if none are specified or given the click option or an incorrect op is given"""
     if operations == ["generate"]:
         return True
     if list_operations:
@@ -88,14 +87,14 @@ def cli(ctx: click.Context, debug: bool):
     is_flag=True,
     help="Prints all available operations and returns.",
 )
-@click.option("--query", default=None, help="")
 @click.option(
     "--filter",
     type=str,
     multiple=True,
     help=(
-        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
-        " submit --filter solver=pisoFoam"
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
+        ' "solver==pisoFoam"'
     ),
 )
 @click.option("--bundling_key", default=None, help="")
@@ -203,15 +202,15 @@ def submit(ctx: click.Context, **kwargs):
     type=str,
     multiple=True,
     help=(
-        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
-        " run -o runParallelSolver --filter solver=pisoFoam"
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
+        ' runParallelSolver --filter "solver==pisoFoam"'
     ),
 )
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
 @click.option("-a", "--aggregate", is_flag=True)
-@click.option("--query", default="")
 @click.option("--args", default="")
 @click.pass_context
 def run(ctx: click.Context, **kwargs):
@@ -311,13 +310,24 @@ def status(ctx: click.Context, **kwargs):
     type=str,
     multiple=True,
     help=(
-        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
-        " query --filter solver=pisoFoam --filter preconditioner=IC"
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr query --filter"
+        ' "solver==pisoFoam"'
     ),
 )
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
-@click.option("-q", "--query", required=True)
+@click.option(
+    "-q",
+    "--query",
+    required=True,
+    help=(
+        "Pass a list of dictionary entries in the \"{key: '<key>', value: '<value>',"
+        " predicate:'<predicate>'}, {...}\" syntax. Predicates include neq, eq, gt,"
+        " geq, lt, leq. For instance, obr query -q \"{key:'maxIter', value:'300',"
+        " predicate:'geq'}\""
+    ),
+)
 @click.option(
     "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
 )
@@ -333,145 +343,6 @@ def query(ctx: click.Context, **kwargs):
     output = kwargs.get("verbose", False)
     queries = input_to_queries(queries_str)
     project.get_jobs(filter=filters, query=queries, output=output)
-
-
-@cli.command()
-@click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    help=(
-        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
-        " archive --filter solver=pisoFoam --filter preconditioner=IC"
-    ),
-)
-@click.option(
-    "-f",
-    "--folder",
-    required=True,
-    default=".",
-    type=str,
-    help="Path to OpenFOAMProject.",
-)
-@click.option(
-    "-r",
-    "--repo",
-    required=True,
-    type=str,
-    help=(
-        "Path to data repository. If this is a valid Github repository, files will be"
-        " automatically added."
-    ),
-)
-@click.option("-l", "--log", required=False, is_flag=True)
-@click.option(
-    "-a",
-    "--file",
-    required=False,
-    multiple=True,
-    help="Path(s) to non-logfile(s) to be also added to the repository.",
-)
-@click.option(
-    "--dry-run",
-    required=False,
-    is_flag=True,
-    help="If set, no files will be copied anywhere. For Debugging purposes.",
-)
-@click.option(
-    "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
-)
-@click.pass_context
-def archive(ctx: click.Context, **kwargs):
-    if current_path := kwargs.get("folder", "."):
-        os.chdir(current_path)
-        current_path = Path(current_path).absolute()
-
-    # setup project and jobs
-    project = OpenFOAMProject().init_project()
-    filters = kwargs.get("filter")
-    verbose = kwargs.get("verbose", False)
-    jobs = project.filter_jobs(filters=filters, output=verbose)
-    dry_run = kwargs.get("dry_run", False)
-    time = str(datetime.now()).replace(" ", "_")
-    target_folder: str = kwargs.get("repo", "")
-    use_github_repo = False
-    repo = None
-    branch_name = None
-    previous_branch = None
-    # check if given path is actually a github repository
-    try:
-        repo = Repo(path=target_folder)
-        previous_branch = repo.active_branch.name
-        branch_name = "archive-" + (
-            str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
-        )
-        use_github_repo = True
-        if not dry_run:
-            logging.info(f"checkout archive-{branch_name}")
-            repo.git.checkout("HEAD", b=branch_name)
-        else:
-            logging.info(f"Would check out new branch archive-{branch_name}")
-    except InvalidGitRepositoryError:
-        logging.warn(
-            f"Given directory {target_folder=} is not a github repository. Will only"
-            " copy files."
-        )
-
-    # setup target folder
-    path = Path(target_folder + f"/{time}")
-    if not path.exists():
-        if not dry_run:
-            logging.info(f"creating {path}")
-            path.mkdir()
-        else:
-            logging.info(f"Would create {path}")
-
-    # iterate cases and copy log files into target repo
-    for job in jobs:
-        case_folder = Path(job.path) / "case"
-
-        if not case_folder.exists():
-            logging.info(f"Job with {job.id=} has no case folder.")
-            continue
-
-        root, _, files = next(os.walk(case_folder))
-        for file in files:
-            log_file = Path(root) / file
-            # TODO add some sort of validity and error checking to only copy files from jobs that ran successfully
-            if file.endswith("log"):
-                target_file = path / file
-                copy_to_archive(repo, use_github_repo, log_file, target_file)
-
-    # copy CLI-passed files into data repo and add if possible
-    extra_files: tuple[str] = kwargs.get("file", ())
-    for file in extra_files:
-        target_file = path / file
-        copy_to_archive(repo, use_github_repo, log_file, target_file)
-
-    # commit and push
-    if use_github_repo and repo and branch_name:
-        if dry_run:
-            logging.info(
-                f"Would now add log files to repo, commit and push to {branch_name}."
-            )
-            return
-        message = f"Add new logs -> {path}"
-        author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
-        logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
-        logging.info(
-            f'config: {repo.git.config("user.name"), repo.git.config("user.email")}'
-        )
-        logging.info(
-            f"Committing changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
-            f" {message=} and remote name {repo.remote().name}"
-        )
-        try:
-            repo.index.commit(message, author=author, committer=author)
-            repo.git.push("origin", "-u", branch_name)
-            logging.info(f"Switching back to branch '{previous_branch}'")
-            repo.git.checkout(previous_branch)
-        except Exception as e:
-            logging.error(e)
 
 
 def main():

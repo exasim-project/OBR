@@ -321,8 +321,7 @@ def build_filter_query(filters: Union[list[str], tuple[str]]) -> list[Query]:
 
 
 def filter_jobs(project, filter: Iterable[str], output: bool = False) -> list[Job]:
-    """`filter` is expected to be a list, string or other iterable of strings in the form of <key><predicate><value>
-    """
+    """`filter` is expected to be a list, string or other iterable of strings in the form of <key><predicate><value>"""
     jobs: list[Job]
 
     if filter:
