@@ -301,7 +301,7 @@ def query_to_dataframe(
 
 
 def build_filter_query(filters: Union[list[str], tuple[str]]) -> list[Query]:
-"""This function builds a list of filter queries, where filter queries are queries that request a specific value and has to conform a predicate"""
+    """This function builds a list of filter queries, where filter queries are queries that request a specific value and has to conform a predicate"""
     q: list[Query] = []
 
     # query syntax
