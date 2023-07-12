@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Union, Callable
 from copy import deepcopy
 import re
 from obr.signac_wrapper.operations import OpenFOAMProject
