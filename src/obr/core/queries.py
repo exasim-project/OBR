@@ -304,13 +304,19 @@ def build_filter_query(filters: Union[list[str], tuple[str]]) -> list[Query]:
     """This function builds a list of filter queries, where filter queries are queries that request a specific value and has to conform a predicate"""
     q: list[Query] = []
 
-    # query syntax
+    # Differentiate between filter and query syntax
+
+    # case query syntax:
+    # filter string has no predicate value (e.g. '==', '<='..) 
+    # => filter is expected to be in query syntax, i.e., "{key:..., value:..., predicate:...}"
     if not any([pred for pred in Predicates if pred.value in filters[0]]):
         if not isinstance(filters, list):
             filters = [filters]
         return [input_to_query(f) for f in filters]
 
-    # filter syntax
+    # case filter syntax:
+    # a predicate has been found inside the filter string
+    # => filter is expected to have filter syntax "<key><predicate><value>"
     for filter in filters:
         for predicate in Predicates:
             # check if predicates like =, >, <=.. are in the filter
