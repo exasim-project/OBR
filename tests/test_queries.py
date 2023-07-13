@@ -132,26 +132,12 @@ def get_project(tmpdir):
             ],
         },
     }
-    print(tmpdir)
     os.chdir(tmpdir)
 
     project = OpenFOAMProject.init_project(root=tmpdir)
     create_tree(project, config, {"folder": tmpdir}, skip_foam_src_check=True)
     project.run(names=["fetchCase"])
     return project
-
-
-# def test_query_to_df(get_project):
-#     base_query = [Query(key="solver", value="pisoFoam")]
-#     df = query_to_dataframe(get_project, base_query)
-
-#     correct_df = pd.DataFrame(
-#         [["pisoFoam", "2c436d59c91a9ec68eaa0dcf70181cbf"]],
-#         columns=["solver", "jobid"],
-#     )
-#     assert isinstance(df, pd.DataFrame)
-#     assert df["solver"][0] == "pisoFoam"
-#     assert df.equals(correct_df)
 
 
 def test_filters(get_project: OpenFOAMProject):

@@ -67,7 +67,7 @@ class Query:
             self.state = {key: value}
             return
 
-        # case: specific value, existent key
+        # case: specific value, existent key. This is effectively a filter.
         try:
             # convert value to target type to avoid TypeErrors
             self.value = type(value)(self.value)

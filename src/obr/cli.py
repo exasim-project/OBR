@@ -225,9 +225,8 @@ def run(ctx: click.Context, **kwargs):
     if not check_cli_operations(project, operations, list_operations):
         return
 
-    queries_str = kwargs.get("query")
     filters = kwargs.get("filter")
-    jobs = project.get_jobs(filter=filters, query=queries_str, output=True)
+    jobs = project.get_jobs(filter=filters)
     # NOTE One would rather filter the jobs, than query them .. right?
     # queries = input_to_queries(queries_str)
     # jobs: list[Job] = []
@@ -340,7 +339,7 @@ def query(ctx: click.Context, **kwargs):
     project = OpenFOAMProject.get_project()
     filters = kwargs.get("filter")
     queries_str = kwargs.get("query", "")
-    output = kwargs.get("verbose", False)
+    output = kwargs["verbose"]
     queries = input_to_queries(queries_str)
     project.get_jobs(filter=filters, query=queries, output=output)
 
