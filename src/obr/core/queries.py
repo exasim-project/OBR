@@ -307,7 +307,7 @@ def build_filter_query(filters: Union[list[str], tuple[str]]) -> list[Query]:
     # Differentiate between filter and query syntax
 
     # case query syntax:
-    # filter string has no predicate value (e.g. '==', '<='..) 
+    # filter string has no predicate value (e.g. '==', '<='..)
     # => filter is expected to be in query syntax, i.e., "{key:..., value:..., predicate:...}"
     if not any([pred for pred in Predicates if pred.value in filters[0]]):
         if not isinstance(filters, list):
