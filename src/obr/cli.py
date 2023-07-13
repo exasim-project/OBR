@@ -37,8 +37,7 @@ from typing import Union
 def check_cli_operations(
     project: OpenFOAMProject, operations: list[str], list_operations: bool
 ):
-    """list available operations if none are specified or given the click option or an incorrect op is given
-    """
+    """list available operations if none are specified or given the click option or an incorrect op is given"""
     if operations == ["generate"]:
         return True
     if list_operations:

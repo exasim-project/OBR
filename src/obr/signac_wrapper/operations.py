@@ -32,6 +32,14 @@ class OpenFOAMProject(flow.FlowProject):
     def get_jobs(
         self, filter=list[str], query: Optional[list[Query]] = None, output=False
     ):
+        """`get_jobs` accepts a list of filters and an optional list of queries. If `output` is set to True, results will be logged verbosely.
+
+        - First, the filters will be applied to all jobs inside the `OpenFOAMProject` instance.
+
+        - Secondly, if queries were passed, the requested values will be logged to the terminal.
+
+        - Lastly, the filtered jobs will be returned as a list.
+        """
         filtered_jobs = self.filter_jobs(filters=filter, output=output)
         if query is not None:
             if isinstance(query, str):
@@ -40,6 +48,7 @@ class OpenFOAMProject(flow.FlowProject):
         return filtered_jobs
 
     def filter_jobs(self, filters: list[str], output: bool = False):
+        """Applies given `filters` to all jobs inside the `OpenFOAMProject` instance."""
         filtered_jobs: list[Job] = filter_jobs(self, filters, output)
         if output:
             for job in filtered_jobs:
@@ -76,8 +85,7 @@ def is_case(job: Job) -> bool:
 
 
 def operation_complete(job: Job, operation: str) -> bool:
-    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success
-    """
+    """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
     if job.doc.get("state") == "ready":
         return True
     else:
@@ -140,8 +148,7 @@ def base_case_is_ready(job: Job) -> Union[bool, None]:
 
 
 def _link_path(base: Path, dst: Path, copy_instead_link: bool):
-    """creates file tree under dst with same folder structure as base but all files are relative symlinks
-    """
+    """creates file tree under dst with same folder structure as base but all files are relative symlinks"""
     # ensure dst path exists
     check_output(["mkdir", "-p", str(dst)])
 
@@ -295,8 +302,7 @@ def dispatch_pre_hooks(operation_name: str, job: Job):
 
 
 def dispatch_post_hooks(operation_name: str, job: Job):
-    """Forwards to `execute_post_build`, performs md5sum calculation of case files and finishes with `end_job_state`
-    """
+    """Forwards to `execute_post_build`, performs md5sum calculation of case files and finishes with `end_job_state`"""
     execute_post_build(operation_name, job)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     case.perform_post_md5sum_calculations()

@@ -6,9 +6,17 @@ Usage: obr query [OPTIONS]
 
 Options:
   -f, --folder TEXT
+  --filter TEXT      Pass a <key><predicate><value> value pair per occurrence
+                     of --filter. Predicates include ==, !=, <=, <, >=, >. For
+                     instance, obr query --filter "solver==pisoFoam"
   -d, --detailed
   -a, --all
-  -q, --query TEXT
+  -q, --query TEXT   Pass a list of dictionary entries in the "{key: '<key>',
+                     value: '<value>', predicate:'<predicate>'}, {...}"
+                     syntax. Predicates include neq, eq, gt, geq, lt, leq. For
+                     instance, obr query -q "{key:'maxIter', value:'300',
+                     predicate:'geq'}"  [required]
+  -v, --verbose      Set for additional output.
   --help             Show this message and exit.
 ```
 

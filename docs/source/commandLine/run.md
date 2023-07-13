@@ -13,11 +13,14 @@ Options:
                          e.g. obr run -o shell,apply. Run with --help to list
                          available operations.  [required]
   -l, --list-operations  Prints all available operations and returns.
+  --filter TEXT          Pass a <key><predicate><value> value pair per
+                         occurrence of --filter. Predicates include ==, !=,
+                         <=, <, >=, >. For instance, obr run -o
+                         runParallelSolver --filter "solver==pisoFoam"
   -j, --job TEXT
   --args TEXT
   -t, --tasks INTEGER
   -a, --aggregate
-  --query TEXT
   --args TEXT
   --help                 Show this message and exit.
 ```
