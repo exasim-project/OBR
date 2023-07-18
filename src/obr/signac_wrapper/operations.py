@@ -13,6 +13,8 @@ from signac.contrib.job import Job
 from typing import Union, Literal
 from datetime import datetime
 import logging
+from typing import Optional
+from obr.core.queries import filter_jobs, query_impl, input_to_queries, Query
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -26,6 +28,36 @@ class OpenFOAMProject(flow.FlowProject):
         ops = sorted(self.operations.keys())
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
+
+    def get_jobs(
+        self, filter=list[str], query: Optional[list[Query]] = None, output=False
+    ):
+        """`get_jobs` accepts a list of filters and an optional list of queries. If `output` is set to True, results will be logged verbosely.
+
+        - First, the filters will be applied to all jobs inside the `OpenFOAMProject` instance.
+
+        - Secondly, if queries were passed, the requested values will be logged to the terminal.
+
+        - Lastly, the filtered jobs will be returned as a list.
+        """
+        filtered_jobs = self.filter_jobs(filters=filter, output=output)
+        if query is not None:
+            if isinstance(query, str):
+                query = input_to_queries(query)
+            self.query_jobs(filtered_jobs, query)
+        return filtered_jobs
+
+    def filter_jobs(self, filters: list[str], output: bool = False):
+        """Applies given `filters` to all jobs inside the `OpenFOAMProject` instance."""
+        filtered_jobs: list[Job] = filter_jobs(self, filters, output)
+        if output:
+            for job in filtered_jobs:
+                print(f"Found Job with {job.id=}")
+        return filtered_jobs
+
+    def query_jobs(self, jobs: list[Job], query: list[Query]) -> list[str]:
+        """return list of job ids as result of `Query`."""
+        return query_impl(jobs, query, output=True)
 
 
 generate = OpenFOAMProject.make_group(name="generate")
