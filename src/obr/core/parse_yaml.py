@@ -47,7 +47,7 @@ def add_includes(yaml_location: Path, config_str: str) -> str:
 
 
 def parse_variables(in_str: str, args: dict, domain: str) -> str:
-    """Replaces ${{ domian.value }} expressions with concrete values"""
+    """Replaces ${{ domain.value }} expressions with concrete values"""
     ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
         if not args.get(inst, ""):
