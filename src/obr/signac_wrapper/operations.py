@@ -282,16 +282,14 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
     """copies the file specified in args['uses'] to path/target"""
     if isinstance(args, str):
         return
-    if not args.get("uses"):
-        return
-    check_output(
-        [
-            "cp",
-            "{}/case/{}/{}".format(job.path, path, args["uses"]),
-            "{}/case/{}/{}".format(job.path, path, target),
-        ]
-    )
-    args.pop("uses")
+    if uses := args.pop("uses", default=False):
+        check_output(
+            [
+                "cp",
+                "{}/case/{}/{}".format(job.path, path, uses),
+                "{}/case/{}/{}".format(job.path, path, target),
+            ]
+        )
 
 
 @generate
@@ -449,15 +447,15 @@ def decomposePar(job: Job, args={}):
 def fetchCase(job: Job, args={}):
     args = get_args(job, args)
 
-    if args.get("uses"):
-        uses = args.pop("uses")
-    else:
-        uses = []
-
+    uses = args.pop("uses", default=[])
     case_type = job.sp()["type"]
     fetch_case_handler = getattr(caseOrigins, case_type)(**args)
     fetch_case_handler.init(path=job.path)
 
+    # if we find any entries in the list of 'uses' forward it to the
+    # corresponding operation. This means we call the corresponding operation
+    # with that specific value ie. uses: controlDict: controlDict.RANS will call
+    # the controlDict operation with  {uses: controlDict.RANS} as arguments
     for entry in uses:
         for k, v in entry.items():
             getattr(sys.modules[__name__], k)(job, {"uses": v})
