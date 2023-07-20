@@ -282,7 +282,7 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
     """copies the file specified in args['uses'] to path/target"""
     if isinstance(args, str):
         return
-    if uses := args.pop("uses", default=False):
+    if uses := args.pop("uses", False):
         check_output(
             [
                 "cp",
@@ -447,7 +447,7 @@ def decomposePar(job: Job, args={}):
 def fetchCase(job: Job, args={}):
     args = get_args(job, args)
 
-    uses = args.pop("uses", default=[])
+    uses = args.pop("uses", [])
     case_type = job.sp()["type"]
     fetch_case_handler = getattr(caseOrigins, case_type)(**args)
     fetch_case_handler.init(path=job.path)
