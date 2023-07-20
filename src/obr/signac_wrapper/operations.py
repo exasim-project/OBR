@@ -124,7 +124,7 @@ def basic_eligible(job: Job, operation: str) -> bool:
         or not is_case(job)
     ):
         # For Debug purposes
-        if False:
+        if False and (operation == job.sp().get("operation")):
             logging.info(f"check if job {job.id} is eligible is False")
             logging.info("is_locked should be False", is_locked(job))
             logging.info("base case is ready should be True", base_case_is_ready(job))
@@ -145,6 +145,7 @@ def base_case_is_ready(job: Job) -> Union[bool, None]:
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
         parent_job = project.open_job(id=job.doc.get("base_id"))
         return parent_job.doc.get("state", "") == "ready"
+    return False
 
 
 def _link_path(base: Path, dst: Path, copy_instead_link: bool):
@@ -279,15 +280,13 @@ def execute_pre_build(operation_name: str, job: Job):
     execute_operation(job, operation_name, operations)
 
 
-def start_job_state(_, job: Job) -> Union[Literal[True], None]:
+def start_job_state(_, job: Job) -> None:
     current_state = job.doc.get("state")
     if not current_state:
         job.doc["state"] = "started"
-        return
-    if current_state == "started":
+    elif current_state == "started":
         # job has been started but not finished yet
         job.doc["state"] = "tmp_lock"
-    return True
 
 
 def end_job_state(_, job: Job) -> Literal[True]:
@@ -314,6 +313,20 @@ def set_failure(operation_name: str, error, job: Job):
     job.doc["state"] = "failure"
 
 
+def copy_on_uses(args: dict, job: Job, path: str, target: str):
+    """copies the file specified in args['uses'] to path/target"""
+    if isinstance(args, str):
+        return
+    if uses := args.pop("uses", False):
+        check_output(
+            [
+                "cp",
+                "{}/case/{}/{}".format(job.path, path, uses),
+                "{}/case/{}/{}".format(job.path, path, target),
+            ]
+        )
+
+
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
@@ -327,6 +340,7 @@ def controlDict(job: Job, args={}):
     # was called directly from a pre/post build or from sp
     # if this was a variation. In any case this could be a decorator
     args = get_args(job, args)
+    copy_on_uses(args, job, "system", "controlDict")
     OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
 
 
@@ -379,6 +393,7 @@ def shell(job: Job, args={}):
 @OpenFOAMProject.operation
 def fvSolution(job: Job, args={}):
     args = get_args(job, args)
+    copy_on_uses(args, job, "system", "fvSolution")
     OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
 
 
@@ -450,7 +465,9 @@ def decomposePar(job: Job, args={}):
 
     if found:
         for processor_path in dst_case.processor_folder:
-            _link_path(processor_path, target_case.path / processor_path.parts[-1])
+            _link_path(
+                processor_path, target_case.path / processor_path.parts[-1], True
+            )
     else:
         target_case.decomposePar(args)
 
@@ -465,9 +482,18 @@ def decomposePar(job: Job, args={}):
 def fetchCase(job: Job, args={}):
     args = get_args(job, args)
 
+    uses = args.pop("uses", [])
     case_type = job.sp()["type"]
     fetch_case_handler = getattr(caseOrigins, case_type)(**args)
     fetch_case_handler.init(path=job.path)
+
+    # if we find any entries in the list of 'uses' forward it to the
+    # corresponding operation. This means we call the corresponding operation
+    # with that specific value ie. uses: controlDict: controlDict.RANS will call
+    # the controlDict operation with  {uses: controlDict.RANS} as arguments
+    for entry in uses:
+        for k, v in entry.items():
+            getattr(sys.modules[__name__], k)(job, {"uses": v})
 
 
 def is_locked(job: Job) -> bool:
