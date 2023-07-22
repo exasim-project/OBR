@@ -44,7 +44,7 @@ OBR should now print a low of configuration, followed by `INFO: successfully ini
 
 ### 2. Running a tree
 
-Finally, a tree can be run with the `obr run` command-line option:
+Finally,  operations on a tree can be run with the `obr run` command-line option:
 
     obr run -o fetchCase --folder path-to-tree
 
