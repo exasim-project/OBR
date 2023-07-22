@@ -32,7 +32,7 @@ The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchm
 
 ### 1. Creating a tree
 
-In general, to create a tree of case variation run
+In general, to create a tree of case variations run
 
     obr init --folder [path] --config path-to-config.yaml
 
