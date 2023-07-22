@@ -52,7 +52,7 @@ Or, in this specific example (the default of `--folder` is `.`):
 
     obr run -o fetchCase
 
-Within `WindsorBody/workspace` should now have appeared a multitude of directories (=cases).
+Within `LidDrivenCavity3D/workspace` should now have appeared a multitude of directories (=jobs).
 Not all cases are afflicted by every obr operation. For instance, only the directory named `78e2de3e6205144311d04282001fe21f` should have a further subdirectory named `case`.
 
 Inside `78e2de3e6205144311d04282001fe21f/signac_job_document.json`, the operation is summarized.
