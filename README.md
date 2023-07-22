@@ -28,7 +28,7 @@ The benchmark runner is split into several layers:
 2. case run/submit
 3. case postprocessing
 
-The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks/tree/case_windsor_body) provides a good point to start learning from. After cloning the repository, `cd` into the `WindsorBody` subdirectory.
+The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks/tree/case_windsor_body) provides a good point to start learning from. After cloning the repository, `cd` into the `LidDrivenCavity3D` directory, where a example yaml file can be found in the assets folder. 
 
 ### 1. Creating a tree
 
