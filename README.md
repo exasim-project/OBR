@@ -28,7 +28,7 @@ The benchmark runner is split into several layers:
 2. case run/submit
 3. case postprocessing
 
-The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks/tree/case_windsor_body) provides a good point to start learning from. After cloning the repository, `cd` into the `LidDrivenCavity3D` directory, where a example yaml file can be found in the assets folder. 
+The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks/tree/case_windsor_body) provides a good point to start learning from. After cloning the repository, `cd` into the `LidDrivenCavity3D` directory, where a example yaml file can be found in the assets folder.
 
 ### 1. Creating a tree
 
@@ -44,7 +44,7 @@ OBR should now print some output, followed by `INFO: successfully initialized`.
 
 ### 2. Running a tree
 
-Finally,  operations on a tree can be run with the `obr run` command-line option:
+Finally,  operations on a tree can be run with the `obr run` command-line option, for example `fetchCase`, which is responsible for copying the base case into the workspace:
 
     obr run -o fetchCase --folder path-to-tree
 
@@ -52,10 +52,12 @@ Or, in this specific example (the default of `--folder` is `.`):
 
     obr run -o fetchCase
 
-Within `LidDrivenCavity3D/workspace` should now have appeared a multitude of directories (=jobs).
-Not all cases are afflicted by every obr operation. For instance, only the directory named `78e2de3e6205144311d04282001fe21f` should have a further subdirectory named `case`.
+Within `LidDrivenCavity3D/workspace` should now have appeared a multitude of directories (=jobs), which are in the form of a UID eg. `78e2de3e6205144311d04282001fe21f`. Each job represents a distinct operation such as modifying the blockMeshDict and call blockMesh including its depencies. The order in which operations can be applied are defined by the `config.json`, however, runnning
 
-Inside `78e2de3e6205144311d04282001fe21f/signac_job_document.json`, the operation is summarized.
+    obr run -o generate
+
+also runs all defined operations in the appropriate order.
+
 
 ## Contributing
 
