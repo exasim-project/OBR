@@ -52,7 +52,7 @@ Or, in this specific example (the default of `--folder` is `.`):
 
     obr run -o fetchCase
 
-Within `LidDrivenCavity3D/workspace` should now have appeared a multitude of directories (=jobs), which are in the form of a UID eg. `78e2de3e6205144311d04282001fe21f`. Each job represents a distinct operation such as modifying the blockMeshDict and call blockMesh including its depencies. The order in which operations can be applied are defined by the `config.json`, however, runnning
+Within `LidDrivenCavity3D/workspace` should now have appeared a multitude of directories (=jobs), which are in the form of a UID eg. `78e2de3e6205144311d04282001fe21f`. Each job represents a distinct operation such as modifying the blockMeshDict and call blockMesh including its dependencies. The order in which operations can be applied are defined by the `config.json`, however, running
 
     obr run -o generate
 
