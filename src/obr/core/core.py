@@ -195,9 +195,14 @@ def writes_files(fns):
 
 def map_view_folder_to_job_id(view_folder: str) -> dict:
     ret = {}
+    base, _, _ = next(os.walk("."))
     for root, folder, file in os.walk(view_folder):
-        path = Path(root) / folder
-        job_id = None
-        if path.is_symlink():
-            job_id = path.absolute().parts[-1]
-            ret[job_id] = path.resolve()
+        for i, fold in enumerate(folder):
+            path = Path(root) / fold
+            job_id = None
+            if path.is_symlink():
+                job_id = path.resolve().parts[-1]
+                rel_fold = [p for p in path.absolute().parts if p not in Path(base).absolute().parts]
+                ret[job_id] = "/".join(rel_fold)
+                folder.pop(i)
+    return ret
