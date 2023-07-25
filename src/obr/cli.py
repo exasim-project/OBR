@@ -292,6 +292,7 @@ def status(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
     project.print_status(detailed=kwargs["detailed"], pretty=True)
+    print(map_view_folder_to_job_id("view"))
 
 
 @cli.command()

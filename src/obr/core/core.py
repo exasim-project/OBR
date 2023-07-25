@@ -191,3 +191,13 @@ def writes_files(fns):
             unlink(fn)
     else:
         unlink(fns)
+
+
+def map_view_folder_to_job_id(view_folder: str) -> dict:
+    ret = {}
+    for root, folder, file in os.walk(view_folder):
+        path = Path(root) / folder
+        job_id = None
+        if path.is_symlink():
+            job_id = path.absolute().parts[-1]
+            ret[job_id] = path.resolve()
