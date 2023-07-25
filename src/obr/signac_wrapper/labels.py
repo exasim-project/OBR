@@ -4,6 +4,8 @@ from pathlib import Path
 from flow import FlowProject
 from subprocess import check_output
 
+from ..core.core import check_log_for_success
+
 
 @FlowProject.label
 def owns_procs(job):
@@ -39,8 +41,12 @@ def finished(job):
     if not solver:
         return False
     solver_log = job.doc["obr"][solver][-1]["log"]
-    res = check_output(["tail", "-n", "1", solver_log], cwd=Path(job.path) / "case")
-    return "Finalising" in res.decode("utf-8")
+    log_path = Path(job.path) / f"case/{solver_log}"
+    # check if log still exists
+    # log files could have been purged
+    if not log_path.exists():
+        return False
+    return check_log_for_success(log_path)
 
 
 @FlowProject.label
