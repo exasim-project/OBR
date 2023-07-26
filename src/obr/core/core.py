@@ -45,7 +45,7 @@ def logged_execute(cmd, path, doc):
     from datetime import datetime
 
     check_output(["mkdir", "-p", ".obr_store"], cwd=path)
-    d = doc.get("obr", {})
+    d = doc["history"]
     cmd_str = " ".join(cmd)
     cmd_str = path_to_key(cmd_str).split()  # replace dots in cmd_str with _dot_'s
     if len(cmd_str) > 1:
@@ -87,10 +87,9 @@ def logged_execute(cmd, path, doc):
             fh.write(log)
         log = fn
 
-    res = d.get(cmd_str, [])
-
-    res.append(
+    d.append(
         {
+            "cmd": cmd_str,
             "type": "shell",
             "log": log,
             "state": state,
@@ -98,8 +97,8 @@ def logged_execute(cmd, path, doc):
             "timestamp": timestamp,
         }
     )
-    d[cmd_str] = res
-    doc["obr"] = d
+
+    doc["history"] = d
 
 
 def logged_func(func, doc, **kwargs):

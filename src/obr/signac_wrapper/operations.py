@@ -69,14 +69,14 @@ class JobCache:
         self.d = {j.id: j for j in jobs}
 
     def search_parent(self, job: Job, key):
-        base_id = job.doc.get("base_id")
-        if not base_id:
+        parent_id = job.doc.get("parent_id")
+        if not parent_id:
             return
-        base_value = self.d[base_id].doc["obr"].get(key)
+        base_value = self.d[parent_id].doc["obr"].get(key)
         if base_value:
             return base_value
         else:
-            return self.search_parent(self.d[base_id], key)
+            return self.search_parent(self.d[parent_id], key)
 
 
 def is_case(job: Job) -> bool:
@@ -141,9 +141,9 @@ def base_case_is_ready(job: Job) -> Union[bool, None]:
 
     TODO rename to parent_job_is_ready
     """
-    if job.doc.get("base_id"):
+    if job.doc.get("parent_id"):
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
-        parent_job = project.open_job(id=job.doc.get("base_id"))
+        parent_job = project.open_job(id=job.doc.get("parent_id"))
         return parent_job.doc.get("state", "") == "ready"
     return False
 
@@ -206,16 +206,16 @@ def needs_init_dependent(job: Job) -> bool:
     # in future it might make sense to specify the files which are modified
     # in the yaml file
     copy_instead_link = job.sp().get("operation") == "shell"
-    if job.doc.get("base_id"):
-        if job.doc.get("init_dependent"):
+    if job.sp().get("parent_id"):
+        if job.doc["state"].get("init_dependent"):
             #    logging.info("already init", job.id)
             return True
-        base_id = job.doc.get("base_id")
+        parent_id = job.sp().get("parent_id")
 
-        base_path = Path(job.path) / ".." / base_id / "case"
+        base_path = Path(job.path) / ".." / parent_id / "case"
         dst_path = Path(job.path) / "case"
         _link_path(base_path, dst_path, copy_instead_link)
-        job.doc["init_dependent"] = True
+        job.doc["state"]["init_dependent"] = True
         return True
     else:
         return False
@@ -228,10 +228,11 @@ def get_args(job: Job, args: Union[dict, str]) -> Union[dict, str]:
     also args can be just a str in case of shell scripts
     """
     if isinstance(args, dict):
+        print("args:", job.sp())
         return (
             {key: value for key, value in args.items()}
             if args
-            else {key: job.sp()[key] for key in job.doc["keys"]}
+            else {key: job.sp()[key] for key in job.sp().get("keys", [])}
         )
     else:
         return args
@@ -256,7 +257,7 @@ def execute_operation(job: Job, operation_name: str, operations) -> Literal[True
             tb = traceback.format_exc()
             logging.info(tb)
             logging.error(e)
-            job.doc["state"] == "failure"
+            job.doc["state"]["global"] == "failure"
     return True
 
 
@@ -266,7 +267,7 @@ def execute_post_build(operation_name: str, job: Job):
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
     """
-    operations = job.doc.get("post_build", [])
+    operations = job.sp.get("post_build", [])
     execute_operation(job, operation_name, operations)
 
 
@@ -276,21 +277,21 @@ def execute_pre_build(operation_name: str, job: Job):
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
     """
-    operations = job.doc.get("pre_build", [])
+    operations = job.sp.get("pre_build", [])
     execute_operation(job, operation_name, operations)
 
 
 def start_job_state(_, job: Job) -> None:
-    current_state = job.doc.get("state")
+    current_state = job.doc["state"].get("global")
     if not current_state:
-        job.doc["state"] = "started"
+        job.doc["state"]["global"] = "started"
     elif current_state == "started":
         # job has been started but not finished yet
-        job.doc["state"] = "tmp_lock"
+        job.doc["state"]["global"] = "tmp_lock"
 
 
 def end_job_state(_, job: Job) -> Literal[True]:
-    job.doc["state"] = "ready"
+    job.doc["state"]["global"] = "ready"
     return True
 
 
@@ -310,7 +311,7 @@ def dispatch_post_hooks(operation_name: str, job: Job):
 
 def set_failure(operation_name: str, error, job: Job):
     """just forwards to start_job_state and execute_pre_build"""
-    job.doc["state"] = "failure"
+    job.doc["state"]["global"] = "failure"
 
 
 def copy_on_uses(args: dict, job: Job, path: str, target: str):
@@ -355,16 +356,6 @@ def blockMesh(job: Job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
 
-    # get number of cells
-    log = job.doc["obr"]["blockMesh"][-1]["log"]
-    cells = (
-        check_output(["grep", "nCells:", Path(job.path) / "case" / log])
-        .decode("utf-8")
-        .split()[-1]
-    )
-    job.doc["obr"]["nCells"] = int(cells)
-    job.doc.blockMesh = True
-
 
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
@@ -381,7 +372,6 @@ def shell(job: Job, args={}):
     else:
         steps = [args]
     execute(steps, job)
-    # TODO do deduplication once done
 
 
 @generate
@@ -476,7 +466,7 @@ def decomposePar(job: Job, args={}):
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
-@OpenFOAMProject.pre(lambda job: not bool(job.doc.get("base_id")))
+@OpenFOAMProject.pre(lambda job: not bool(job.sp().get("parent_id")))
 @OpenFOAMProject.post(is_case)
 @OpenFOAMProject.operation
 def fetchCase(job: Job, args={}):
@@ -561,7 +551,6 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     if skip_complete and finished(job):
         return "true"
 
-    args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -623,7 +612,7 @@ def runSerialSolver(job: Job, args={}):
 @OpenFOAMProject.operation
 def archive(job: Job, args={}) -> Literal[True]:
     root, _, files = next(os.walk(Path(job.path) / "case"))
-    fp = os.environ.get("OBR_CALL_ARGS")
+    fp = os.environ.get("OBR_CALL_ARGS", "")
     for fn in files:
         if fp not in fn:
             continue

@@ -32,12 +32,12 @@ from git.repo import Repo
 from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
-from typing import Union
+from typing import Union, Optional, Any
 
 
 def check_cli_operations(
-    project: OpenFOAMProject, operations: list[str], list_operations: bool
-):
+    project: OpenFOAMProject, operations: list[str], list_operations: Optional[Any]
+) -> bool:
     """list available operations if none are specified or given the click option or an incorrect op is given"""
     if operations == ["generate"]:
         return True
@@ -230,7 +230,7 @@ def run(ctx: click.Context, **kwargs):
     jobs = project.get_jobs(filter=filters)
 
     if kwargs.get("args"):
-        os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
+        os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
 
     # project._reregister_aggregates()
     # print(project.groups)
