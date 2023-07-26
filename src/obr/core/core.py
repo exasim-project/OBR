@@ -206,17 +206,19 @@ def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
         A dictionary with jobid: view_folder
     """
     ret = {}
-    base, _, _ = next(os.walk(view_folder))
+    base = Path(view_folder)
+    if not base.exists():
+        return {}
     for root, folder, file in os.walk(view_folder):
         for i, fold in enumerate(folder):
             path = Path(root) / fold
             job_id = None
             if path.is_symlink():
                 job_id = path.resolve().name
+                # only keep path parts relative to the start of
+                # of the view folder
                 rel_fold = [
-                    p
-                    for p in path.absolute().parts
-                    if p not in Path(base).absolute().parts
+                    p for p in path.absolute().parts if p not in base.absolute().parts
                 ]
                 ret[job_id] = "/".join(rel_fold)
                 folder.pop(i)
