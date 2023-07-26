@@ -198,8 +198,8 @@ def writes_files(fns):
         unlink(fns)
 
 
-def map_view_folder_to_job_id(view_folder: str) -> dict:
-    """Creates a mapping from from the view schema to the original jobid
+def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
+    """Creates a mapping from the view schema to the original jobid
 
     Returns:
     ========
@@ -212,7 +212,7 @@ def map_view_folder_to_job_id(view_folder: str) -> dict:
             path = Path(root) / fold
             job_id = None
             if path.is_symlink():
-                job_id = path.resolve().parts[-1]
+                job_id = path.resolve().name
                 rel_fold = [
                     p
                     for p in path.absolute().parts

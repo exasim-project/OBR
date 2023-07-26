@@ -295,7 +295,7 @@ def status(ctx: click.Context, **kwargs):
     project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
 
-    print("Detailed overview:\n" + "=" * 80)
+    logging.info("Detailed overview:\n" + "=" * 80)
 
     finished, unfinished = [], []
     for job in project:
@@ -306,14 +306,14 @@ def status(ctx: click.Context, **kwargs):
                 finished.append((view, jobid, labels))
             else:
                 unfinished.append((view, jobid, labels))
-    print("finished:")
+    logging.info("finished:")
     finished.sort()
     for view, jobid, labels in finished:
-        print(view, jobid)
-    print("unfinished:")
+        logging.info(view, jobid)
+    logging.info("unfinished:")
     unfinished.sort()
     for view, jobid, labels in unfinished:
-        print(view, jobid)
+        logging.info(view, jobid)
 
 
 @cli.command()
