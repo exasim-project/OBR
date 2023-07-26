@@ -295,25 +295,23 @@ def status(ctx: click.Context, **kwargs):
     project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
 
-    print("Detailed overview:\n===================")
+    print("Detailed overview:\n" + "=" * 80)
 
     finished, unfinished = [], []
     for job in project:
         jobid = job.id
         if view := id_view_map.get(jobid):
-            # print(jobid, view, project.labels(job), project.get_job_status(job))
             labels = project.labels(job)
             if "finished" in labels:
                 finished.append((view, jobid, labels))
             else:
                 unfinished.append((view, jobid, labels))
-            print(f"case: {view}")
-            print(f"id: {jobid}\nlabels: {','.join(labels)}")
-            print("-" * 80)
     print("finished:")
+    finished.sort()
     for view, jobid, labels in finished:
         print(view, jobid)
     print("unfinished:")
+    unfinished.sort()
     for view, jobid, labels in unfinished:
         print(view, jobid)
 

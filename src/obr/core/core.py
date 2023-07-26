@@ -175,6 +175,7 @@ def modifies_file(fns):
     else:
         unlink(fns)
 
+
 def check_log_for_success(log: Path) -> bool:
     res = check_output(["tail", "-n", "2", log], text=True)
     return ("Finalising" in res) or ("End" in res)
@@ -198,8 +199,14 @@ def writes_files(fns):
 
 
 def map_view_folder_to_job_id(view_folder: str) -> dict:
+    """Creates a mapping from from the view schema to the original jobid
+
+    Returns:
+    ========
+        A dictionary with jobid: view_folder
+    """
     ret = {}
-    base, _, _ = next(os.walk("."))
+    base, _, _ = next(os.walk(view_folder))
     for root, folder, file in os.walk(view_folder):
         for i, fold in enumerate(folder):
             path = Path(root) / fold
