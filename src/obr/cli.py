@@ -32,7 +32,6 @@ from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union
-from tqdm import tqdm
 
 
 def check_cli_operations(
@@ -57,12 +56,18 @@ def check_cli_operations(
 
 
 def copy_to_archive(
-    repo: Union[Repo, None], use_github_repo: bool, log_file: Path, target_file: Path, progress: bool = False
+    repo: Union[Repo, None], use_git_repo: bool, src_file: Path, target_file: Path
 ) -> None:
-    if not progress:
-        logging.info(f"will copy from {log_file} to {target_file}")
-    check_output(["cp", log_file, target_file])
-    if use_github_repo and repo:
+    """Copies files to archive repo"""
+    # ensure target directory exists()
+    target_path = target_file.parents[0]
+    if not target_path.exists():
+        target_path.mkdir(parents=True)
+    logging.info(f"will copy from {src_file} to {target_file}")
+    if src_file.is_symlink():
+        src_file = Path(os.path.realpath(src_file))
+    check_output(["cp", src_file, target_file])
+    if use_git_repo and repo:
         repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
 
 
@@ -356,19 +361,24 @@ def query(ctx: click.Context, **kwargs):
     help="Path(s) to non-logfile(s) to be also added to the repository.",
 )
 @click.option(
-    "-t",
     "--tag",
     required=False,
     type=str,
-    help="Files fit for archival will be saved into <folder>/workspace/<job.id>/<tag>"
+    help=(
+        "Specify prefix of branch name. Will checkout new branch with timestamp"
+        " <tag>-<timestamp>."
+    ),
 )
 @click.option(
-    "-p",
-    "--progress",
-    is_flag=True,
+    "--amend",
+    required=False,
+    multiple=False,
+    type=str,
+    help="Add to existing branch instead of creating new one.",
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
+    target_folder: Path = Path(kwargs.get("repo", "")).absolute()
     if current_path := kwargs.get("folder", "."):
         os.chdir(current_path)
         current_path = Path(current_path).absolute()
@@ -378,67 +388,93 @@ def archive(ctx: click.Context, **kwargs):
     filters: tuple[str] = kwargs.get("filter", ())
     jobs = filter_jobs_by_query(project, filters)
 
-    progress = kwargs.get("progress")
-    tag = kwargs.get("tag", "")
     time = str(datetime.now()).replace(" ", "_")
-    target_folder: str = kwargs.get("repo", "") 
-    use_github_repo = False
     repo = None
     branch_name = None
     previous_branch = None
+    tag = kwargs.get("tag", "archive")
     # check if given path is actually a github repository
+    use_git_repo = False
     try:
-        repo = Repo(path=target_folder)
+        repo = Repo(path=str(target_folder), search_parent_directories=True)
         previous_branch = repo.active_branch.name
-        branch_name = "archive-" + (
+        time_stamp = (
             str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
         )
-        use_github_repo = True
-        logging.info(f"checkout archive-{branch_name}")
+        branch_name = f"{tag}-{time_stamp}"
+        logging.info(f"checkout {branch_name}")
         repo.git.checkout("HEAD", b=branch_name)
+        use_git_repo = True
     except InvalidGitRepositoryError:
         logging.warn(
             f"Given directory {target_folder=} is not a github repository. Will only"
             " copy files."
         )
+    if use_git_repo:
+        previous_branch = repo.active_branch.name
+        if branch := kwargs.get("amend"):
+            use_git_repo = True
+            logging.info(f"checkout {branch_name}")
+            if not branch in repo.git.branch():
+                # throw error, return
+                logging.error(
+                    "Specified 'amend' branch does not exist. Current existing"
+                    f" branches include {repo.git.branch()}."
+                )
+                return
+            repo.git.checkout(branch_name)
+        else:
+            branch_name = "archive-" + (
+                str(datetime.now())
+                .rsplit(":", 1)[0]
+                .replace(" ", ":")
+                .replace(":", "_")
+            )
+            logging.info(f"checkout {branch_name}")
+            repo.git.checkout("HEAD", b=branch_name)
 
     # setup target folder
-    path = Path(target_folder) / "workspace"
-    if not path.exists():
-        logging.info(f"creating {path}")
-        path.mkdir()
+    if not target_folder.exists():
+        logging.info(f"creating {str(target_folder)}")
+        target_folder.mkdir()
 
     skip = kwargs.get("skip_logs")
     if not skip:
         # iterate cases and copy log files into target repo
-        for job in tqdm(jobs, desc="Job Progress", position=0):
+        for job in jobs:
+            # copy signac state point
+            signac_statepoint = Path(job.path) / "signac_statepoint.json"
+            if not signac_statepoint.exists():
+                continue
+            target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
+            logging.debug(f"{target_folder}, {signac_statepoint}")
+            target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
+            copy_to_archive(repo, use_git_repo, signac_statepoint, target_file)
+
             case_folder = Path(job.path) / "case"
             if not case_folder.exists():
-                if not progress:
-                    logging.info(f"Job with {job.id=} has no case folder.")
+                logging.info(f"Job with {job.id=} has no case folder.")
                 continue
 
-            path = path / f"{job.id}" / tag
-
+            # TODO: implement archival only of non-failed jobs
             # skip if either the most recent obr action failed or the label is set to "not success"
-            case = OpenFOAMCase(str(case_folder), job)
-            if not case.was_successful(progress):
-                if not progress:
-                    logging.info(
-                        f"Skipping Job with {job.id=} due to recent failure states."
-                    )
-                continue
-            root, _, files = next(os.walk(case_folder))
+            # case = OpenFOAMCase(str(case_folder), job)
+            # if not case.was_successful():
+            #     logging.info(
+            #         f"Skipping Job with {job.id=} due to recent failure states."
+            #     )
+            #     continue
 
+            root, _, files = next(os.walk(case_folder))
             for file in files:
-                log_file = Path(root) / file
-                if log_file.is_relative_to(current_path):
-                    log_file = log_file.relative_to(current_path)
+                src_file = Path(root) / file
+                if src_file.is_relative_to(current_path):
+                    src_file = src_file.relative_to(current_path)
                 if file.endswith("log"):
-                    target_file = path
+                    target_file = target_folder / f"workspace/{job.id}/case/{file}"
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
-                    copy_to_archive(repo, use_github_repo, log_file, target_file, progress)
+                    copy_to_archive(repo, use_git_repo, src_file, target_file)
 
     # copy CLI-passed files into data repo and add if possible
     extra_files: tuple[str] = kwargs.get("file", ())
@@ -447,11 +483,11 @@ def archive(ctx: click.Context, **kwargs):
         if not f.exists():
             logging.info(f"invalid path {f}. Skipping.")
             continue
-        copy_to_archive(repo, use_github_repo, f.absolute(), path)
+        copy_to_archive(repo, use_git_repo, f.absolute())
 
     # commit and push
-    if use_github_repo and repo and branch_name:
-        message = f"Add new logs -> {path}"
+    if use_git_repo and repo and branch_name:
+        message = f"Add new logs -> {str(target_folder)}"
         author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
         logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
         logging.info(
