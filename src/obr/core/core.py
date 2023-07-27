@@ -214,11 +214,9 @@ def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
             job_id = None
             if path.is_symlink():
                 job_id = path.resolve().name
-                # only keep path parts relative to the start of
-                # of the view folder
-                rel_fold = [
-                    p for p in path.absolute().parts if p not in base.absolute().parts
-                ]
-                ret[job_id] = "/".join(rel_fold)
+                # only keep path parts relative to the start of of the view
+                # folder
+                if path.absolute().is_relative_to(base.absolute()):
+                    ret[job_id] = str(path.absolute().relative_to(base.absolute()))
                 folder.pop(i)
     return ret

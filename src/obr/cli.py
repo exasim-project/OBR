@@ -298,22 +298,24 @@ def status(ctx: click.Context, **kwargs):
     logging.info("Detailed overview:\n" + "=" * 80)
 
     finished, unfinished = [], []
+    max_view_len = 0
     for job in project:
         jobid = job.id
         if view := id_view_map.get(jobid):
             labels = project.labels(job)
+            max_view_len = max(len(view), max_view_len)
             if "finished" in labels:
                 finished.append((view, jobid, labels))
             else:
                 unfinished.append((view, jobid, labels))
-    logging.info("finished:")
     finished.sort()
     for view, jobid, labels in finished:
-        logging.info(view, jobid)
-    logging.info("unfinished:")
+        pad = " " * (max_view_len - len(view) + 1)
+        logging.info(f"{view}:{pad}| F | {jobid}")
     unfinished.sort()
     for view, jobid, labels in unfinished:
-        logging.info(view, jobid)
+        pad = " " * (max_view_len - len(view) + 1)
+        logging.info(f"{view}:{pad}| U | {jobid}")
 
 
 @cli.command()
