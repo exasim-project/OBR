@@ -339,6 +339,8 @@ def filter_jobs(project, filter: Iterable[str], output: bool = False) -> list[Jo
     jobs: list[Job]
 
     if filter:
+        if isinstance(filter, str):
+            filter = [filter]
         queries = build_filter_query(filter)
         sel_jobs = query_impl(project, queries, output=output)
         jobs = [j for j in project if j.id in sel_jobs]
