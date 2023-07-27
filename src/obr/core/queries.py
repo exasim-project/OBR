@@ -200,7 +200,6 @@ def query_impl(
     return query_ids
 
 
-<<<<<<< HEAD
 def query_to_records(
     jobs: OpenFOAMProject,
     queries: list[Query],
@@ -250,4 +249,3 @@ def filter_jobs_by_query(project, queries_str) -> list[Job]:
     else:
         jobs = [j for j in project]
     return jobs
-
