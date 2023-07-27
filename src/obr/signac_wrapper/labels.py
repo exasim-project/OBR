@@ -59,17 +59,20 @@ def started(job):
 
 @FlowProject.label
 def processing(job):
-    return job.doc["state"] == "started" or job.doc["state"] == "tmp_lock"
+    return (
+        job.doc["state"].get("global") == "started"
+        or job.doc["state"].get("global") == "tmp_lock"
+    )
 
 
 @FlowProject.label
 def failure(job):
-    return job.doc["state"] == "failure"
+    return job.doc["state"].get("global") == "failure"
 
 
 @FlowProject.label
 def ready(job):
-    return job.doc["state"] == "ready"
+    return job.doc["state"].get("global") == "ready"
 
 
 @FlowProject.label

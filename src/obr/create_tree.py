@@ -138,7 +138,7 @@ def to_dict(synced_dict) -> dict:
 def add_variations(
     operations: list,
     project: OpenFOAMProject,
-    variation: dict,
+    variation: list,
     parent_job: Job,
     id_path_mapping: dict,
 ) -> list:
@@ -159,21 +159,21 @@ def add_variations(
             path = clean_path(path)
             base_dict = deepcopy(to_dict(parent_job.sp))
 
-            base_dict.update(
-                {
-                    "keys": keys,
-                    "parent_id": parent_job.id,
-                    "operation": operation["operation"],
-                    "has_child": True if sub_variation else False,
-                    "pre_build": sub_variation.get("pre_build", []),
-                    "post_build": sub_variation.get("post_build", []),
-                    **args,
-                }
-            )
+            statepoint = {
+                "keys": keys,
+                "parent_id": parent_job.id,
+                "operation": operation["operation"],
+                "has_child": True if sub_variation else False,
+                "pre_build": operation.get("pre_build", []),
+                "post_build": operation.get("post_build", []),
+                **args,
+            }
+            statepoint["parent"] = base_dict
 
-            job = project.open_job(base_dict)
+            job = project.open_job(statepoint)
             setup_job_doc(job, value)
             job.init()
+            job.doc["state"]["global"] = ""
 
             id_path_mapping[job.id] = id_path_mapping.get(parent_job.id, "") + path
 
@@ -213,6 +213,7 @@ def create_tree(
     base_case_state = {
         "has_child": True,
         "parent_id": None,
+        "parent": {},
         "pre_build": config["case"].get("pre_build", []),
         "post_build": config["case"].get("post_build", []),
         "keys": list(config["case"].keys()),
@@ -221,8 +222,6 @@ def create_tree(
     of_case = project.open_job(base_case_state)
 
     setup_job_doc(of_case, value=[])
-
-    of_case.doc["state"]["global"] = "ready"
     of_case.init()
 
     operations: list = []
