@@ -175,6 +175,7 @@ def modifies_file(fns):
     else:
         unlink(fns)
 
+
 def check_log_for_success(log: Path) -> bool:
     res = check_output(["tail", "-n", "2", log], text=True)
     return ("Finalising" in res) or ("End" in res)
