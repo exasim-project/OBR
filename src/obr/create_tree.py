@@ -22,8 +22,9 @@ import logging
 from collections.abc import MutableMapping
 from pathlib import Path
 from subprocess import check_output
-
+from signac.contrib.job import Job
 from obr.signac_wrapper.operations import OpenFOAMProject
+from copy import deepcopy
 
 
 def flatten(d, parent_key="", sep="/"):
@@ -138,12 +139,12 @@ def add_variations(
     operations: list,
     project: OpenFOAMProject,
     variation: dict,
-    parent_job,
+    parent_job: Job,
     id_path_mapping: dict,
 ) -> list:
     """Recursively adds variations to the project"""
     for operation in variation:
-        sub_variation = operation.get("variation")
+        sub_variation = operation.get("variation", {})
 
         if not is_on_requested_parent(operation, parent_job):
             continue
@@ -156,18 +157,22 @@ def add_variations(
             # derive path name from schema or key value
             keys, path, args = extract_from_operation(operation, value)
             path = clean_path(path)
-            base_dict = to_dict(parent_job.sp)
+            base_dict = deepcopy(to_dict(parent_job.sp))
 
             base_dict.update(
                 {
+                    "keys": keys,
+                    "parent_id": parent_job.id,
                     "operation": operation["operation"],
                     "has_child": True if sub_variation else False,
+                    "pre_build": sub_variation.get("pre_build", []),
+                    "post_build": sub_variation.get("post_build", []),
                     **args,
                 }
             )
 
             job = project.open_job(base_dict)
-            setup_job_doc(job, parent_job.id, operation, keys, value)
+            setup_job_doc(job, value)
             job.init()
 
             id_path_mapping[job.id] = id_path_mapping.get(parent_job.id, "") + path
@@ -181,40 +186,17 @@ def add_variations(
     return operations
 
 
-def setup_job_doc(job, base_id, operation, keys: list, value, reset=False):
+def setup_job_doc(job, value, reset=False):
     """Sets basic information in the job document"""
-
-    # we compute an opertation hash since not all
-    # parameters go into the job statepoint
-    h = hashlib.new("md5")
-    h.update((str(operation) + str(value)).encode())
-    operation_hash = h.hexdigest()
-    doc_operation_hash = job.doc.get("operation_hash")
-
-    if doc_operation_hash == operation_hash and not reset:
-        return
 
     # dont overwrite old job state on init so that we can update a tree without
     # triggering rerunning operations
-    if job.doc.get("state") == "ready":
+    if job.doc.get("state"):
         return
-
-    # set up the hash of the operation
-    job.doc["operation_hash"] = operation_hash
-
-    # the job.id of the case from which the current
-    # job has been derived
-    job.doc["base_id"] = base_id
-
-    # store the keys here since the job.sp constantly expands
-    # that way we can check the specific keys from this operation
-    job.doc["keys"] = keys
-
-    # list of pre and post build operations
-    job.doc["pre_build"] = operation.get("pre_build", [])
-    job.doc["post_build"] = operation.get("post_build", [])
-
-    job.doc["state"] = ""
+    job.doc["state"] = {}
+    job.doc["data"] = []  # store results data here
+    job.doc["history"] = []  # history of executed operations
+    job.doc["cache"] = {}
 
 
 def create_tree(
@@ -228,15 +210,19 @@ def create_tree(
         sys.exit(-1)
 
     # Add base case
-    base_case_state = {"has_child": True}
+    base_case_state = {
+        "has_child": True,
+        "parent_id": None,
+        "pre_build": config["case"].get("pre_build", []),
+        "post_build": config["case"].get("post_build", []),
+        "keys": list(config["case"].keys()),
+    }
     base_case_state.update({k: v for k, v in config["case"].items()})
     of_case = project.open_job(base_case_state)
 
-    setup_job_doc(
-        of_case, None, config["case"], keys=list(config["case"].keys()), value=[]
-    )
+    setup_job_doc(of_case, value=[])
 
-    of_case.doc["state"] = "ready"
+    of_case.doc["state"]["global"] = "ready"
     of_case.init()
 
     operations: list = []

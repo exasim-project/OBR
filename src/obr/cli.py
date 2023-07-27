@@ -24,6 +24,7 @@ from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
+from .core.core import map_view_folder_to_job_id
 from pathlib import Path
 import logging
 from subprocess import check_output
@@ -31,12 +32,12 @@ from git.repo import Repo
 from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
-from typing import Union
+from typing import Union, Optional, Any
 
 
 def check_cli_operations(
-    project: OpenFOAMProject, operations: list[str], list_operations: bool
-):
+    project: OpenFOAMProject, operations: list[str], list_operations: Optional[Any]
+) -> bool:
     """list available operations if none are specified or given the click option or an incorrect op is given"""
     if operations == ["generate"]:
         return True
@@ -229,7 +230,7 @@ def run(ctx: click.Context, **kwargs):
     jobs = project.get_jobs(filter=filters)
 
     if kwargs.get("args"):
-        os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
+        os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
 
     # project._reregister_aggregates()
     # print(project.groups)
@@ -292,6 +293,29 @@ def status(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
     project.print_status(detailed=kwargs["detailed"], pretty=True)
+    id_view_map = map_view_folder_to_job_id("view")
+
+    logging.info("Detailed overview:\n" + "=" * 80)
+
+    finished, unfinished = [], []
+    max_view_len = 0
+    for job in project:
+        jobid = job.id
+        if view := id_view_map.get(jobid):
+            labels = project.labels(job)
+            max_view_len = max(len(view), max_view_len)
+            if "finished" in labels:
+                finished.append((view, jobid, labels))
+            else:
+                unfinished.append((view, jobid, labels))
+    finished.sort()
+    for view, jobid, labels in finished:
+        pad = " " * (max_view_len - len(view) + 1)
+        logging.info(f"{view}:{pad}| F | {jobid}")
+    unfinished.sort()
+    for view, jobid, labels in unfinished:
+        pad = " " * (max_view_len - len(view) + 1)
+        logging.info(f"{view}:{pad}| U | {jobid}")
 
 
 @cli.command()
