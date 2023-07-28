@@ -469,15 +469,14 @@ def refineMesh(job: Job, args={}):
 @OpenFOAMProject.operation
 def checkMesh(job: Job, args={}):
     args = get_args(job, args)
-    OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
+    log = OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
-    log = job.doc["obr"]["checkMesh"][-1]["log"]
     cells = (
         check_output(["grep", "cells:", Path(job.path) / "case" / log])
         .decode("utf-8")
         .split()[-1]
     )
-    job.doc["obr"]["nCells"] = int(cells)
+    job.doc["cache"]["nCells"] = int(cells)
 
 
 def get_number_of_procs(job: Job) -> int:
@@ -511,20 +510,28 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    if not job.doc.get("obr"):
-        job.doc["obr"] = {}
 
-    res = job.doc["obr"].get(solver, [])
+    res = job.doc["history"]
+
+    cli_args = {
+        "solver": solver,
+        "path": job.path,
+        "timestamp": timestamp,
+        "np": get_number_of_procs(job),
+    }
+    cmd_str = cmd_format.format(**cli_args)
     res.append(
         {
+            "cmd": cmd_str,
             "type": "shell",
             "log": f"{solver}_{timestamp}.log",
             "state": "started",
             "timestamp": timestamp,
+            "user": os.environ.get("USER"),
+            "hostname": os.environ.get("HOST"),
         }
     )
-    job.doc["obr"][solver] = res
-    job.doc["obr"]["solver"] = solver
+    job.doc["history"].apppend(res)
 
     cli_args = {
         "solver": solver,

@@ -147,8 +147,6 @@ def flatten_jobs(
 
     # merge job docs and statepoints
     for job in jobs:
-        if not job.doc.get("obr"):
-            continue
         docs[job.id] = {}
         for key, value in job.doc.obr.items():
             docs[job.id].update({key: value})

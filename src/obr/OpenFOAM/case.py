@@ -210,8 +210,8 @@ class OpenFOAMCase(BlockMesh):
             except UnicodeDecodeError:
                 return False
 
-    def _exec_operation(self, operation):
-        logged_execute(operation, self.path, self.job.doc)
+    def _exec_operation(self, operation) -> Path:
+        return logged_execute(operation, self.path, self.job.doc)
 
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar"""
@@ -242,10 +242,11 @@ class OpenFOAMCase(BlockMesh):
                 }
             )
 
-        self._exec_operation(["decomposePar", "-force"])
+        log = self._exec_operation(["decomposePar", "-force"])
         fvSolutionArgs = args.get("fvSolution", {})
         if fvSolutionArgs:
             self.fvSolution.set(fvSolutionArgs)
+        return log
 
     def setKeyValuePair(self, args: dict):
         path = Path(args.pop("file"))
@@ -256,7 +257,7 @@ class OpenFOAMCase(BlockMesh):
 
     def run(self, args: dict):
         solver = self.controlDict.get("application")
-        self._exec_operation([solver])
+        return self._exec_operation([solver])
 
     def is_file_modified(self, path: str) -> bool:
         """

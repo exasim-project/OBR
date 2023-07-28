@@ -3,7 +3,7 @@
 from pathlib import Path
 from flow import FlowProject
 from subprocess import check_output
-from ..core.core import check_log_for_success
+from ..core.core import check_log_for_success, get_latest_log
 
 
 @FlowProject.label
@@ -20,15 +20,6 @@ def owns_mesh(job):
 
 
 @FlowProject.label
-def check_mesh(job):
-    """Check whether checkMesh was performed correctly."""
-    checkMeshList = job.doc.get("obr", {}).get("checkMesh", [])
-    if checkMeshList == []:
-        return False
-    return checkMeshList[0].get("state") == "success"
-
-
-@FlowProject.label
 def unitialised(job):
     has_ctrlDict = job.isfile("case/system/controlDict")
     return not has_ctrlDict
@@ -36,25 +27,10 @@ def unitialised(job):
 
 @FlowProject.label
 def finished(job):
-    solver = job.doc.get("obr", {}).get("solver")
-    if not solver:
-        return False
-    solver_log = job.doc["obr"][solver][-1]["log"]
-    return check_log_for_success(Path(job.path) / "case" / solver_log)
-
-
-@FlowProject.label
-def started(job):
-    solver = job.doc.get("obr", {}).get("solver")
-    if not solver:
-        return False
-    if not job.doc["obr"][solver][-1]["state"] == "started":
-        return False
-    solver_log = job.doc["obr"][solver][-1]["log"]
-    res = check_output(["tail", "-n", "1", solver_log], cwd=Path(job.path) / "case")
-    if "Finalising" in res.decode("utf-8"):
-        return False
-    return True
+    solver_log = get_latest_log(job)
+    if solver_log:
+        return check_log_for_success(Path(job.path) / "case" / solver_log)
+    return False
 
 
 @FlowProject.label
@@ -87,13 +63,6 @@ def final(job):
 
 @FlowProject.label
 def failed_op(job):
-    if not job.doc.get("obr"):
-        return False
-
-    for operation, data in job.doc.obr.items():
-        if not isinstance(data, list):
-            continue
-        if data[-1]["state"] == "failure":
-            return True
-
+    if job.doc["state"].get("global") == "failure":
+        return True
     return False
