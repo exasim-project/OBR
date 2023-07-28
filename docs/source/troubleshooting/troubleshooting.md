@@ -13,3 +13,8 @@
 ## FOAM FATAL IO ERROR: Wrong token type - expected string, found on line (e.g.) 47: word 'libOGL.so'
   > Make sure to not have conflicting openFOAM installations, e.g. `openfoam2212` and `openfoam` (both installed via `apt install`)
   > Remove the `openfoam` installation (`apt uninstall openfoam`). If this error happened after installing `openfoam` due to a missing operation, e.g. `blockMesh` see [this issue](#no-such-file-or-directory-blockmesh)
+
+## 'cp: cannot access' during fetchCase
+  > This error can stem from setting `LidDrivenCavityS` to e.g. `/tmp`.
+  > It will likely also throw a `flow.errors.UserOperationError` later on.
+  > Try `unset LidDrivenCavityS` or `export LidDrivenCavityS=/pathTo/existing/empty/folder`
