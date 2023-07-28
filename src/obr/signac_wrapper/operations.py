@@ -531,7 +531,7 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
             "hostname": os.environ.get("HOST"),
         }
     )
-    job.doc["history"].apppend(res)
+    job.doc["history"].append(res)
 
     cli_args = {
         "solver": solver,
