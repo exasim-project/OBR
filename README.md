@@ -61,11 +61,12 @@ also runs all defined operations in the appropriate order.
 ## Environmental variables
 
 OBR workflows often rely on environmental variables to adapt a workflow to specific node or cluster properties. In workflow.yaml files for example `${{env.HOST}}` is replaced by
-`$HOST`. Additionally, `OBR_RUN_CMD` defines the exact call to for parallel runs and `OBR_PREFLIGHT` can call a script to verify your environment just before the solver execution.
+`$HOST`. Additionally, `OBR_RUN_CMD` defines the exact command to execute for parallel runs and `OBR_PREFLIGHT` can call a script to verify your environment just before the solver execution.
 
     export OBR_RUN_CMD="mpirun --bind-to core --map-by core -np {np} {solver} -parallel -case {path}/case >  {path}/case/{solver}_{timestamp}.log 2>&1"
     export OBR_PREFLIGHT="python3 $HOME/data/code/exasim_project/micro_benchmarks/common/preflight.py"
 
+Additionally, `OBR_SKIP_COMPLETE` defines if a already complete run should be repeated.
 
 ## Contributing
 

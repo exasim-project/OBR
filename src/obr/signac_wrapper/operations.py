@@ -580,6 +580,9 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
         preflight_cmd = f"{preflight} > {job.path}/case/preflight_{timestamp}.log && "
         cmd_format = preflight_cmd + cmd_format
 
+    # NOTE we add || true such that the command never fails
+    # otherwise if one execution would fail OBR exits and
+    # the following solver runs would be discarded
     return cmd_format.format(**cli_args) + "|| true"
 
 
