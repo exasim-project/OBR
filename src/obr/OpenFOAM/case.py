@@ -289,13 +289,13 @@ class OpenFOAMCase(BlockMesh):
         for case_path in self.config_file_tree:
             case_file = Path(self.job.path) / "case" / case_path
             md5sum = check_output(["md5sum", case_file], text=True)
-            if "md5sum" not in self.job.doc["obr"]:
-                self.job.doc["obr"]["md5sum"] = dict()
+            if "md5sum" not in self.job.doc["cache"]:
+                self.job.doc["cache"]["md5sum"] = dict()
             signac_friendly_path = path_to_key(
                 str(case_path)
             )  # signac does not allow . inside paths or job.doc keys
             last_modified = os.path.getmtime(case_file)
-            self.job.doc["obr"]["md5sum"][signac_friendly_path] = (
+            self.job.doc["cache"]["md5sum"][signac_friendly_path] = (
                 md5sum.split()[0],
                 last_modified,
             )
