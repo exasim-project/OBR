@@ -58,6 +58,14 @@ Within `LidDrivenCavity3D/workspace` should now have appeared a multitude of dir
 
 also runs all defined operations in the appropriate order.
 
+## Enviromental variables
+
+OBR workflows often rely on enviromental variables to adapt a workflow to specific node or cluster properties. In workflow.yaml files for example `${{env.HOST}}` is replaced by
+`$HOST`. Additionally, `OBR_RUN_CMD` defines the exact call to for parallel runs and `OBR_PREFLIGHT` can call a script to verify your enviroment just before the solver execution.
+
+    export OBR_RUN_CMD="mpirun --bind-to core --map-by core -np {np} {solver} -parallel -case {path}/case >  {path}/case/{solver}_{timestamp}.log 2>&1"
+    export OBR_PREFLIGHT="python3 $HOME/data/code/exasim_project/micro_benchmarks/common/preflight.py"
+
 
 ## Contributing
 
