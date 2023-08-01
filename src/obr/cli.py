@@ -476,7 +476,7 @@ def archive(ctx: click.Context, **kwargs):
                 return
             branch_name = branches[-1][1]
             if dry_run:
-                logging.info(f"Would ammend to {branch_name}.")
+                logging.info(f"Would amend to {branch_name}.")
             else:
                 logging.info(f"Amending to {branch_name} branch")
                 repo.git.checkout(branch_name)
