@@ -7,6 +7,7 @@ from ..core.core import check_log_for_success, get_latest_log
 
 import re
 
+
 @FlowProject.label
 def owns_procs(job):
     fn = Path(job.path) / "case/processor0"
@@ -60,11 +61,14 @@ def final(job):
     NOTE as a side effect we check the number of cells
     """
     if not unitialised(job):
-        final =  not job.sp.get("has_child")
+        final = not job.sp.get("has_child")
         if final:
-            if not job.doc["cache".get("nCells"):
-                owner = check_output(["head", "-n", "13", f"{job.path}/case/constant/polyMesh/owner" ], text=True)
-                nCells = re.findall("[0-9]+",owner.split("\n")[-2])[1]
+            if not job.doc["cache"].get("nCells"):
+                owner = check_output(
+                    ["head", "-n", "13", f"{job.path}/case/constant/polyMesh/owner"],
+                    text=True,
+                )
+                nCells = re.findall("[0-9]+", owner.split("\n")[-2])[1]
                 job.doc["cache"]["nCells"] = nCells
         return final
     else:
