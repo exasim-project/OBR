@@ -149,7 +149,7 @@ def get_latest_log(job):
     solver = case.controlDict.get("application")
 
     history = job.doc["history"]
-    for entry in history[:-1:]:
+    for entry in history[:-1]:
         if entry.get("cmd", "").startswith(solver):
             return entry["log"]
     return ""
