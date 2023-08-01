@@ -18,6 +18,7 @@ import click
 import yaml  # type: ignore[import]
 import os
 import time
+import sys
 
 from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
@@ -63,7 +64,7 @@ def copy_to_archive(
     target_path = target_file.parents[0]
     if not target_path.exists():
         target_path.mkdir(parents=True)
-    logging.info(f"will copy from {src_file} to {target_file}")
+    logging.info(f"cp \\\n\t{src_file}\n\t{target_file.resolve()}")
     if src_file.is_symlink():
         src_file = Path(os.path.realpath(src_file))
     check_output(["cp", src_file, target_file])
@@ -361,6 +362,12 @@ def query(ctx: click.Context, **kwargs):
     help="Path(s) to non-logfile(s) to be also added to the repository.",
 )
 @click.option(
+    "--campaign",
+    required=True,
+    type=str,
+    help="Specify the campaign",
+)
+@click.option(
     "--tag",
     required=False,
     type=str,
@@ -371,10 +378,15 @@ def query(ctx: click.Context, **kwargs):
 )
 @click.option(
     "--amend",
+    is_flag=True,
     required=False,
-    multiple=False,
-    type=str,
     help="Add to existing branch instead of creating new one.",
+)
+@click.option(
+    "--push",
+    required=False,
+    is_flag=True,
+    help="Push changes directly to origin and switch to previous branch.",
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
@@ -392,18 +404,13 @@ def archive(ctx: click.Context, **kwargs):
     repo = None
     branch_name = None
     previous_branch = None
-    tag = kwargs.get("tag", "archive")
+    campaign = kwargs["campaign"]
+    tag = kwargs.get("tag", "")
     # check if given path is actually a github repository
     use_git_repo = False
     try:
         repo = Repo(path=str(target_folder), search_parent_directories=True)
         previous_branch = repo.active_branch.name
-        time_stamp = (
-            str(datetime.now()).rsplit(":", 1)[0].replace(" ", ":").replace(":", "_")
-        )
-        branch_name = f"{tag}-{time_stamp}"
-        logging.info(f"checkout {branch_name}")
-        repo.git.checkout("HEAD", b=branch_name)
         use_git_repo = True
     except InvalidGitRepositoryError:
         logging.warn(
@@ -411,25 +418,32 @@ def archive(ctx: click.Context, **kwargs):
             " copy files."
         )
     if use_git_repo:
-        previous_branch = repo.active_branch.name
-        if branch := kwargs.get("amend"):
-            use_git_repo = True
-            logging.info(f"checkout {branch_name}")
-            if not branch in repo.git.branch():
+        if kwargs.get("amend"):
+            branches = [
+                (branch.name[-16 : len(branch.name)], branch.name)
+                for branch in repo.branches
+                if branch.name.startswith(campaign)
+            ]
+            branches.sort()
+
+            if not branches:
                 # throw error, return
                 logging.error(
-                    "Specified 'amend' branch does not exist. Current existing"
+                    f"Cannot amend to {campaign} branch. Existing"
                     f" branches include {repo.git.branch()}."
                 )
                 return
+            branch_name = branches[-1][1]
+            logging.info(f"Amending to {branch_name} branch")
             repo.git.checkout(branch_name)
         else:
-            branch_name = "archive-" + (
+            time_stamp = (
                 str(datetime.now())
                 .rsplit(":", 1)[0]
                 .replace(" ", ":")
                 .replace(":", "_")
             )
+            branch_name = f"{campaign}/{time_stamp}"
             logging.info(f"checkout {branch_name}")
             repo.git.checkout("HEAD", b=branch_name)
 
@@ -448,8 +462,21 @@ def archive(ctx: click.Context, **kwargs):
                 continue
             target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
             logging.debug(f"{target_folder}, {signac_statepoint}")
-            target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
             copy_to_archive(repo, use_git_repo, signac_statepoint, target_file)
+
+            # copy signac state point
+            signac_job_document = Path(job.path) / "signac_job_document.json"
+            if not signac_job_document.exists():
+                continue
+
+            md5sum = check_output(
+                ["md5sum", str(signac_job_document)], text=True
+            ).split()[0]
+            target_file = (
+                target_folder / f"workspace/{job.id}/signac_job_document_{md5sum}.json"
+            )
+            logging.debug(f"{target_folder}, {signac_job_document}")
+            copy_to_archive(repo, use_git_repo, signac_job_document, target_file)
 
             case_folder = Path(job.path) / "case"
             if not case_folder.exists():
@@ -466,12 +493,15 @@ def archive(ctx: click.Context, **kwargs):
             #     continue
 
             root, _, files = next(os.walk(case_folder))
+            tags = "/".join(tag.split(","))
             for file in files:
                 src_file = Path(root) / file
                 if src_file.is_relative_to(current_path):
                     src_file = src_file.relative_to(current_path)
                 if file.endswith("log"):
-                    target_file = target_folder / f"workspace/{job.id}/case/{file}"
+                    target_file = (
+                        target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
+                    )
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
                     copy_to_archive(repo, use_git_repo, src_file, target_file)
@@ -499,9 +529,10 @@ def archive(ctx: click.Context, **kwargs):
         )
         try:
             repo.index.commit(message, author=author, committer=author)
-            repo.git.push("origin", "-u", branch_name)
-            logging.info(f"Switching back to branch '{previous_branch}'")
-            repo.git.checkout(previous_branch)
+            if kwargs.get("push"):
+                repo.git.push("origin", "-u", branch_name)
+                logging.info(f"Switching back to branch '{previous_branch}'")
+                repo.git.checkout(previous_branch)
         except Exception as e:
             logging.error(e)
 
