@@ -26,10 +26,13 @@ class File(FileParser):
         # forwards all unused arguments
         self._file = kwargs["file"]
         self._folder = kwargs["folder"]
-        kwargs["path"] = Path(self._folder) / self._file
-        super().__init__(**kwargs)
         self.job = kwargs["job"]
-        self._optional = kwargs.get("optional", False)
+        kwargs["path"] = Path(self._folder) / self._file
+        if not kwargs["path"].exists():
+            self.path = kwargs["path"]
+            self.missing = True  # indicate that the file is currently missing
+            return
+        super().__init__(**kwargs)
         self._md5sum = None
 
     def get(self, name: str):
@@ -87,16 +90,12 @@ class OpenFOAMCase(BlockMesh):
         self.job: Job = job
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
-        # FIXME fvSchemes does not exist when using this class in post hooks?
         if Path(self.system_folder / "fvSchemes").exists():
             self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
         # decomposeParDict might not exist in some test cases
         if Path(self.system_folder / "decomposeParDict").exists():
             self.decomposeParDict = File(
-                folder=self.system_folder,
-                file="decomposeParDict",
-                job=job,
-                optional=True,
+                folder=self.system_folder, file="decomposeParDict", job=job
             )
         self.file_dict: dict[str, File] = dict()
         self.config_file_tree

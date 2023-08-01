@@ -15,8 +15,9 @@ def emit_test_config():
             "folder": "Lid_driven_cavity-3d/S",
             "commit": "f9594d16aa6993bb3690ec47b2ca624b37ea40cd",
             "cache_folder": "None/S",
+            "uses": [{"fvSolution": "fvSolution.fixedNORM"}],
             "post_build": [
-                {"shell": "cp system/fvSolution.fixedNORM system/fvSolution"},
+                {"shell": "touch test"},
                 {"controlDict": {"writeFormat": "binary", "libs": ["libOGL.so"]}},
                 {
                     "fvSolution": {
@@ -44,11 +45,19 @@ def test_create_tree(tmpdir, emit_test_config):
     _, folder, _ = next(os.walk(workspace_dir))
 
     assert len(folder) == 1
-    for fold in folder:
-        case_fold = workspace_dir / fold
-        assert case_fold.exists() == True
+    fold = folder[0]
+    case_base_fold = workspace_dir / fold
+    assert case_base_fold.exists() == True
 
     project.run(names=["fetchCase"])
+
+    # after fetch case we should have a base case
+    case_fold = case_base_fold / "case"
+    assert case_fold.exists() == True
+    fvSolution_file = case_fold / "system/fvSolution"
+    assert fvSolution_file.exists() == True
+    shell_file = case_fold / "test"
+    assert shell_file.exists() == True
 
 
 def test_call_generate_tree(tmpdir, emit_test_config):

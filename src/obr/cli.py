@@ -24,7 +24,8 @@ from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl, filter_jobs_by_query
+from .core.queries import input_to_queries, query_impl
+from .core.core import map_view_folder_to_job_id
 from pathlib import Path
 import logging
 from subprocess import check_output
@@ -32,12 +33,12 @@ from git.repo import Repo
 from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
-from typing import Union
+from typing import Union, Optional, Any
 
 
 def check_cli_operations(
-    project: OpenFOAMProject, operations: list[str], list_operations: bool
-):
+    project: OpenFOAMProject, operations: list[str], list_operations: Optional[Any]
+) -> bool:
     """list available operations if none are specified or given the click option or an incorrect op is given"""
     if operations == ["generate"]:
         return True
@@ -104,7 +105,16 @@ def cli(ctx: click.Context, debug: bool):
     is_flag=True,
     help="Prints all available operations and returns.",
 )
-@click.option("--query", default=None, help="")
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
+        ' "solver==pisoFoam"'
+    ),
+)
 @click.option("--bundling_key", default=None, help="")
 @click.option("-p", "--partition", default="cpuonly")
 @click.option("--account", default="")
@@ -205,11 +215,20 @@ def submit(ctx: click.Context, **kwargs):
     is_flag=True,
     help="Prints all available operations and returns.",
 )
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
+        ' runParallelSolver --filter "solver==pisoFoam"'
+    ),
+)
 @click.option("-j", "--job")
 @click.option("--args", default="")
 @click.option("-t", "--tasks", default=-1)
 @click.option("-a", "--aggregate", is_flag=True)
-@click.option("--query", default="")
 @click.option("--args", default="")
 @click.pass_context
 def run(ctx: click.Context, **kwargs):
@@ -224,17 +243,11 @@ def run(ctx: click.Context, **kwargs):
     if not check_cli_operations(project, operations, list_operations):
         return
 
-    queries_str = kwargs.get("query")
-    queries = input_to_queries(queries_str)
-    jobs: list[Job] = []
-    if queries:
-        sel_jobs = query_impl(project, queries, output=False)
-        jobs = [j for j in project if j.id in sel_jobs]
-    else:
-        jobs = [j for j in project]
+    filters = kwargs.get("filter")
+    jobs = project.get_jobs(filter=filters)
 
     if kwargs.get("args"):
-        os.environ["OBR_CALL_ARGS"] = kwargs.get("args")
+        os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
 
     # project._reregister_aggregates()
     # print(project.groups)
@@ -297,70 +310,65 @@ def status(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
     project.print_status(detailed=kwargs["detailed"], pretty=True)
+    id_view_map = map_view_folder_to_job_id("view")
+
+    logging.info("Detailed overview:\n" + "=" * 80)
+
+    finished, unfinished = [], []
+    max_view_len = 0
+    for job in project:
+        jobid = job.id
+        if view := id_view_map.get(jobid):
+            labels = project.labels(job)
+            max_view_len = max(len(view), max_view_len)
+            if "finished" in labels:
+                finished.append((view, jobid, labels))
+            else:
+                unfinished.append((view, jobid, labels))
+    finished.sort()
+    for view, jobid, labels in finished:
+        pad = " " * (max_view_len - len(view) + 1)
+        logging.info(f"{view}:{pad}| F | {jobid}")
+    unfinished.sort()
+    for view, jobid, labels in unfinished:
+        pad = " " * (max_view_len - len(view) + 1)
+        logging.info(f"{view}:{pad}| U | {jobid}")
 
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-d", "--detailed", is_flag=True)
-@click.option("-a", "--all", is_flag=True)
-@click.option("-q", "--query", required=True)
-@click.pass_context
-def query(ctx: click.Context, **kwargs):
-    # TODO refactor
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-
-    project = OpenFOAMProject.get_project()
-    queries_str = kwargs.get("query")
-    queries = input_to_queries(queries_str)
-    query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
-
-
-@cli.command()
 @click.option(
     "--filter",
     type=str,
     multiple=True,
     help=(
-        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
-        " archive --filter solver=pisoFoam --filter preconditioner=IC"
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr query --filter"
+        ' "solver==pisoFoam"'
     ),
 )
+@click.option("-d", "--detailed", is_flag=True)
+@click.option("-a", "--all", is_flag=True)
 @click.option(
-    "-f",
-    "--folder",
+    "-q",
+    "--query",
     required=True,
-    default=".",
-    type=str,
-    help="Path to OpenFOAMProject.",
-)
-@click.option(
-    "-r",
-    "--repo",
-    required=True,
-    type=str,
     help=(
-        "Path to data repository. If this is a valid Github repository, files will be"
-        " automatically added."
+        "Pass a list of dictionary entries in the \"{key: '<key>', value: '<value>',"
+        " predicate:'<predicate>'}, {...}\" syntax. Predicates include neq, eq, gt,"
+        " geq, lt, leq. For instance, obr query -q \"{key:'maxIter', value:'300',"
+        " predicate:'geq'}\""
     ),
 )
 @click.option(
-    "-s",
-    "--skip-logs",
-    required=False,
-    is_flag=True,
-    help=(
-        "If set, .log files will not be archived. This does not affect .log files"
-        " passed via the --file option."
-    ),
+    "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
 )
-@click.option(
-    "-a",
-    "--file",
-    required=False,
-    multiple=True,
-    help="Path(s) to non-logfile(s) to be also added to the repository.",
-)
+def query(ctx: click.Context, **kwargs):
+    target_folder: Path = Path(kwargs.get("repo", "")).absolute()
+    # TODO refactor
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+
 @click.option(
     "--campaign",
     required=True,
@@ -396,7 +404,6 @@ def query(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
-    target_folder: Path = Path(kwargs.get("repo", "")).absolute()
     if current_path := kwargs.get("folder", "."):
         os.chdir(current_path)
         current_path = Path(current_path).absolute()

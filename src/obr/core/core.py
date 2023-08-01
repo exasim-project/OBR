@@ -45,7 +45,7 @@ def logged_execute(cmd, path, doc):
     from datetime import datetime
 
     check_output(["mkdir", "-p", ".obr_store"], cwd=path)
-    d = doc.get("obr", {})
+    d = doc["history"]
     cmd_str = " ".join(cmd)
     cmd_str = path_to_key(cmd_str).split()  # replace dots in cmd_str with _dot_'s
     if len(cmd_str) > 1:
@@ -87,10 +87,9 @@ def logged_execute(cmd, path, doc):
             fh.write(log)
         log = fn
 
-    res = d.get(cmd_str, [])
-
-    res.append(
+    d.append(
         {
+            "cmd": cmd_str,
             "type": "shell",
             "log": log,
             "state": state,
@@ -98,8 +97,8 @@ def logged_execute(cmd, path, doc):
             "timestamp": timestamp,
         }
     )
-    d[cmd_str] = res
-    doc["obr"] = d
+
+    doc["history"] = d
 
 
 def logged_func(func, doc, **kwargs):
@@ -196,3 +195,28 @@ def writes_files(fns):
             unlink(fn)
     else:
         unlink(fns)
+
+
+def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
+    """Creates a mapping from the view schema to the original jobid
+
+    Returns:
+    ========
+        A dictionary with jobid: view_folder
+    """
+    ret = {}
+    base = Path(view_folder)
+    if not base.exists():
+        return {}
+    for root, folder, file in os.walk(view_folder):
+        for i, fold in enumerate(folder):
+            path = Path(root) / fold
+            job_id = None
+            if path.is_symlink():
+                job_id = path.resolve().name
+                # only keep path parts relative to the start of of the view
+                # folder
+                if path.absolute().is_relative_to(base.absolute()):
+                    ret[job_id] = str(path.absolute().relative_to(base.absolute()))
+                folder.pop(i)
+    return ret

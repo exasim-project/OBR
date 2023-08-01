@@ -3,6 +3,7 @@ import os
 import urllib.request
 from pathlib import Path
 import logging
+import sys
 
 
 def read_yaml(kwargs: dict) -> str:
@@ -20,10 +21,12 @@ def read_yaml(kwargs: dict) -> str:
         # search for includes
         config_str = add_includes(yaml_location, config_str)
 
-    return parse_variables(
-        parse_variables(config_str, dict(os.environ), "env"),
-        {"location": str(yaml_location)},
-        "yaml",
+    return eval_yaml_expressions(
+        parse_variables(
+            parse_variables(config_str, dict(os.environ), "env"),
+            {"location": str(yaml_location)},
+            "yaml",
+        )
     )
 
 
@@ -44,6 +47,7 @@ def add_includes(yaml_location: Path, config_str: str) -> str:
 
 
 def parse_variables(in_str: str, args: dict, domain: str) -> str:
+    """Replaces ${{ domain.value }} expressions with concrete values"""
     ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
         if not args.get(inst, ""):
@@ -51,10 +55,18 @@ def parse_variables(in_str: str, args: dict, domain: str) -> str:
         in_str = in_str.replace(
             "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
         )
+    return in_str
+
+
+def eval_yaml_expressions(in_str: str) -> str:
+    """Tries evaluate ${{ }} expressions"""
     expr = re.findall(r"\${{([\'\"\= 0.-9()*+A-Za-z_>!]*)}}", in_str)
     for inst in expr:
         try:
             in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
-        except:
+        except Exception as e:
+            logging.error(e)
             logging.error(in_str + inst)
+
+            sys.exit(1)
     return in_str

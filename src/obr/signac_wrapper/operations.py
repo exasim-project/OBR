@@ -13,6 +13,8 @@ from signac.contrib.job import Job
 from typing import Union, Literal
 from datetime import datetime
 import logging
+from typing import Optional
+from obr.core.queries import filter_jobs, query_impl, input_to_queries, Query
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -27,6 +29,36 @@ class OpenFOAMProject(flow.FlowProject):
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
+    def get_jobs(
+        self, filter=list[str], query: Optional[list[Query]] = None, output=False
+    ):
+        """`get_jobs` accepts a list of filters and an optional list of queries. If `output` is set to True, results will be logged verbosely.
+
+        - First, the filters will be applied to all jobs inside the `OpenFOAMProject` instance.
+
+        - Secondly, if queries were passed, the requested values will be logged to the terminal.
+
+        - Lastly, the filtered jobs will be returned as a list.
+        """
+        filtered_jobs = self.filter_jobs(filters=filter, output=output)
+        if query is not None:
+            if isinstance(query, str):
+                query = input_to_queries(query)
+            self.query_jobs(filtered_jobs, query)
+        return filtered_jobs
+
+    def filter_jobs(self, filters: list[str], output: bool = False):
+        """Applies given `filters` to all jobs inside the `OpenFOAMProject` instance."""
+        filtered_jobs: list[Job] = filter_jobs(self, filters, output)
+        if output:
+            for job in filtered_jobs:
+                print(f"Found Job with {job.id=}")
+        return filtered_jobs
+
+    def query_jobs(self, jobs: list[Job], query: list[Query]) -> list[str]:
+        """return list of job ids as result of `Query`."""
+        return query_impl(jobs, query, output=True)
+
 
 generate = OpenFOAMProject.make_group(name="generate")
 simulate = OpenFOAMProject.make_group("execute")
@@ -37,14 +69,14 @@ class JobCache:
         self.d = {j.id: j for j in jobs}
 
     def search_parent(self, job: Job, key):
-        base_id = job.doc.get("base_id")
-        if not base_id:
+        parent_id = job.doc.get("parent_id")
+        if not parent_id:
             return
-        base_value = self.d[base_id].doc["obr"].get(key)
+        base_value = self.d[parent_id].doc["obr"].get(key)
         if base_value:
             return base_value
         else:
-            return self.search_parent(self.d[base_id], key)
+            return self.search_parent(self.d[parent_id], key)
 
 
 def is_case(job: Job) -> bool:
@@ -92,7 +124,7 @@ def basic_eligible(job: Job, operation: str) -> bool:
         or not is_case(job)
     ):
         # For Debug purposes
-        if False:
+        if False and (operation == job.sp().get("operation")):
             logging.info(f"check if job {job.id} is eligible is False")
             logging.info("is_locked should be False", is_locked(job))
             logging.info("base case is ready should be True", base_case_is_ready(job))
@@ -109,10 +141,11 @@ def base_case_is_ready(job: Job) -> Union[bool, None]:
 
     TODO rename to parent_job_is_ready
     """
-    if job.doc.get("base_id"):
+    if job.doc.get("parent_id"):
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
-        parent_job = project.open_job(id=job.doc.get("base_id"))
+        parent_job = project.open_job(id=job.doc.get("parent_id"))
         return parent_job.doc.get("state", "") == "ready"
+    return False
 
 
 def _link_path(base: Path, dst: Path, copy_instead_link: bool):
@@ -173,16 +206,16 @@ def needs_init_dependent(job: Job) -> bool:
     # in future it might make sense to specify the files which are modified
     # in the yaml file
     copy_instead_link = job.sp().get("operation") == "shell"
-    if job.doc.get("base_id"):
-        if job.doc.get("init_dependent"):
+    if job.sp().get("parent_id"):
+        if job.doc["state"].get("init_dependent"):
             #    logging.info("already init", job.id)
             return True
-        base_id = job.doc.get("base_id")
+        parent_id = job.sp().get("parent_id")
 
-        base_path = Path(job.path) / ".." / base_id / "case"
+        base_path = Path(job.path) / ".." / parent_id / "case"
         dst_path = Path(job.path) / "case"
         _link_path(base_path, dst_path, copy_instead_link)
-        job.doc["init_dependent"] = True
+        job.doc["state"]["init_dependent"] = True
         return True
     else:
         return False
@@ -195,10 +228,11 @@ def get_args(job: Job, args: Union[dict, str]) -> Union[dict, str]:
     also args can be just a str in case of shell scripts
     """
     if isinstance(args, dict):
+        print("args:", job.sp())
         return (
             {key: value for key, value in args.items()}
             if args
-            else {key: job.sp()[key] for key in job.doc["keys"]}
+            else {key: job.sp()[key] for key in job.sp().get("keys", [])}
         )
     else:
         return args
@@ -223,7 +257,7 @@ def execute_operation(job: Job, operation_name: str, operations) -> Literal[True
             tb = traceback.format_exc()
             logging.info(tb)
             logging.error(e)
-            job.doc["state"] == "failure"
+            job.doc["state"]["global"] == "failure"
     return True
 
 
@@ -233,7 +267,7 @@ def execute_post_build(operation_name: str, job: Job):
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
     """
-    operations = job.doc.get("post_build", [])
+    operations = job.sp.get("post_build", [])
     execute_operation(job, operation_name, operations)
 
 
@@ -243,23 +277,21 @@ def execute_pre_build(operation_name: str, job: Job):
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
     """
-    operations = job.doc.get("pre_build", [])
+    operations = job.sp.get("pre_build", [])
     execute_operation(job, operation_name, operations)
 
 
-def start_job_state(_, job: Job) -> Union[Literal[True], None]:
-    current_state = job.doc.get("state")
+def start_job_state(_, job: Job) -> None:
+    current_state = job.doc["state"].get("global")
     if not current_state:
-        job.doc["state"] = "started"
-        return
-    if current_state == "started":
+        job.doc["state"]["global"] = "started"
+    elif current_state == "started":
         # job has been started but not finished yet
-        job.doc["state"] = "tmp_lock"
-    return True
+        job.doc["state"]["global"] = "tmp_lock"
 
 
 def end_job_state(_, job: Job) -> Literal[True]:
-    job.doc["state"] = "ready"
+    job.doc["state"]["global"] = "ready"
     return True
 
 
@@ -279,7 +311,21 @@ def dispatch_post_hooks(operation_name: str, job: Job):
 
 def set_failure(operation_name: str, error, job: Job):
     """just forwards to start_job_state and execute_pre_build"""
-    job.doc["state"] = "failure"
+    job.doc["state"]["global"] = "failure"
+
+
+def copy_on_uses(args: dict, job: Job, path: str, target: str):
+    """copies the file specified in args['uses'] to path/target"""
+    if isinstance(args, str):
+        return
+    if uses := args.pop("uses", False):
+        check_output(
+            [
+                "cp",
+                "{}/case/{}/{}".format(job.path, path, uses),
+                "{}/case/{}/{}".format(job.path, path, target),
+            ]
+        )
 
 
 @generate
@@ -295,6 +341,7 @@ def controlDict(job: Job, args={}):
     # was called directly from a pre/post build or from sp
     # if this was a variation. In any case this could be a decorator
     args = get_args(job, args)
+    copy_on_uses(args, job, "system", "controlDict")
     OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
 
 
@@ -308,16 +355,6 @@ def controlDict(job: Job, args={}):
 def blockMesh(job: Job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
-
-    # get number of cells
-    log = job.doc["obr"]["blockMesh"][-1]["log"]
-    cells = (
-        check_output(["grep", "nCells:", Path(job.path) / "case" / log])
-        .decode("utf-8")
-        .split()[-1]
-    )
-    job.doc["obr"]["nCells"] = int(cells)
-    job.doc.blockMesh = True
 
 
 @generate
@@ -335,7 +372,6 @@ def shell(job: Job, args={}):
     else:
         steps = [args]
     execute(steps, job)
-    # TODO do deduplication once done
 
 
 @generate
@@ -347,6 +383,7 @@ def shell(job: Job, args={}):
 @OpenFOAMProject.operation
 def fvSolution(job: Job, args={}):
     args = get_args(job, args)
+    copy_on_uses(args, job, "system", "fvSolution")
     OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
 
 
@@ -418,7 +455,9 @@ def decomposePar(job: Job, args={}):
 
     if found:
         for processor_path in dst_case.processor_folder:
-            _link_path(processor_path, target_case.path / processor_path.parts[-1])
+            _link_path(
+                processor_path, target_case.path / processor_path.parts[-1], True
+            )
     else:
         target_case.decomposePar(args)
 
@@ -427,15 +466,24 @@ def decomposePar(job: Job, args={}):
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
-@OpenFOAMProject.pre(lambda job: not bool(job.doc.get("base_id")))
+@OpenFOAMProject.pre(lambda job: not bool(job.sp().get("parent_id")))
 @OpenFOAMProject.post(is_case)
 @OpenFOAMProject.operation
 def fetchCase(job: Job, args={}):
     args = get_args(job, args)
 
+    uses = args.pop("uses", [])
     case_type = job.sp()["type"]
     fetch_case_handler = getattr(caseOrigins, case_type)(**args)
     fetch_case_handler.init(path=job.path)
+
+    # if we find any entries in the list of 'uses' forward it to the
+    # corresponding operation. This means we call the corresponding operation
+    # with that specific value ie. uses: controlDict: controlDict.RANS will call
+    # the controlDict operation with  {uses: controlDict.RANS} as arguments
+    for entry in uses:
+        for k, v in entry.items():
+            getattr(sys.modules[__name__], k)(job, {"uses": v})
 
 
 def is_locked(job: Job) -> bool:
@@ -503,7 +551,6 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     if skip_complete and finished(job):
         return "true"
 
-    args = get_args(job, args)
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -565,7 +612,7 @@ def runSerialSolver(job: Job, args={}):
 @OpenFOAMProject.operation
 def archive(job: Job, args={}) -> Literal[True]:
     root, _, files = next(os.walk(Path(job.path) / "case"))
-    fp = os.environ.get("OBR_CALL_ARGS")
+    fp = os.environ.get("OBR_CALL_ARGS", "")
     for fn in files:
         if fp not in fn:
             continue
