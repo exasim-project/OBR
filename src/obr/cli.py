@@ -337,38 +337,64 @@ def status(ctx: click.Context, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
+@click.option("-d", "--detailed", is_flag=True)
+@click.option("-a", "--all", is_flag=True)
+@click.option("-q", "--query", required=True)
+def query(ctx: click.Context, **kwargs):
+    # TODO refactor
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+
+    project = OpenFOAMProject.get_project()
+    queries_str = kwargs.get("query", "")
+    queries = input_to_queries(queries_str)
+    query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
+
+@cli.command()
 @click.option(
     "--filter",
     type=str,
     multiple=True,
     help=(
-        "Pass a <key><predicate><value> value pair per occurrence of --filter."
-        " Predicates include ==, !=, <=, <, >=, >. For instance, obr query --filter"
-        ' "solver==pisoFoam"'
+        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
+        " archive --filter solver=pisoFoam --filter preconditioner=IC"
     ),
 )
-@click.option("-d", "--detailed", is_flag=True)
-@click.option("-a", "--all", is_flag=True)
 @click.option(
-    "-q",
-    "--query",
+    "-f",
+    "--folder",
     required=True,
+    default=".",
+    type=str,
+    help="Path to OpenFOAMProject.",
+)
+@click.option(
+    "-r",
+    "--repo",
+    required=True,
+    type=str,
     help=(
-        "Pass a list of dictionary entries in the \"{key: '<key>', value: '<value>',"
-        " predicate:'<predicate>'}, {...}\" syntax. Predicates include neq, eq, gt,"
-        " geq, lt, leq. For instance, obr query -q \"{key:'maxIter', value:'300',"
-        " predicate:'geq'}\""
+        "Path to data repository. If this is a valid Github repository, files will be"
+        " automatically added."
     ),
 )
 @click.option(
-    "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
+    "-s",
+    "--skip-logs",
+    required=False,
+    is_flag=True,
+    help=(
+        "If set, .log files will not be archived. This does not affect .log files"
+        " passed via the --file option."
+    ),
 )
-def query(ctx: click.Context, **kwargs):
-    target_folder: Path = Path(kwargs.get("repo", "")).absolute()
-    # TODO refactor
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-
+@click.option(
+    "-a",
+    "--file",
+    required=False,
+    multiple=True,
+    help="Path(s) to non-logfile(s) to be also added to the repository.",
+)
 @click.option(
     "--campaign",
     required=True,
@@ -404,6 +430,7 @@ def query(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
+    target_folder: Path = Path(kwargs.get("repo", "")).absolute()
     if current_path := kwargs.get("folder", "."):
         os.chdir(current_path)
         current_path = Path(current_path).absolute()
@@ -411,7 +438,7 @@ def archive(ctx: click.Context, **kwargs):
     # setup project and jobs
     project = OpenFOAMProject().init_project()
     filters: tuple[str] = kwargs.get("filter", ())
-    jobs = filter_jobs_by_query(project, filters)
+    jobs = project.filter_jobs(list(filters), False)
 
     dry_run = kwargs.get("dry_run", False)
     time = str(datetime.now()).replace(" ", "_")
