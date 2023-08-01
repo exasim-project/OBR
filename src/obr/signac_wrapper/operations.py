@@ -64,21 +64,6 @@ generate = OpenFOAMProject.make_group(name="generate")
 simulate = OpenFOAMProject.make_group("execute")
 
 
-class JobCache:
-    def __init__(self, jobs: list[Job]):
-        self.d = {j.id: j for j in jobs}
-
-    def search_parent(self, job: Job, key):
-        parent_id = job.sp()["parent_id"]
-        if not parent_id:
-            return
-        base_value = self.d[parent_id].doc.get(key)
-        if base_value:
-            return base_value
-        else:
-            return self.search_parent(self.d[parent_id], key)
-
-
 def is_case(job: Job) -> bool:
     has_ctrlDict = job.isfile("case/system/controlDict")
     return has_ctrlDict
