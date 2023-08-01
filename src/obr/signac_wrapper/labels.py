@@ -5,6 +5,7 @@ from flow import FlowProject
 from subprocess import check_output
 from ..core.core import check_log_for_success, get_latest_log
 
+import re
 
 @FlowProject.label
 def owns_procs(job):
@@ -54,9 +55,18 @@ def ready(job):
 @FlowProject.label
 def final(job):
     """jobs that dont have children/variations are considered to be final and
-    are thus eligible for execution"""
+    are thus eligible for execution
+
+    NOTE as a side effect we check the number of cells
+    """
     if not unitialised(job):
-        return not job.sp.get("has_child")
+        final =  not job.sp.get("has_child")
+        if final:
+            if not job.doc["cache".get("nCells"):
+                owner = check_output(["head", "-n", "13", f"{job.path}/case/constant/polyMesh/owner" ], text=True)
+                nCells = re.findall("[0-9]+",owner.split("\n")[-2])[1]
+                job.doc["cache"]["nCells"] = nCells
+        return final
     else:
         return False
 
