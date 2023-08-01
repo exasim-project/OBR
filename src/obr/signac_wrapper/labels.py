@@ -63,9 +63,10 @@ def final(job):
     if not unitialised(job):
         final = not job.sp.get("has_child")
         if final:
-            if not job.doc["cache"].get("nCells"):
+            owner_path = Path(f"{job.path}/case/constant/polyMesh/owner")
+            if not job.doc["cache"].get("nCells") and owner_path.exists():
                 owner = check_output(
-                    ["head", "-n", "13", f"{job.path}/case/constant/polyMesh/owner"],
+                    ["head", "-n", "13", owner_path],
                     text=True,
                 )
                 nCells = re.findall("[0-9]+", owner.split("\n")[-2])[1]
