@@ -388,6 +388,12 @@ def query(ctx: click.Context, **kwargs):
     is_flag=True,
     help="Push changes directly to origin and switch to previous branch.",
 )
+@click.option(
+    "--dry-run",
+    required=False,
+    is_flag=True,
+    help="If set, will log which files WOULD be copied and committed, without actually doing it."
+)
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     target_folder: Path = Path(kwargs.get("repo", "")).absolute()
@@ -400,6 +406,7 @@ def archive(ctx: click.Context, **kwargs):
     filters: tuple[str] = kwargs.get("filter", ())
     jobs = filter_jobs_by_query(project, filters)
 
+    dry_run = kwargs.get("dry_run", False)
     time = str(datetime.now()).replace(" ", "_")
     repo = None
     branch_name = None
@@ -434,8 +441,11 @@ def archive(ctx: click.Context, **kwargs):
                 )
                 return
             branch_name = branches[-1][1]
-            logging.info(f"Amending to {branch_name} branch")
-            repo.git.checkout(branch_name)
+            if dry_run:
+                logging.info(f"Would ammend to {branch_name}.")
+            else:
+                logging.info(f"Amending to {branch_name} branch")
+                repo.git.checkout(branch_name)
         else:
             time_stamp = (
                 str(datetime.now())
@@ -444,13 +454,19 @@ def archive(ctx: click.Context, **kwargs):
                 .replace(":", "_")
             )
             branch_name = f"{campaign}/{time_stamp}"
-            logging.info(f"checkout {branch_name}")
-            repo.git.checkout("HEAD", b=branch_name)
+            if dry_run:
+                logging.info(f"Would checkout {branch_name}.")
+            else:
+                logging.info(f"checkout {branch_name}")
+                repo.git.checkout("HEAD", b=branch_name)
 
     # setup target folder
     if not target_folder.exists():
-        logging.info(f"creating {str(target_folder)}")
-        target_folder.mkdir()
+        if dry_run:
+            logging.info(f"Would Create {str(target_folder)}")
+        else:
+            logging.info(f"creating {str(target_folder)}")
+            target_folder.mkdir()
 
     skip = kwargs.get("skip_logs")
     if not skip:
@@ -461,8 +477,11 @@ def archive(ctx: click.Context, **kwargs):
             if not signac_statepoint.exists():
                 continue
             target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
-            logging.debug(f"{target_folder}, {signac_statepoint}")
-            copy_to_archive(repo, use_git_repo, signac_statepoint, target_file)
+            if dry_run:
+                logging.info(f"Would copy {signac_statepoint} to {target_file}.")
+            else:
+                logging.debug(f"{target_folder}, {signac_statepoint}")
+                copy_to_archive(repo, use_git_repo, signac_statepoint, target_file)
 
             # copy signac state point
             signac_job_document = Path(job.path) / "signac_job_document.json"
@@ -475,8 +494,11 @@ def archive(ctx: click.Context, **kwargs):
             target_file = (
                 target_folder / f"workspace/{job.id}/signac_job_document_{md5sum}.json"
             )
-            logging.debug(f"{target_folder}, {signac_job_document}")
-            copy_to_archive(repo, use_git_repo, signac_job_document, target_file)
+            if dry_run:
+                logging.info(f"Would copy {signac_job_document} to {target_file}.")
+            else:
+                logging.debug(f"{target_folder}, {signac_job_document}")
+                copy_to_archive(repo, use_git_repo, signac_job_document, target_file)
 
             case_folder = Path(job.path) / "case"
             if not case_folder.exists():
@@ -504,7 +526,10 @@ def archive(ctx: click.Context, **kwargs):
                     )
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
-                    copy_to_archive(repo, use_git_repo, src_file, target_file)
+                    if dry_run:
+                        logging.info(f"Would copy {src_file} to {target_file}.")
+                    else:
+                        copy_to_archive(repo, use_git_repo, src_file, target_file)
 
     # copy CLI-passed files into data repo and add if possible
     extra_files: tuple[str] = kwargs.get("file", ())
@@ -513,7 +538,10 @@ def archive(ctx: click.Context, **kwargs):
         if not f.exists():
             logging.info(f"invalid path {f}. Skipping.")
             continue
-        copy_to_archive(repo, use_git_repo, f.absolute())
+        if dry_run:
+            logging.info(f"Would copy {f} to {f.absolute}.")
+        else:
+            copy_to_archive(repo, use_git_repo, f, f.absolute())
 
     # commit and push
     if use_git_repo and repo and branch_name:
@@ -523,18 +551,25 @@ def archive(ctx: click.Context, **kwargs):
         logging.info(
             f'config: {repo.git.config("user.name"), repo.git.config("user.email")}'
         )
-        logging.info(
-            f"Committing changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
-            f" {message=} and remote name {repo.remote().name}"
-        )
-        try:
-            repo.index.commit(message, author=author, committer=author)
-            if kwargs.get("push"):
-                repo.git.push("origin", "-u", branch_name)
-                logging.info(f"Switching back to branch '{previous_branch}'")
-                repo.git.checkout(previous_branch)
-        except Exception as e:
-            logging.error(e)
+        if dry_run:
+            logging.info(
+                f"Would commit changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
+                f" {message=} and remote name {repo.remote().name}"
+            )
+
+        else:
+            logging.info(
+                f"Committing changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
+                f" {message=} and remote name {repo.remote().name}"
+            )
+            try:
+                repo.index.commit(message, author=author, committer=author)
+                if kwargs.get("push"):
+                    repo.git.push("origin", "-u", branch_name)
+                    logging.info(f"Switching back to branch '{previous_branch}'")
+                    repo.git.checkout(previous_branch)
+            except Exception as e:
+                logging.error(e)
 
 
 def main():
