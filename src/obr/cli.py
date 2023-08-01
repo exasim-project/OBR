@@ -350,6 +350,7 @@ def query(ctx: click.Context, **kwargs):
     queries = input_to_queries(queries_str)
     query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
 
+
 @cli.command()
 @click.option(
     "--filter",
@@ -426,7 +427,7 @@ def query(ctx: click.Context, **kwargs):
     "--dry-run",
     required=False,
     is_flag=True,
-    help="If set, will log which files WOULD be copied and committed, without actually doing it."
+    help="If set, will log which files WOULD be copied and committed, without actually doing it.",
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
