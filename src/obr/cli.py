@@ -169,7 +169,7 @@ def submit(ctx: click.Context, **kwargs):
     else:
         logging.info(f"submitting {len(jobs)} individual jobs")
         ret_submit = project.submit(
-            names=[kwargs.get("operation")],
+            names=operations,
             **cluster_args,
         )
         logging.info(ret_submit)
