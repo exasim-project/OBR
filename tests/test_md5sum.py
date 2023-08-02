@@ -63,7 +63,8 @@ def test_md5sum_calculation(tmpdir, emit_test_config):
             [f.rsplit("/", 1)[1] for f in case.config_file_tree]
         )
         md5summed_files_actual = [
-            key_to_path(file.rsplit("/", 1)[1]) for file in job["obr"].get("md5sum", [])
+            key_to_path(file.rsplit("/", 1)[1])
+            for file in job["cache"].get("md5sum", [])
         ]
 
         for fname in md5summed_files_actual:

@@ -23,10 +23,9 @@ else:
 def calculate_simple_partition(nSubDomains, decomp):
     """Calculates a simple domain decomposition based on nSubDomains
 
-    Returns
-    -------
+    Returns:
+    --------
         number of subdomains
-
     """
 
     def next_position(x):

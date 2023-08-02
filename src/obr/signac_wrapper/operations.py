@@ -64,21 +64,6 @@ generate = OpenFOAMProject.make_group(name="generate")
 simulate = OpenFOAMProject.make_group("execute")
 
 
-class JobCache:
-    def __init__(self, jobs: list[Job]):
-        self.d = {j.id: j for j in jobs}
-
-    def search_parent(self, job: Job, key):
-        parent_id = job.doc.get("parent_id")
-        if not parent_id:
-            return
-        base_value = self.d[parent_id].doc["obr"].get(key)
-        if base_value:
-            return base_value
-        else:
-            return self.search_parent(self.d[parent_id], key)
-
-
 def is_case(job: Job) -> bool:
     has_ctrlDict = job.isfile("case/system/controlDict")
     return has_ctrlDict
@@ -86,23 +71,10 @@ def is_case(job: Job) -> bool:
 
 def operation_complete(job: Job, operation: str) -> bool:
     """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
-    if job.doc.get("state") == "ready":
+    if job.doc["state"].get("global") == "ready":
         return True
     else:
         return False
-    # TODO check if anything else is actually needed
-    # if job.doc.get("obr"):
-    #     # if job has completed before its state
-    #     # is set to success
-
-    #     state = job.doc.get("obr").get(operation)
-    #     if not state:
-    #         return False
-    #     args_in = get_args(job, False)
-    #     prev_args = {key: job.sp[key] for key in job.doc.get("keys", [])}
-    #     return (state[-1]["state"] == "success") and (args_in == prev_args)
-    # else:
-    #     return False
 
 
 def basic_eligible(job: Job, operation: str) -> bool:
@@ -118,38 +90,40 @@ def basic_eligible(job: Job, operation: str) -> bool:
     # don't execute operation on cases that dont request them
     if (
         is_locked(job)
-        or not base_case_is_ready(job)
+        or not parent_job_is_ready(job) == "ready"
         or not operation == job.sp().get("operation")
-        or not needs_init_dependent(job)
+        or not needs_initialization(job)
         or not is_case(job)
     ):
         # For Debug purposes
         if False and (operation == job.sp().get("operation")):
             logging.info(f"check if job {job.id} is eligible is False")
-            logging.info("is_locked should be False", is_locked(job))
-            logging.info("base case is ready should be True", base_case_is_ready(job))
-            logging.info(
-                "needs_init_dependent should be True", needs_init_dependent(job)
-            )
-            logging.info("is_case should be True", is_case(job))
+            if is_locked(job):
+                logging.info(f"\tis_locked=True, should be False")
+            if not parent_job_is_ready(job) == "ready":
+                state = parent_job_is_ready(job)
+                logging.info(f"\tparent_job_is_ready={state} should be ready")
+            if not needs_initialization(job):
+                logging.info(f"\tneeds_initialization=False should be True")
+            if not is_case(job):
+                logging.info("\tis_case=False should be True")
         return False
     return True
 
 
-def base_case_is_ready(job: Job) -> Union[bool, None]:
-    """Checks whether the parent of the given job is ready
-
-    TODO rename to parent_job_is_ready
-    """
-    if job.doc.get("parent_id"):
+def parent_job_is_ready(job: Job) -> str:
+    """Checks whether the parent of the given job is ready"""
+    if job.sp().get("parent_id"):
         project = OpenFOAMProject.get_project(root=job.path + "/../..")
-        parent_job = project.open_job(id=job.doc.get("parent_id"))
-        return parent_job.doc.get("state", "") == "ready"
-    return False
+        parent_job = project.open_job(id=job.sp().get("parent_id"))
+        return parent_job.doc["state"].get("global", "")
+    return ""
 
 
 def _link_path(base: Path, dst: Path, copy_instead_link: bool):
-    """creates file tree under dst with same folder structure as base but all files are relative symlinks"""
+    """creates file tree under dst with same folder structure as base but all
+    files are relative symlinks
+    """
     # ensure dst path exists
     check_output(["mkdir", "-p", str(dst)])
 
@@ -194,28 +168,26 @@ def _link_path(base: Path, dst: Path, copy_instead_link: bool):
                     )
 
 
-def needs_init_dependent(job: Job) -> bool:
+def needs_initialization(job: Job) -> bool:
     """check if this job has been already linked to
 
     The default strategy is to link all files. If a file is modified
     the modifying operations are responsible for unlinking and copying
     """
-    # shell scripts might change files as side effect
-    # hence we copy all files instead of linking to avoid
-    # side effects
-    # in future it might make sense to specify the files which are modified
-    # in the yaml file
+    # shell scripts might change files as side effect hence we copy all files
+    # instead of linking to avoid side effects in future it might make sense to
+    # specify the files which are modified in the yaml file
     copy_instead_link = job.sp().get("operation") == "shell"
     if job.sp().get("parent_id"):
-        if job.doc["state"].get("init_dependent"):
-            #    logging.info("already init", job.id)
+        if job.doc["state"].get("is_initialized"):
             return True
         parent_id = job.sp().get("parent_id")
 
         base_path = Path(job.path) / ".." / parent_id / "case"
         dst_path = Path(job.path) / "case"
+        # logging.info(f"linking {base_path} to {dst_path}")
         _link_path(base_path, dst_path, copy_instead_link)
-        job.doc["state"]["init_dependent"] = True
+        job.doc["state"]["is_initialized"] = True
         return True
     else:
         return False
@@ -228,7 +200,6 @@ def get_args(job: Job, args: Union[dict, str]) -> Union[dict, str]:
     also args can be just a str in case of shell scripts
     """
     if isinstance(args, dict):
-        print("args:", job.sp())
         return (
             {key: value for key, value in args.items()}
             if args
@@ -423,43 +394,14 @@ def has_mesh(job: Job) -> bool:
 def decomposePar(job: Job, args={}):
     args = get_args(job, args)
 
-    # TODO
-    # before decomposing check if case with same state
-    # ie time folder blockMeshDict decomposeParDict
-    # exists and decomposition is already done
-    # if so just copy/link folders
+    # NOTE don't try anything smart about reusing existing decompositions
+    # if decompositions should be reused place decompositions in front
+    # of your workflow file
     workspace_folder = Path(job.path) / "../"
     root, job_paths, _ = next(os.walk(workspace_folder))
 
     target_case = OpenFOAMCase(str(job.path) + "/case", job)
-
-    # TODO consider also latest/all time folder contents
-    target_md5sums = [
-        target_case.decomposeParDict.md5sum(),
-        target_case.blockMeshDictmd5sum(),
-    ]
-
-    found = False
-    for job_path in job_paths:
-        dst_path = Path(root) / job_path / "case"
-        if not dst_path.exists():
-            continue
-        dst_case = OpenFOAMCase(dst_path, {})
-        dst_md5sums = [
-            dst_case.decomposeParDict.md5sum(),
-            dst_case.blockMeshDictmd5sum(),
-        ]
-        if target_md5sums == dst_md5sums:
-            found = True
-            break
-
-    if found:
-        for processor_path in dst_case.processor_folder:
-            _link_path(
-                processor_path, target_case.path / processor_path.parts[-1], True
-            )
-    else:
-        target_case.decomposePar(args)
+    target_case.decomposePar(args)
 
 
 @generate
@@ -490,7 +432,7 @@ def is_locked(job: Job) -> bool:
     """Cases that are already started are set to tmp_lock
     dont try to execute them
     """
-    return job.doc.get("state") == "tmp_lock"
+    return job.doc["state"].get("global") == "tmp_lock"
 
 
 @generate
@@ -507,20 +449,19 @@ def refineMesh(job: Job, args={}):
         OpenFOAMCase(str(job.path) + "/case", job).refineMesh(args)
 
 
-@OpenFOAMProject.pre(base_case_is_ready)
+@OpenFOAMProject.pre(parent_job_is_ready)
 @OpenFOAMProject.pre(owns_mesh)
 @OpenFOAMProject.operation
 def checkMesh(job: Job, args={}):
     args = get_args(job, args)
-    OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
+    log = OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
-    log = job.doc["obr"]["checkMesh"][-1]["log"]
     cells = (
         check_output(["grep", "cells:", Path(job.path) / "case" / log])
         .decode("utf-8")
         .split()[-1]
     )
-    job.doc["obr"]["nCells"] = int(cells)
+    job.doc["cache"]["nCells"] = int(cells)
 
 
 def get_number_of_procs(job: Job) -> int:
@@ -554,20 +495,28 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    if not job.doc.get("obr"):
-        job.doc["obr"] = {}
 
-    res = job.doc["obr"].get(solver, [])
+    res = job.doc["history"]
+
+    cli_args = {
+        "solver": solver,
+        "path": job.path,
+        "timestamp": timestamp,
+        "np": get_number_of_procs(job),
+    }
+    cmd_str = cmd_format.format(**cli_args)
     res.append(
         {
+            "cmd": cmd_str,
             "type": "shell",
             "log": f"{solver}_{timestamp}.log",
             "state": "started",
             "timestamp": timestamp,
+            "user": os.environ.get("USER"),
+            "hostname": os.environ.get("HOST"),
         }
     )
-    job.doc["obr"][solver] = res
-    job.doc["obr"]["solver"] = solver
+    job.doc["history"].append(res)
 
     cli_args = {
         "solver": solver,
