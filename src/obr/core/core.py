@@ -10,6 +10,7 @@ from pathlib import Path
 from subprocess import check_output
 from typing import Union
 from datetime import datetime
+from signac.contrib.job import Job
 
 # these are to be replaced with each other
 SIGNAC_PATH_TOKEN = "_dot_"
@@ -141,11 +142,17 @@ def logged_func(func, doc, **kwargs):
     doc["history"].append(res)
 
 
-def get_latest_log(job):
+def get_latest_log(job: Job):
     """find latest"""
     from ..OpenFOAM.case import OpenFOAMCase
 
-    case = OpenFOAMCase(str(job.path) + "/case", job)
+    case_path = Path(job.path + "case")
+    # in case obr status is called directly after initialization
+    # this would also fail if there was no case directory
+    if not case_path.exists():
+        return ""
+
+    case = OpenFOAMCase(case_path, job)
     solver = case.controlDict.get("application")
 
     history = job.doc["history"]
