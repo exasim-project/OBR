@@ -18,9 +18,10 @@ import click
 import yaml  # type: ignore[import]
 import os
 import time
+import sys
 
 from signac.contrib.job import Job
-from .signac_wrapper.operations import OpenFOAMProject, get_values
+from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl
@@ -54,6 +55,22 @@ def check_cli_operations(
         project.print_operations()
         return False
     return True
+
+
+def copy_to_archive(
+    repo: Union[Repo, None], use_git_repo: bool, src_file: Path, target_file: Path
+) -> None:
+    """Copies files to archive repo"""
+    # ensure target directory exists()
+    target_path = target_file.parents[0]
+    if not target_path.exists():
+        target_path.mkdir(parents=True)
+    logging.info(f"cp \\\n\t{src_file}\n\t{target_file.resolve()}")
+    if src_file.is_symlink():
+        src_file = Path(os.path.realpath(src_file))
+    check_output(["cp", src_file, target_file])
+    if use_git_repo and repo:
+        repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
 
 
 @click.group()
@@ -331,44 +348,274 @@ def status(ctx: click.Context, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    help=(
-        "Pass a <key><predicate><value> value pair per occurrence of --filter."
-        " Predicates include ==, !=, <=, <, >=, >. For instance, obr query --filter"
-        ' "solver==pisoFoam"'
-    ),
-)
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
-@click.option(
-    "-q",
-    "--query",
-    required=True,
-    help=(
-        "Pass a list of dictionary entries in the \"{key: '<key>', value: '<value>',"
-        " predicate:'<predicate>'}, {...}\" syntax. Predicates include neq, eq, gt,"
-        " geq, lt, leq. For instance, obr query -q \"{key:'maxIter', value:'300',"
-        " predicate:'geq'}\""
-    ),
-)
-@click.option(
-    "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
-)
-@click.pass_context
+@click.option("-q", "--query", required=True)
 def query(ctx: click.Context, **kwargs):
     # TODO refactor
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
-    filters = kwargs.get("filter")
     queries_str = kwargs.get("query", "")
-    output = kwargs["verbose"]
     queries = input_to_queries(queries_str)
-    project.get_jobs(filter=filters, query=queries, output=output)
+    query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
+
+
+@cli.command()
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
+        " archive --filter solver=pisoFoam --filter preconditioner=IC"
+    ),
+)
+@click.option(
+    "-f",
+    "--folder",
+    required=True,
+    default=".",
+    type=str,
+    help="Path to OpenFOAMProject.",
+)
+@click.option(
+    "-r",
+    "--repo",
+    required=True,
+    type=str,
+    help=(
+        "Path to data repository. If this is a valid Github repository, files will be"
+        " automatically added."
+    ),
+)
+@click.option(
+    "-s",
+    "--skip-logs",
+    required=False,
+    is_flag=True,
+    help=(
+        "If set, .log files will not be archived. This does not affect .log files"
+        " passed via the --file option."
+    ),
+)
+@click.option(
+    "-a",
+    "--file",
+    required=False,
+    multiple=True,
+    help="Path(s) to non-logfile(s) to be also added to the repository.",
+)
+@click.option(
+    "--campaign",
+    required=True,
+    type=str,
+    help="Specify the campaign",
+)
+@click.option(
+    "--tag",
+    required=False,
+    type=str,
+    help=(
+        "Specify prefix of branch name. Will checkout new branch with timestamp"
+        " <tag>-<timestamp>."
+    ),
+)
+@click.option(
+    "--amend",
+    is_flag=True,
+    required=False,
+    help="Add to existing branch instead of creating new one.",
+)
+@click.option(
+    "--push",
+    required=False,
+    is_flag=True,
+    help="Push changes directly to origin and switch to previous branch.",
+)
+@click.option(
+    "--dry-run",
+    required=False,
+    is_flag=True,
+    help="If set, will log which files WOULD be copied and committed, without actually doing it.",
+)
+@click.pass_context
+def archive(ctx: click.Context, **kwargs):
+    target_folder: Path = Path(kwargs.get("repo", "")).absolute()
+    if current_path := kwargs.get("folder", "."):
+        os.chdir(current_path)
+        current_path = Path(current_path).absolute()
+
+    # setup project and jobs
+    project = OpenFOAMProject().init_project()
+    filters: tuple[str] = kwargs.get("filter", ())
+    jobs = project.filter_jobs(list(filters), False)
+
+    dry_run = kwargs.get("dry_run", False)
+    time = str(datetime.now()).replace(" ", "_")
+    repo = None
+    branch_name = None
+    previous_branch = None
+    campaign = kwargs["campaign"]
+    tag = kwargs.get("tag", "")
+    # check if given path is actually a github repository
+    use_git_repo = False
+    try:
+        repo = Repo(path=str(target_folder), search_parent_directories=True)
+        previous_branch = repo.active_branch.name
+        use_git_repo = True
+    except InvalidGitRepositoryError:
+        logging.warn(
+            f"Given directory {target_folder=} is not a github repository. Will only"
+            " copy files."
+        )
+    if use_git_repo:
+        if kwargs.get("amend"):
+            branches = [
+                (branch.name[-16 : len(branch.name)], branch.name)
+                for branch in repo.branches
+                if branch.name.startswith(campaign)
+            ]
+            branches.sort()
+
+            if not branches:
+                # throw error, return
+                logging.error(
+                    f"Cannot amend to {campaign} branch. Existing"
+                    f" branches include {repo.git.branch()}."
+                )
+                return
+            branch_name = branches[-1][1]
+            if dry_run:
+                logging.info(f"Would amend to {branch_name}.")
+            else:
+                logging.info(f"Amending to {branch_name} branch")
+                repo.git.checkout(branch_name)
+        else:
+            time_stamp = (
+                str(datetime.now())
+                .rsplit(":", 1)[0]
+                .replace(" ", ":")
+                .replace(":", "_")
+            )
+            branch_name = f"{campaign}/{time_stamp}"
+            if dry_run:
+                logging.info(f"Would checkout {branch_name}.")
+            else:
+                logging.info(f"checkout {branch_name}")
+                repo.git.checkout("HEAD", b=branch_name)
+
+    # setup target folder
+    if not target_folder.exists():
+        if dry_run:
+            logging.info(f"Would Create {str(target_folder)}")
+        else:
+            logging.info(f"creating {str(target_folder)}")
+            target_folder.mkdir()
+
+    skip = kwargs.get("skip_logs")
+    if not skip:
+        # iterate cases and copy log files into target repo
+        for job in jobs:
+            # copy signac state point
+            signac_statepoint = Path(job.path) / "signac_statepoint.json"
+            if not signac_statepoint.exists():
+                continue
+            target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
+            if dry_run:
+                logging.info(f"Would copy {signac_statepoint} to {target_file}.")
+            else:
+                logging.debug(f"{target_folder}, {signac_statepoint}")
+                copy_to_archive(repo, use_git_repo, signac_statepoint, target_file)
+
+            # copy signac state point
+            signac_job_document = Path(job.path) / "signac_job_document.json"
+            if not signac_job_document.exists():
+                continue
+
+            md5sum = check_output(
+                ["md5sum", str(signac_job_document)], text=True
+            ).split()[0]
+            target_file = (
+                target_folder / f"workspace/{job.id}/signac_job_document_{md5sum}.json"
+            )
+            if dry_run:
+                logging.info(f"Would copy {signac_job_document} to {target_file}.")
+            else:
+                logging.debug(f"{target_folder}, {signac_job_document}")
+                copy_to_archive(repo, use_git_repo, signac_job_document, target_file)
+
+            case_folder = Path(job.path) / "case"
+            if not case_folder.exists():
+                logging.info(f"Job with {job.id=} has no case folder.")
+                continue
+
+            # TODO: implement archival only of non-failed jobs
+            # skip if either the most recent obr action failed or the label is set to "not success"
+            # case = OpenFOAMCase(str(case_folder), job)
+            # if not case.was_successful():
+            #     logging.info(
+            #         f"Skipping Job with {job.id=} due to recent failure states."
+            #     )
+            #     continue
+
+            root, _, files = next(os.walk(case_folder))
+            tags = "/".join(tag.split(","))
+            for file in files:
+                src_file = Path(root) / file
+                if src_file.is_relative_to(current_path):
+                    src_file = src_file.relative_to(current_path)
+                if file.endswith("log"):
+                    target_file = (
+                        target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
+                    )
+                    if target_file.is_relative_to(current_path):
+                        target_file = target_file.relative_to(current_path)
+                    if dry_run:
+                        logging.info(f"Would copy {src_file} to {target_file}.")
+                    else:
+                        copy_to_archive(repo, use_git_repo, src_file, target_file)
+
+    # copy CLI-passed files into data repo and add if possible
+    extra_files: tuple[str] = kwargs.get("file", ())
+    for file in extra_files:
+        f = Path(file)
+        if not f.exists():
+            logging.info(f"invalid path {f}. Skipping.")
+            continue
+        if dry_run:
+            logging.info(f"Would copy {f} to {f.absolute}.")
+        else:
+            copy_to_archive(repo, use_git_repo, f, f.absolute())
+
+    # commit and push
+    if use_git_repo and repo and branch_name:
+        message = f"Add new logs -> {str(target_folder)}"
+        author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
+        logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
+        logging.info(
+            f'config: {repo.git.config("user.name"), repo.git.config("user.email")}'
+        )
+        if dry_run:
+            logging.info(
+                f"Would commit changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
+                f" {message=} and remote name {repo.remote().name}"
+            )
+
+        else:
+            logging.info(
+                f"Committing changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
+                f" {message=} and remote name {repo.remote().name}"
+            )
+            try:
+                repo.index.commit(message, author=author, committer=author)
+                if kwargs.get("push"):
+                    repo.git.push("origin", "-u", branch_name)
+                    logging.info(f"Switching back to branch '{previous_branch}'")
+                    repo.git.checkout(previous_branch)
+            except Exception as e:
+                logging.error(e)
 
 
 def main():
