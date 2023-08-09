@@ -9,7 +9,6 @@ from ..core.core import check_log_for_success, get_latest_log
 import re
 
 
-
 @FlowProject.label
 def owns_procs(job):
     fn = Path(job.path) / "case/processor0"
@@ -35,7 +34,6 @@ def finished(job):
     if solver_log:
         return check_log_for_success(Path(job.path) / "case" / solver_log)
     return False
-
 
 
 @FlowProject.label
