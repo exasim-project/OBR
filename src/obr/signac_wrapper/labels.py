@@ -66,11 +66,20 @@ def final(job):
         if final:
             owner_path = Path(f"{job.path}/case/constant/polyMesh/owner")
             if not job.doc["cache"].get("nCells") and owner_path.exists():
-                owner = check_output(
-                    ["head", "-n", "13", owner_path],
-                    text=True,
-                )
-                nCells = re.findall("[0-9]+", owner.split("\n")[-2])[1]
+                with open(owner_path, "r", errors="replace") as fh:
+                    read = True
+                    FoamFile = False
+                    found_note = ""
+                    while read:
+                        line = fh.readline()
+                        if "FoamFile" in line:
+                            FoamFile = True
+                        if FoamFile and line.strip().startswith("}"):
+                            read = False
+                        if FoamFile and "note" in line:
+                            found_note = line
+                note_line = found_note
+                nCells = re.findall("[0-9]+", note_line)[1]
                 job.doc["cache"]["nCells"] = nCells
         return final
     else:
