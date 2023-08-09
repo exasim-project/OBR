@@ -93,6 +93,7 @@ class OpenFOAMCase(BlockMesh):
         if Path(self.system_folder / "fvSchemes").exists():
             self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
         # decomposeParDict might not exist in some test cases
+        self.decomposeParDict = False
         if Path(self.system_folder / "decomposeParDict").exists():
             self.decomposeParDict = File(
                 folder=self.system_folder, file="decomposeParDict", job=job
@@ -209,8 +210,8 @@ class OpenFOAMCase(BlockMesh):
             except UnicodeDecodeError:
                 return False
 
-    def _exec_operation(self, operation):
-        logged_execute(operation, self.path, self.job.doc)
+    def _exec_operation(self, operation) -> Path:
+        return logged_execute(operation, self.path, self.job.doc)
 
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar"""
@@ -241,10 +242,11 @@ class OpenFOAMCase(BlockMesh):
                 }
             )
 
-        self._exec_operation(["decomposePar", "-force"])
+        log = self._exec_operation(["decomposePar", "-force"])
         fvSolutionArgs = args.get("fvSolution", {})
         if fvSolutionArgs:
             self.fvSolution.set(fvSolutionArgs)
+        return log
 
     def setKeyValuePair(self, args: dict):
         path = Path(args.pop("file"))
@@ -255,7 +257,7 @@ class OpenFOAMCase(BlockMesh):
 
     def run(self, args: dict):
         solver = self.controlDict.get("application")
-        self._exec_operation([solver])
+        return self._exec_operation([solver])
 
     def is_file_modified(self, path: str) -> bool:
         """
@@ -287,13 +289,13 @@ class OpenFOAMCase(BlockMesh):
         for case_path in self.config_file_tree:
             case_file = Path(self.job.path) / "case" / case_path
             md5sum = check_output(["md5sum", case_file], text=True)
-            if "md5sum" not in self.job.doc["obr"]:
-                self.job.doc["obr"]["md5sum"] = dict()
+            if "md5sum" not in self.job.doc["cache"]:
+                self.job.doc["cache"]["md5sum"] = dict()
             signac_friendly_path = path_to_key(
                 str(case_path)
             )  # signac does not allow . inside paths or job.doc keys
             last_modified = os.path.getmtime(case_file)
-            self.job.doc["obr"]["md5sum"][signac_friendly_path] = (
+            self.job.doc["cache"]["md5sum"][signac_friendly_path] = (
                 md5sum.split()[0],
                 last_modified,
             )

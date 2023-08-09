@@ -4,7 +4,10 @@ from pathlib import Path
 from flow import FlowProject
 from subprocess import check_output
 
-from ..core.core import check_log_for_success
+from ..core.core import check_log_for_success, get_latest_log
+
+import re
+
 
 
 @FlowProject.label
@@ -21,15 +24,6 @@ def owns_mesh(job):
 
 
 @FlowProject.label
-def check_mesh(job):
-    """Check whether checkMesh was performed correctly."""
-    checkMeshList = job.doc.get("obr", {}).get("checkMesh", [])
-    if checkMeshList == []:
-        return False
-    return checkMeshList[0].get("state") == "success"
-
-
-@FlowProject.label
 def unitialised(job):
     has_ctrlDict = job.isfile("case/system/controlDict")
     return not has_ctrlDict
@@ -37,66 +31,56 @@ def unitialised(job):
 
 @FlowProject.label
 def finished(job):
-    solver = job.doc.get("obr", {}).get("solver")
-    if not solver:
-        return False
-    solver_log = job.doc["obr"][solver][-1]["log"]
-    log_path = Path(job.path) / f"case/{solver_log}"
-    # check if log still exists
-    # log files could have been purged
-    if not log_path.exists():
-        return False
-    return check_log_for_success(log_path)
+    solver_log = get_latest_log(job)
+    if solver_log:
+        return check_log_for_success(Path(job.path) / "case" / solver_log)
+    return False
 
-
-@FlowProject.label
-def started(job):
-    solver = job.doc.get("obr", {}).get("solver")
-    if not solver:
-        return False
-    if not job.doc["obr"][solver][-1]["state"] == "started":
-        return False
-    solver_log = job.doc["obr"][solver][-1]["log"]
-    res = check_output(["tail", "-n", "1", solver_log], cwd=Path(job.path) / "case")
-    if "Finalising" in res.decode("utf-8"):
-        return False
-    return True
 
 
 @FlowProject.label
 def processing(job):
-    return job.doc["state"] == "started" or job.doc["state"] == "tmp_lock"
+    return (
+        job.doc["state"].get("global") == "started"
+        or job.doc["state"].get("global") == "tmp_lock"
+    )
 
 
 @FlowProject.label
 def failure(job):
-    return job.doc["state"] == "failure"
+    return job.doc["state"].get("global") == "failure"
 
 
 @FlowProject.label
 def ready(job):
-    return job.doc["state"] == "ready"
+    return job.doc["state"].get("global") == "ready"
 
 
 @FlowProject.label
 def final(job):
     """jobs that dont have children/variations are considered to be final and
-    are thus eligible for execution"""
+    are thus eligible for execution
+
+    NOTE as a side effect we check the number of cells
+    """
     if not unitialised(job):
-        return not job.sp.get("has_child")
+        final = not job.sp.get("has_child")
+        if final:
+            owner_path = Path(f"{job.path}/case/constant/polyMesh/owner")
+            if not job.doc["cache"].get("nCells") and owner_path.exists():
+                owner = check_output(
+                    ["head", "-n", "13", owner_path],
+                    text=True,
+                )
+                nCells = re.findall("[0-9]+", owner.split("\n")[-2])[1]
+                job.doc["cache"]["nCells"] = nCells
+        return final
     else:
         return False
 
 
 @FlowProject.label
 def failed_op(job):
-    if not job.doc.get("obr"):
-        return False
-
-    for operation, data in job.doc.obr.items():
-        if not isinstance(data, list):
-            continue
-        if data[-1]["state"] == "failure":
-            return True
-
+    if job.doc["state"].get("global") == "failure":
+        return True
     return False

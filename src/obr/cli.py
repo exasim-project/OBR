@@ -186,7 +186,7 @@ def submit(ctx: click.Context, **kwargs):
     else:
         logging.info(f"submitting {len(jobs)} individual jobs")
         ret_submit = project.submit(
-            names=[kwargs.get("operation")],
+            names=operations,
             **cluster_args,
         )
         logging.info(ret_submit)
@@ -304,19 +304,30 @@ def init(ctx: click.Context, **kwargs):
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
+        ' "solver==pisoFoam"'
+    ),
+)
 @click.pass_context
 def status(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
+    filters = kwargs.get("filter")
     project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
 
-    logging.info("Detailed overview:\n" + "=" * 80)
-
     finished, unfinished = [], []
     max_view_len = 0
-    for job in project:
+    jobs = project.get_jobs(filter=filters)
+    logging.info("Detailed overview:\n" + "=" * 80)
+    for job in jobs:
         jobid = job.id
         if view := id_view_map.get(jobid):
             labels = project.labels(job)

@@ -3,10 +3,14 @@ import os
 import subprocess
 import re
 import hashlib
+import logging
+
+
 from pathlib import Path
 from subprocess import check_output
-import logging
 from typing import Union
+from datetime import datetime
+from signac.contrib.job import Job
 
 # these are to be replaced with each other
 SIGNAC_PATH_TOKEN = "_dot_"
@@ -41,8 +45,10 @@ def logged_execute(cmd, path, doc):
 
     If cmd is a string, it will be interpreted as shell cmd
     otherwise a callable function is expected
+
+    Returns:
+        path to log file
     """
-    from datetime import datetime
 
     check_output(["mkdir", "-p", ".obr_store"], cwd=path)
     d = doc["history"]
@@ -53,6 +59,7 @@ def logged_execute(cmd, path, doc):
     else:
         flags = []
     cmd_str = cmd_str[0]
+    log_path = None
     try:
         ret = check_output(cmd, cwd=path, stderr=subprocess.STDOUT).decode("utf-8")
         log = ret
@@ -86,6 +93,7 @@ def logged_execute(cmd, path, doc):
         with open(path / fn, "w") as fh:
             fh.write(log)
         log = fn
+        log_path = path / fn
 
     d.append(
         {
@@ -95,10 +103,14 @@ def logged_execute(cmd, path, doc):
             "state": state,
             "flags": flags,
             "timestamp": timestamp,
+            "user": os.environ.get("USER"),
+            "hostname": os.environ.get("HOST"),
         }
     )
 
     doc["history"] = d
+
+    return log_path
 
 
 def logged_func(func, doc, **kwargs):
@@ -109,7 +121,6 @@ def logged_func(func, doc, **kwargs):
     """
     from datetime import datetime
 
-    d = doc.get("obr", {})
     cmd_str = func.__name__
     try:
         func(**kwargs)
@@ -118,17 +129,37 @@ def logged_func(func, doc, **kwargs):
         logging.error("Failure" + __file__ + __name__ + func.__name__ + kwargs + str(e))
         state = "failure"
 
-    res = d.get(cmd_str, [])
-    res.append(
-        {
-            "args": str(kwargs),
-            "state": state,
-            "type": "obr",
-            "timestamp": str(datetime.now()),
-        }
-    )
-    d[cmd_str] = res
-    doc["obr"] = d
+    res = {
+        "cmd": cmd_str,
+        "args": str(kwargs),
+        "state": state,
+        "type": "obr",
+        "timestamp": str(datetime.now()),
+        "type": "logged_func",
+        "user": os.environ.get("USER"),
+        "hostname": os.environ.get("HOST"),
+    }
+    doc["history"].append(res)
+
+
+def get_latest_log(job: Job):
+    """find latest"""
+    from ..OpenFOAM.case import OpenFOAMCase
+
+    case_path = Path(job.path + "case")
+    # in case obr status is called directly after initialization
+    # this would also fail if there was no case directory
+    if not case_path.exists():
+        return ""
+
+    case = OpenFOAMCase(case_path, job)
+    solver = case.controlDict.get("application")
+
+    history = job.doc["history"]
+    for entry in history[:-1]:
+        if entry.get("cmd", "").startswith(solver):
+            return entry["log"]
+    return ""
 
 
 def execute(steps: list[str], job) -> bool:
