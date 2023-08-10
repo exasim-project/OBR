@@ -351,6 +351,7 @@ def status(ctx: click.Context, **kwargs):
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
 @click.option("-q", "--query", required=True)
+@click.pass_context
 def query(ctx: click.Context, **kwargs):
     # TODO refactor
     if kwargs.get("folder"):
