@@ -348,18 +348,44 @@ def status(ctx: click.Context, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr query --filter"
+        ' "solver==pisoFoam"'
+    ),
+)
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
-@click.option("-q", "--query", required=True)
+@click.option(
+    "-q",
+    "--query",
+    required=True,
+    help=(
+        "Pass a list of dictionary entries in the \"{key: '<key>', value: '<value>',"
+        " predicate:'<predicate>'}, {...}\" syntax. Predicates include neq, eq, gt,"
+        " geq, lt, leq. For instance, obr query -q \"{key:'maxIter', value:'300',"
+        " predicate:'geq'}\""
+    ),
+)
+@click.option(
+    "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
+)
+@click.pass_context
 def query(ctx: click.Context, **kwargs):
     # TODO refactor
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
+    filters = kwargs.get("filter")
     queries_str = kwargs.get("query", "")
+    output = kwargs["verbose"]
     queries = input_to_queries(queries_str)
-    query_impl(project, queries, output=True, latest_only=not kwargs.get("all"))
+    project.get_jobs(filter=filters, query=queries, output=output)
 
 
 @cli.command()
@@ -438,7 +464,10 @@ def query(ctx: click.Context, **kwargs):
     "--dry-run",
     required=False,
     is_flag=True,
-    help="If set, will log which files WOULD be copied and committed, without actually doing it.",
+    help=(
+        "If set, will log which files WOULD be copied and committed, without actually"
+        " doing it."
+    ),
 )
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
@@ -454,7 +483,6 @@ def archive(ctx: click.Context, **kwargs):
 
     dry_run = kwargs.get("dry_run", False)
     time = str(datetime.now()).replace(" ", "_")
-    repo = None
     branch_name = None
     previous_branch = None
     campaign = kwargs["campaign"]
