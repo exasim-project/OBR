@@ -4,6 +4,7 @@ import subprocess
 import re
 import hashlib
 import logging
+import json
 
 
 from pathlib import Path
@@ -226,6 +227,20 @@ def writes_files(fns):
             unlink(fn)
     else:
         unlink(fns)
+
+
+def merge_job_documents(job):
+    """Merge multiple job_document_hash.json files into job_document.json"""
+    _, _, files = next(os.walk(job.path))
+
+    def is_job_sub_document(fn):
+        if fn == "job_document.json":
+            return False
+        return fn.startswith("job_document")
+
+    files = [f for f in files if is_job_sub_document(f)]
+    print(files)
+    job.doc = {}
 
 
 def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
