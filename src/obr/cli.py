@@ -319,13 +319,19 @@ def status(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
-    filters = kwargs.get("filter")
+    filters = kwargs.get("filter", [])
+    jobs = project.get_jobs(filter=filters)
+    if len(jobs) == 0:
+        if filters == []:
+            logging.warning("No jobs found in workspace folder!")
+            return
+        logging.warning(f"Found no jobs that satisfy the given filter {filters}!")
+        return
     project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
 
     finished, unfinished = [], []
     max_view_len = 0
-    jobs = project.get_jobs(filter=filters)
     logging.info("Detailed overview:\n" + "=" * 80)
     for job in jobs:
         jobid = job.id
