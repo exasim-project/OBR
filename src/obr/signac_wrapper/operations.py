@@ -30,7 +30,7 @@ class OpenFOAMProject(flow.FlowProject):
         return
 
     def get_jobs(
-        self, filter=list[str], query: Optional[list[Query]] = None, output=False
+        self, filter: list[str], query: Optional[list[Query]] = None, output=False
     ):
         """`get_jobs` accepts a list of filters and an optional list of queries. If `output` is set to True, results will be logged verbosely.
 
