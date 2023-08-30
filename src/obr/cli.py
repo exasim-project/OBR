@@ -57,6 +57,20 @@ def check_cli_operations(
     return True
 
 
+def is_valid_workspace(filters: list = []) -> bool:
+    project: OpenFOAMProject = OpenFOAMProject.get_project()
+    jobs: list[Job] = project.get_jobs(filter=filters)
+    if len(jobs) == 0:
+        if filters == []:
+            logging.warning("No jobs found in workspace folder!")
+            return False
+        logging.warning(
+            f"Found no jobs that satisfy the given filter(s) {' and '.join(filters)}!"
+        )
+        return False
+    return True
+
+
 def copy_to_archive(
     repo: Union[Repo, None], use_git_repo: bool, src_file: Path, target_file: Path
 ) -> None:
@@ -130,6 +144,11 @@ def submit(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject().init_project()
+
+    # check if given path points to valid project
+    if not is_valid_workspace():
+        return
+
     project._entrypoint = {"executable": "", "path": "obr"}
 
     operations = kwargs.get("operations", "").split(",")
@@ -244,7 +263,10 @@ def run(ctx: click.Context, **kwargs):
         return
 
     filters = kwargs.get("filter")
-    jobs = project.get_jobs(filter=filters)
+    # check if given path points to valid project
+    if not is_valid_workspace(filters or []):
+        return
+    jobs = project.get_jobs(filter=filters or [])
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
@@ -319,14 +341,13 @@ def status(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
-    filters = kwargs.get("filter", [])
-    jobs = project.get_jobs(filter=filters)
-    if len(jobs) == 0:
-        if filters == []:
-            logging.warning("No jobs found in workspace folder!")
-            return
-        logging.warning(f"Found no jobs that satisfy the given filter {filters}!")
+    filters = kwargs.get("filter")
+    jobs = project.get_jobs(filter=filters or [])
+
+    # check if given path points to valid project
+    if not is_valid_workspace(filters or []):
         return
+
     project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
 
@@ -387,16 +408,29 @@ def query(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
+<<<<<<< HEAD
     filters: tuple[str] = kwargs.get("filter", ())
-    # queries_str = kwargs.get("query", "")
+    if not is_valid_workspace(filters or []):
+        return
+
     input_queries: tuple[str] = kwargs.get("query", ())
     output: bool = kwargs.get("verbose", False)
-    # queries = input_to_queries(queries_str)
+
     if input_queries == "":
         logging.warning("--query argument cannot be empty!")
         return
     queries: list[Query] = build_filter_query(input_queries)
     project.get_jobs(filter=list(filters), query=queries, output=output)
+=======
+    filters = kwargs.get("filter")
+
+    # check if given path points to valid project
+
+    queries_str = kwargs.get("query", "")
+    output = kwargs["verbose"]
+    queries = input_to_queries(queries_str)
+    project.get_jobs(filter=filters, query=queries, output=output)
+>>>>>>> 03e208e (refactor, check project validity for all operations)
 
 
 @cli.command()
@@ -489,11 +523,13 @@ def archive(ctx: click.Context, **kwargs):
 
     # setup project and jobs
     project = OpenFOAMProject().init_project()
-    filters: tuple[str] = kwargs.get("filter", ())
-    jobs = project.filter_jobs(list(filters), False)
+    filters = kwargs.get("filter")
+    # check if given path points to valid project
+    if not is_valid_workspace(filters or []):
+        return
+    jobs = project.filter_jobs(filters or [], False)
 
     dry_run = kwargs.get("dry_run", False)
-    time = str(datetime.now()).replace(" ", "_")
     branch_name = None
     previous_branch = None
     campaign = kwargs["campaign"]
