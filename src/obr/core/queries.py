@@ -69,6 +69,9 @@ class Query:
 
         # case: specific value, existent key. This is effectively a filter.
         try:
+            # NOTE this sadly doesnt work for e.g. NoSubdomains, when self.value==0.25 and value is 1
+            if isinstance(value, (int, float)):
+                value = float(value)
             # convert value to target type to avoid TypeErrors
             self.value = type(value)(self.value)
             if not self.state and self.predicate_op(
@@ -309,14 +312,16 @@ def build_filter_query(filters: Iterable[str]) -> list[Query]:
     # case query syntax:
     # filter string has no predicate value (e.g. '==', '<='..)
     # => filter is expected to be in query syntax, i.e., "{key:..., value:..., predicate:...}"
-    if not any([pred for pred in Predicates if pred.value in list(filters)[0]]):
-        if not isinstance(filters, list):
-            filters = list(filters)
-        return [input_to_query(f) for f in filters]
+    # if not any([pred for pred in Predicates if pred.value in list(filters)[0]]):
+    #     if not isinstance(filters, list):
+    #         filters = list(filters)
+    #     return [input_to_query(f) for f in filters]
 
     # case filter syntax:
     # a predicate has been found inside the filter string
     # => filter is expected to have filter syntax "<key><predicate><value>"
+    if not isinstance(filters, (list, tuple)):
+        filters = [filters]
     for filter in filters:
         for predicate in Predicates:
             # check if predicates like =, >, <=.. are in the filter
@@ -327,8 +332,10 @@ def build_filter_query(filters: Iterable[str]) -> list[Query]:
                 break
         else:
             logging.warning(
-                f"No applicable predicate found in {filter=}. Will be ignored."
+                f"No applicable predicate found in {filter=}. Will assume '!= None'."
             )
+            q.append(Query(key=filter, value=None, predicate=Predicates.neq.name))
+
     return q
 
 
