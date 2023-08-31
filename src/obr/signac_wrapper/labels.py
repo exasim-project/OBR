@@ -79,8 +79,10 @@ def final(job):
                         if FoamFile and "note" in line:
                             found_note = line
                 note_line = found_note
-                nCells = re.findall("[0-9]+", note_line)[1]
+                nCells = int(re.findall("nCells:([0-9]+)", note_line)[0])
+                nFaces = int(re.findall("Faces:([0-9]+)", note_line)[0])
                 job.doc["cache"]["nCells"] = nCells
+                job.doc["cache"]["nFaces"] = nFaces
         return final
     else:
         return False

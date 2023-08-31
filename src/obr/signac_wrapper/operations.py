@@ -362,6 +362,19 @@ def fvSolution(job: Job, args={}):
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
+@OpenFOAMProject.pre(lambda job: basic_eligible(job, "fvSchemes"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "fvSchemes"))
+@OpenFOAMProject.operation
+def fvSchemes(job: Job, args={}):
+    args = get_args(job, args)
+    copy_on_uses(args, job, "system", "fvSchemes")
+    OpenFOAMCase(str(job.path) + "/case", job).fvSchemes.set(args)
+
+
+@generate
+@OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
+@OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "setKeyValuePair"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "setKeyValuePair"))
 @OpenFOAMProject.operation
@@ -456,12 +469,10 @@ def checkMesh(job: Job, args={}):
     args = get_args(job, args)
     log = OpenFOAMCase(str(job.path) + "/case", job).checkMesh(args)
 
-    cells = (
-        check_output(["grep", "cells:", Path(job.path) / "case" / log])
-        .decode("utf-8")
-        .split()[-1]
-    )
-    job.doc["cache"]["nCells"] = int(cells)
+
+@OpenFOAMProject.operation
+def purgeCache(job: Job, args={}):
+    job.doc["cache"] = {}
 
 
 def get_number_of_procs(job: Job) -> int:
