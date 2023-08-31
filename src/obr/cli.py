@@ -386,7 +386,7 @@ def query(ctx: click.Context, **kwargs):
     input_queries: tuple[str] = kwargs.get("query", ())
     output: bool = kwargs.get("verbose", False)
     # queries = input_to_queries(queries_str)
-    if input_queries == (""):
+    if input_queries == "":
         logging.warning("--query argument cannot be empty!")
         return
     queries: list[Query] = build_filter_query(input_queries)
