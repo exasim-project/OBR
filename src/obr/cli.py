@@ -34,6 +34,43 @@ from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union, Optional, Any
+from click.shell_completion import CompletionItem
+
+
+class ArchiveBranch(click.ParamType):
+    name = "envvar"
+
+    def shell_complete(self, ctx, param, incomplete):
+        try:
+            repo_path = ctx.params["repo"]
+            repo_path = Path(repo_path).absolute()
+            repo = Repo(str(repo_path))
+            return [
+                CompletionItem(name)
+                for name in repo.branches
+            ]
+        except InvalidGitRepositoryError as e:
+            logging.error(e)
+            sys.exit(1)
+
+
+class ArchivePath(click.ParamType):
+    def shell_complete(self, ctx, param, incomplete):
+        if not incomplete:
+            incomplete = "./"
+        elif incomplete == "..":
+            incomplete = "../"
+        l, r = incomplete.rsplit("/", 1)
+        l: str = l or "/"  # if incomplete=="/home", l would be ""
+        root = Path(l)
+        ret_list: list[CompletionItem] = []
+        for path in root.iterdir():
+            if path.parts[-1].lower().startswith(r.lower()):
+                if path.is_dir():
+                    ret_list.append(CompletionItem(str(path)+"/"))
+                else:
+                    ret_list.append(CompletionItem(str(path)))
+        return ret_list
 
 
 def check_cli_operations(
@@ -410,7 +447,7 @@ def query(ctx: click.Context, **kwargs):
     "-r",
     "--repo",
     required=True,
-    type=str,
+    type=ArchivePath(),
     help=(
         "Path to data repository. If this is a valid Github repository, files will be"
         " automatically added."
@@ -450,8 +487,8 @@ def query(ctx: click.Context, **kwargs):
 )
 @click.option(
     "--amend",
-    is_flag=True,
     required=False,
+    type=ArchiveBranch(),
     help="Add to existing branch instead of creating new one.",
 )
 @click.option(
@@ -469,6 +506,7 @@ def query(ctx: click.Context, **kwargs):
         " doing it."
     ),
 )
+@click.option("--tools", type=ArchiveBranch())
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     target_folder: Path = Path(kwargs.get("repo", "")).absolute()
@@ -644,6 +682,25 @@ def archive(ctx: click.Context, **kwargs):
                     repo.git.checkout(previous_branch)
             except Exception as e:
                 logging.error(e)
+
+
+
+
+@cli.command()
+@click.option(
+    "-r",
+    "--repo",
+    type=ArchivePath(),
+    required=True,
+    help=(
+        "Path to data repository. If this is a valid Github repository, files will be"
+        " automatically added."
+    ),
+)
+@click.option("--tools", "-t", type=ArchiveBranch())
+@click.pass_context
+def test(ctx: click.Context, **kwargs):
+    logging.info("hi")
 
 
 def main():

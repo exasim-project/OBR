@@ -17,6 +17,7 @@ SIGNAC_PATH_TOKEN = "_dot_"
 PATH_TOKEN = "."
 
 
+
 def parse_variables_impl(in_str, args, domain):
     ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
