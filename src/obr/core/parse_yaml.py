@@ -65,8 +65,8 @@ def eval_yaml_expressions(in_str: str) -> str:
         try:
             in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
         except Exception as e:
-            logging.error(e)
             logging.error(in_str + inst)
+            logging.error(e)
 
             sys.exit(1)
     return in_str
