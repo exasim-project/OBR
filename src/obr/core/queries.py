@@ -70,7 +70,7 @@ class Query:
         # case: specific value, existent key. This is effectively a filter.
         try:
             # NOTE this sadly doesnt work when value is an integer, and self.value is a float
-            # so, quickly convert value to a float to avoid casting erros
+            # so, quickly convert value to a float to avoid casting errors
             if isinstance(value, (int, float)):
                 value = float(value)
             # convert value to target type to avoid TypeErrors
