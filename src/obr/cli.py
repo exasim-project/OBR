@@ -24,7 +24,7 @@ from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl
+from .core.queries import input_to_queries, query_impl, build_filter_query, Query
 from .core.core import map_view_folder_to_job_id
 from pathlib import Path
 import logging
@@ -355,7 +355,7 @@ def status(ctx: click.Context, **kwargs):
     help=(
         "Pass a <key><predicate><value> value pair per occurrence of --filter."
         " Predicates include ==, !=, <=, <, >=, >. For instance, obr query --filter"
-        ' "solver==pisoFoam"'
+        "solver==pisoFoam"
     ),
 )
 @click.option("-d", "--detailed", is_flag=True)
@@ -364,11 +364,11 @@ def status(ctx: click.Context, **kwargs):
     "-q",
     "--query",
     required=True,
+    multiple=True,
     help=(
-        "Pass a list of dictionary entries in the \"{key: '<key>', value: '<value>',"
-        " predicate:'<predicate>'}, {...}\" syntax. Predicates include neq, eq, gt,"
-        " geq, lt, leq. For instance, obr query -q \"{key:'maxIter', value:'300',"
-        " predicate:'geq'}\""
+        "Pass a <key><predicate><value> value pair per occurrence of --query."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr query --query"
+        " solver==pisoFoam"
     ),
 )
 @click.option(
@@ -381,11 +381,16 @@ def query(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
-    filters = kwargs.get("filter")
-    queries_str = kwargs.get("query", "")
-    output = kwargs["verbose"]
-    queries = input_to_queries(queries_str)
-    project.get_jobs(filter=filters, query=queries, output=output)
+    filters: tuple[str] = kwargs.get("filter", ())
+    # queries_str = kwargs.get("query", "")
+    input_queries: tuple[str] = kwargs.get("query", ())
+    output: bool = kwargs.get("verbose", False)
+    # queries = input_to_queries(queries_str)
+    if input_queries == "":
+        logging.warning("--query argument cannot be empty!")
+        return
+    queries: list[Query] = build_filter_query(input_queries)
+    project.get_jobs(filter=list(filters), query=queries, output=output)
 
 
 @cli.command()
