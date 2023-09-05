@@ -69,6 +69,14 @@ def is_case(job: Job) -> bool:
     return has_ctrlDict
 
 
+def is_job(job: Job) -> bool:
+    """checks OBR_JOB is set to the current job.id used to prevent multiple
+    execution of jobs if --job=id is set"""
+    skip_job = os.environ.get("OBR_JOB")
+    if skip_job and not str(job.id) == skip_job:
+        return "true"
+
+
 def operation_complete(job: Job, operation: str) -> bool:
     """An operation is considered to be complete if an entry in the job document with same arguments exists and state is success"""
     if job.doc["state"].get("global") == "ready":
@@ -484,10 +492,6 @@ def get_values(jobs: list, key: str) -> set:
 def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     """Builds the cli command to run a OpenFOAM application"""
 
-    skip_job = os.environ.get("OBR_JOB")
-    if skip_job and not str(job.id) == skip_job:
-        return "true"
-
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
         return "true"
@@ -537,6 +541,7 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
 
 @simulate
 @OpenFOAMProject.pre(final)
+@OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.operation(
     cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
 )
@@ -555,6 +560,7 @@ def runParallelSolver(job: Job, args={}) -> str:
 
 @simulate
 @OpenFOAMProject.pre(final)
+@OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.operation(cmd=True)
 def runSerialSolver(job: Job, args={}):
     env_run_template = os.environ.get("OBR_SERIAL_RUN_CMD")
