@@ -72,7 +72,6 @@ def final(job):
                 )
                 nCells = re.findall("[0-9]+", owner.split("\n")[-2])[1]
                 job.doc["cache"]["nCells"] = nCells
-                job.doc["cache"]["nFaces"] = nFaces
         return final
     else:
         return False
