@@ -466,12 +466,6 @@ def query(ctx: click.Context, **kwargs):
     help="Push changes directly to origin and switch to previous branch.",
 )
 @click.option(
-    "--purge",
-    required=False,
-    is_flag=True,
-    help="Purge target folder before copying",
-)
-@click.option(
     "--dry-run",
     required=False,
     is_flag=True,
