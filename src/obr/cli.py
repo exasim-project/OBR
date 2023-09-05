@@ -250,7 +250,7 @@ def run(ctx: click.Context, **kwargs):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
 
     if kwargs.get("job"):
-        os.environ.get("OBR_JOB") = kwargs.get("job")
+        os.environ["OBR_JOB"] = kwargs.get("job")
 
     # project._reregister_aggregates()
     # print(project.groups)
