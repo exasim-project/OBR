@@ -142,6 +142,32 @@ def logged_func(func, doc, **kwargs):
     doc["history"].append(res)
 
 
+def get_mesh_stats(owner_path: str) -> dict:
+    """Check constant/polyMesh/owner file for mesh properties
+    and return it via a dictionary"""
+    nCells = None
+    nFaces = None
+    if Path(owner_path).exists():
+        with open(owner_path, "r", errors="replace") as fh:
+            read = True
+            FoamFile = False
+            found_note = ""
+            while read:
+                # A litle parser for the header part of a foam file
+                # TODO this should be moved to OWLS
+                line = fh.readline()
+                if "FoamFile" in line:
+                    FoamFile = True
+                if FoamFile and line.strip().startswith("}"):
+                    read = False
+                if FoamFile and "note" in line:
+                    found_note = line
+        note_line = found_note
+        nCells = int(re.findall("nCells:([0-9]+)", note_line)[0])
+        nFaces = int(re.findall("Faces:([0-9]+)", note_line)[0])
+    return {"nCells": nCells, "nFaces": nFaces}
+
+
 def get_latest_log(job: Job):
     """find latest"""
     from ..OpenFOAM.case import OpenFOAMCase

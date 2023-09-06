@@ -64,24 +64,11 @@ def final(job):
     if not unitialised(job):
         final = not job.sp.get("has_child")
         if final:
-            owner_path = Path(f"{job.path}/case/constant/polyMesh/owner")
-            if not job.doc["cache"].get("nCells") and owner_path.exists():
-                with open(owner_path, "r", errors="replace") as fh:
-                    read = True
-                    FoamFile = False
-                    found_note = ""
-                    while read:
-                        line = fh.readline()
-                        if "FoamFile" in line:
-                            FoamFile = True
-                        if FoamFile and line.strip().startswith("}"):
-                            read = False
-                        if FoamFile and "note" in line:
-                            found_note = line
-                note_line = found_note
-                nCells = re.findall("[0-9]+", note_line)[1]
-                job.doc["cache"]["nCells"] = nCells
-        return final
+            owner_path = f"{job.path}/case/constant/polyMesh/owner"
+            if not job.doc["cache"].get("nCells"):
+                mesh_stats = get_mesh_stats(owner_path)
+                job.doc["cache"]["nCells"] = mesh_stats["nCells"]
+                job.doc["cache"]["nFaces"] = mesh_stats["nFaces"]
     else:
         return False
 
