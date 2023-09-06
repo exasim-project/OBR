@@ -4,7 +4,7 @@ from pathlib import Path
 from flow import FlowProject
 from subprocess import check_output
 
-from ..core.core import check_log_for_success, get_latest_log
+from ..core.core import check_log_for_success, get_latest_log, get_mesh_stats
 
 import re
 
