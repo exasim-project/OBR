@@ -153,7 +153,7 @@ def get_mesh_stats(owner_path: str) -> dict:
             FoamFile = False
             found_note = ""
             while read:
-                # A litle parser for the header part of a foam file
+                # A little parser for the header part of a foam file
                 # TODO this should be moved to OWLS
                 line = fh.readline()
                 if "FoamFile" in line:
