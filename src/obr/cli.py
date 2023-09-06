@@ -408,7 +408,6 @@ def query(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
-<<<<<<< HEAD
     filters: tuple[str] = kwargs.get("filter", ())
     if not is_valid_workspace(filters or []):
         return
@@ -421,16 +420,6 @@ def query(ctx: click.Context, **kwargs):
         return
     queries: list[Query] = build_filter_query(input_queries)
     project.get_jobs(filter=list(filters), query=queries, output=output)
-=======
-    filters = kwargs.get("filter")
-
-    # check if given path points to valid project
-
-    queries_str = kwargs.get("query", "")
-    output = kwargs["verbose"]
-    queries = input_to_queries(queries_str)
-    project.get_jobs(filter=filters, query=queries, output=output)
->>>>>>> 03e208e (refactor, check project validity for all operations)
 
 
 @cli.command()
