@@ -166,8 +166,7 @@ def merge_job_documents(job: Job):
             # TODO handle inconsistent cache
             if not cache:
                 cache = job_doc["cache"]
-    merged_job_doc = {"data": merged_data, "history": merged_history, "cache": cache}
-    job.doc = merged_job_doc
+    job.doc = {"data": merged_data, "history": merged_history, "cache": cache}
 
 
 def get_latest_log(job: Job):
