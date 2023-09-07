@@ -146,7 +146,6 @@ def logged_func(func, doc, **kwargs):
 def merge_job_documents(job: Job):
     """Merge multiple job_document_hash.json files into job_document.json"""
     root, _, files = next(os.walk(job.path))
-    print(files)
 
     def is_job_sub_document(fn):
         if fn == "signac_job_document.json":
