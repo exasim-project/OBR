@@ -148,7 +148,7 @@ def get_mesh_stats(owner_path: str) -> dict:
     nCells = None
     nFaces = None
     if Path(owner_path).exists():
-        with open(owner_path, "r", errors="replace") as fh:
+        with open(owner_path, errors="replace") as fh:
             read = True
             FoamFile = False
             found_note = ""
