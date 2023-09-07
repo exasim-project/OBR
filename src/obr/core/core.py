@@ -157,7 +157,7 @@ def merge_job_documents(job: Job):
     merged_history = []
     cache = None
     for f in files:
-        with open(Path(root) / f, "r") as fh:
+        with open(Path(root) / f) as fh:
             job_doc = json.load(fh)
             for record in job_doc["data"]:
                 merged_data.append(record)
