@@ -58,6 +58,10 @@ def check_cli_operations(
 
 
 def is_valid_workspace(filters: list = []) -> bool:
+    """This function checks if:
+    - the `workspace` folder is not empty, and
+    - applying filters would return an empty list
+    """
     project: OpenFOAMProject = OpenFOAMProject.get_project()
     jobs: list[Job] = project.get_jobs(filter=filters)
     if len(jobs) == 0:
