@@ -31,7 +31,7 @@ class OpenFOAMProject(flow.FlowProject):
 
     def get_jobs(
         self, filter: list[str], query: Optional[list[Query]] = None, output=False
-    ):
+    ) -> list[Job]:
         """`get_jobs` accepts a list of filters and an optional list of queries. If `output` is set to True, results will be logged verbosely.
 
         - First, the filters will be applied to all jobs inside the `OpenFOAMProject` instance.
