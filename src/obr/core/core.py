@@ -150,17 +150,17 @@ def get_mesh_stats(owner_path: str) -> dict:
     if Path(owner_path).exists():
         with open(owner_path, errors="replace") as fh:
             read = True
-            FoamFile = False
+            is_foamFile = False
             found_note = ""
             while read:
                 # A little parser for the header part of a foam file
                 # TODO this should be moved to OWLS
                 line = fh.readline()
                 if "FoamFile" in line:
-                    FoamFile = True
-                if FoamFile and line.strip().startswith("}"):
+                    is_foamFile = True
+                if is_foamFile and line.strip().startswith("}"):
                     read = False
-                if FoamFile and "note" in line:
+                if is_foamFile and "note" in line:
                     found_note = line
         note_line = found_note
         nCells = int(re.findall("nCells:([0-9]+)", note_line)[0])
