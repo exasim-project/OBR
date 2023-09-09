@@ -266,11 +266,11 @@ def run(ctx: click.Context, **kwargs):
     if not check_cli_operations(project, operations, list_operations):
         return
 
-    filters = kwargs.get("filter")
+    filters: list[str] = kwargs.get("filter")
     # check if given path points to valid project
-    if not is_valid_workspace(filters or []):
+    if not is_valid_workspace(filters):
         return
-    jobs = project.get_jobs(filter=filters or [])
+    jobs = project.get_jobs(filter=filters)
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
@@ -334,6 +334,7 @@ def init(ctx: click.Context, **kwargs):
     "--filter",
     type=str,
     multiple=True,
+    default=[],
     help=(
         "Pass a <key><predicate><value> value pair per occurrence of --filter."
         " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
@@ -345,11 +346,11 @@ def status(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
-    filters = kwargs.get("filter")
-    jobs = project.get_jobs(filter=filters or [])
+    filters: list[str] = kwargs.get("filter")
+    jobs = project.get_jobs(filter=filters)
 
     # check if given path points to valid project
-    if not is_valid_workspace(filters or []):
+    if not is_valid_workspace(filters):
         return
 
     project.print_status(detailed=kwargs["detailed"], pretty=True)
@@ -412,8 +413,8 @@ def query(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
 
     project = OpenFOAMProject.get_project()
-    filters: tuple[str] = kwargs.get("filter", ())
-    if not is_valid_workspace(filters or []):
+    filters: list[str] = list(kwargs.get("filter", ()))
+    if not is_valid_workspace(filters):
         return
 
     input_queries: tuple[str] = kwargs.get("query", ())
@@ -516,11 +517,11 @@ def archive(ctx: click.Context, **kwargs):
 
     # setup project and jobs
     project = OpenFOAMProject().init_project()
-    filters = kwargs.get("filter")
+    filters: list[str] = kwargs.get("filter")
     # check if given path points to valid project
-    if not is_valid_workspace(filters or []):
+    if not is_valid_workspace(filters):
         return
-    jobs = project.filter_jobs(filters or [], False)
+    jobs = project.filter_jobs(filters, False)
 
     dry_run = kwargs.get("dry_run", False)
     branch_name = None
