@@ -363,7 +363,50 @@ def shell(job: Job, args={}):
 def fvSolution(job: Job, args={}):
     args = get_args(job, args)
     copy_on_uses(args, job, "system", "fvSolution")
-    OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
+    if args:
+        OpenFOAMCase(str(job.path) + "/case", job).fvSolution.set(args)
+
+
+@generate
+@OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
+@OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
+@OpenFOAMProject.pre(lambda job: basic_eligible(job, "fvSchemes"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "fvSchemes"))
+@OpenFOAMProject.operation
+def fvSchemes(job: Job, args={}):
+    args = get_args(job, args)
+    copy_on_uses(args, job, "system", "fvSchemes")
+    if args:
+        OpenFOAMCase(str(job.path) + "/case", job).fvSchemes.set(args)
+
+
+@generate
+@OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
+@OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
+@OpenFOAMProject.pre(lambda job: basic_eligible(job, "transportProperties"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "transportProperties"))
+@OpenFOAMProject.operation
+def transportProperties(job: Job, args={}):
+    args = get_args(job, args)
+    copy_on_uses(args, job, "constant", "transportProperties")
+    if args:
+        OpenFOAMCase(str(job.path) + "/case", job).transportProperties.set(args)
+
+
+@generate
+@OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
+@OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
+@OpenFOAMProject.pre(lambda job: basic_eligible(job, "turbulenceProperties"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "turbulenceProperties"))
+@OpenFOAMProject.operation
+def turbulenceProperties(job: Job, args={}):
+    args = get_args(job, args)
+    copy_on_uses(args, job, "constant", "turbulenceProperties")
+    if args:
+        OpenFOAMCase(str(job.path) + "/case", job).transportProperties.set(args)
 
 
 @generate
