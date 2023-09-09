@@ -4,6 +4,7 @@ import subprocess
 import re
 import hashlib
 import logging
+import json
 
 
 from pathlib import Path
@@ -166,6 +167,33 @@ def get_mesh_stats(owner_path: str) -> dict:
         nCells = int(re.findall("nCells:([0-9]+)", note_line)[0])
         nFaces = int(re.findall("Faces:([0-9]+)", note_line)[0])
     return {"nCells": nCells, "nFaces": nFaces}
+
+  
+def merge_job_documents(job: Job):
+    """Merge multiple job_document_hash.json files into job_document.json"""
+    root, _, files = next(os.walk(job.path))
+
+    def is_job_sub_document(fn):
+        if fn == "signac_job_document.json":
+            return False
+        return fn.startswith("signac_job_document")
+
+    files = [f for f in files if is_job_sub_document(f)]
+    merged_data = []
+    merged_history = []
+    cache = None
+    for f in files:
+        with open(Path(root) / f) as fh:
+            job_doc = json.load(fh)
+            for record in job_doc["data"]:
+                merged_data.append(record)
+            for record in job_doc["history"]:
+                merged_history.append(record)
+            # TODO handle inconsistent cache
+            if not cache:
+                cache = job_doc["cache"]
+    job.doc = {"data": merged_data, "history": merged_history, "cache": cache}
+
 
 
 def get_latest_log(job: Job):
