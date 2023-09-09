@@ -168,7 +168,7 @@ def get_mesh_stats(owner_path: str) -> dict:
         nFaces = int(re.findall("Faces:([0-9]+)", note_line)[0])
     return {"nCells": nCells, "nFaces": nFaces}
 
-  
+
 def merge_job_documents(job: Job):
     """Merge multiple job_document_hash.json files into job_document.json"""
     root, _, files = next(os.walk(job.path))
@@ -193,7 +193,6 @@ def merge_job_documents(job: Job):
             if not cache:
                 cache = job_doc["cache"]
     job.doc = {"data": merged_data, "history": merged_history, "cache": cache}
-
 
 
 def get_latest_log(job: Job):
