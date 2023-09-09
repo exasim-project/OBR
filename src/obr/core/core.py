@@ -143,6 +143,32 @@ def logged_func(func, doc, **kwargs):
     doc["history"].append(res)
 
 
+def get_mesh_stats(owner_path: str) -> dict:
+    """Check constant/polyMesh/owner file for mesh properties
+    and return it via a dictionary"""
+    nCells = None
+    nFaces = None
+    if Path(owner_path).exists():
+        with open(owner_path, errors="replace") as fh:
+            read = True
+            is_foamFile = False
+            found_note = ""
+            while read:
+                # A little parser for the header part of a foam file
+                # TODO this should be moved to OWLS
+                line = fh.readline()
+                if "FoamFile" in line:
+                    is_foamFile = True
+                if is_foamFile and line.strip().startswith("}"):
+                    read = False
+                if is_foamFile and "note" in line:
+                    found_note = line
+        note_line = found_note
+        nCells = int(re.findall("nCells:([0-9]+)", note_line)[0])
+        nFaces = int(re.findall("Faces:([0-9]+)", note_line)[0])
+    return {"nCells": nCells, "nFaces": nFaces}
+
+
 def merge_job_documents(job: Job):
     """Merge multiple job_document_hash.json files into job_document.json"""
     root, _, files = next(os.walk(job.path))

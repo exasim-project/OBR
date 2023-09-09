@@ -4,7 +4,7 @@ from pathlib import Path
 from flow import FlowProject
 from subprocess import check_output
 
-from ..core.core import check_log_for_success, get_latest_log
+from ..core.core import check_log_for_success, get_latest_log, get_mesh_stats
 
 import re
 
@@ -64,15 +64,11 @@ def final(job):
     if not unitialised(job):
         final = not job.sp.get("has_child")
         if final:
-            owner_path = Path(f"{job.path}/case/constant/polyMesh/owner")
-            if not job.doc["cache"].get("nCells") and owner_path.exists():
-                owner = check_output(
-                    ["head", "-n", "13", owner_path],
-                    text=True,
-                )
-                nCells = re.findall("[0-9]+", owner.split("\n")[-2])[1]
-                job.doc["cache"]["nCells"] = nCells
-        return final
+            owner_path = f"{job.path}/case/constant/polyMesh/owner"
+            if not job.doc["cache"].get("nCells"):
+                mesh_stats = get_mesh_stats(owner_path)
+                job.doc["cache"]["nCells"] = mesh_stats["nCells"]
+                job.doc["cache"]["nFaces"] = mesh_stats["nFaces"]
     else:
         return False
 
