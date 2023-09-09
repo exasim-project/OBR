@@ -610,17 +610,20 @@ def archive(ctx: click.Context, **kwargs):
                     else:
                         copy_to_archive(repo, use_git_repo, src_file, target_file)
 
-    # copy CLI-passed files into data repo and add if possible
-    extra_files: tuple[str] = kwargs.get("file", ())
-    for file in extra_files:
-        f = Path(file)
-        if not f.exists():
-            logging.info(f"invalid path {f}. Skipping.")
-            continue
-        if dry_run:
-            logging.info(f"Would copy {f} to {f.absolute}.")
-        else:
-            copy_to_archive(repo, use_git_repo, f, f.absolute())
+            # copy CLI-passed files into data repo and add if possible
+            extra_files: tuple[str] = kwargs.get("file", ())
+            for file in extra_files:
+                f = case_folder / file
+                target_file = (
+                    target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
+                )
+                if not f.exists():
+                    logging.info(f"invalid path {f}. Skipping.")
+                    continue
+                if dry_run:
+                    logging.info(f"Would copy {f} to {f.absolute}.")
+                else:
+                    copy_to_archive(repo, use_git_repo, f, target_file)
 
     # commit and push
     if use_git_repo and repo and branch_name:
