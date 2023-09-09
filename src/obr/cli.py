@@ -517,7 +517,7 @@ def archive(ctx: click.Context, **kwargs):
 
     # setup project and jobs
     project = OpenFOAMProject().init_project()
-    filters: list[str] = kwargs.get("filter")
+    filters: list[str] = list(kwargs.get("filter", ()))
     # check if given path points to valid project
     if not is_valid_workspace(filters):
         return
