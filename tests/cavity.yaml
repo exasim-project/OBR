@@ -27,11 +27,11 @@ variation:
         preconditioner: none
         executor: CPU
   - operation: fvSchemes
-    schema: "schemes/{backward}"
+    schema: "schemes/ddt_default_{default}"
     values:
       - set: ddtSchemes
         default: backward
-  - operation: transportPropertiesDict
+  - operation: transportProperties
     schema: "transportProperties/{nu}"
     values:
       - nu: 10
