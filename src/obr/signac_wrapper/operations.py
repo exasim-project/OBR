@@ -31,12 +31,12 @@ class OpenFOAMProject(flow.FlowProject):
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
-    def filter_jobs(self, filter: list[str]) -> list[Job]:
+    def filter_jobs(self, filters: list[str]) -> list[Job]:
         """`filter_jobs` accepts a list of filters.
 
         The filters will be applied to all jobs inside the `OpenFOAMProject` instance and the filtered jobs will be returned as a list.
         """
-        self.filtered_jobs: list[Job] = filter_jobs(self, filters, output)
+        self.filtered_jobs: list[Job] = filter_jobs(self, filters)
         return self.filtered_jobs
 
     def query(self, jobs: list[Job], query: list[Query]) -> list[dict]:

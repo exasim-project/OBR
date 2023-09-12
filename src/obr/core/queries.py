@@ -243,25 +243,9 @@ def query_impl(
 ) -> list[dict]:
     """Performs a query and returns a list of records"""
     res = query_to_dict(jobs, queries, output, latest_only)
-    if output:
-        if len(queries) > 0:
-            q = queries[0]
-            if len(res) == 0:
-                logging.info(f"No results for Query {q}")
-            else:
-                logging.info(f"Query results for {q}:")
-        for r in res:
-            logging.info(f"\t{r}")
-
-    query_ids = []
+    query_ids = {}
     for id_ in res:
-        d = {"id": id_.id}
-        for q in id_.result:
-            d.update(q)
-        query_ids.append(d)
-
-    print("query_ids", query_ids)
-
+        query_ids[id_.id] = id_.result
     return query_ids
 
 
