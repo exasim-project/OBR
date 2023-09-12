@@ -406,7 +406,7 @@ def turbulenceProperties(job: Job, args={}):
     args = get_args(job, args)
     copy_on_uses(args, job, "constant", "turbulenceProperties")
     if args:
-        OpenFOAMCase(str(job.path) + "/case", job).transportProperties.set(args)
+        OpenFOAMCase(str(job.path) + "/case", job).turbulenceProperties.set(args)
 
 
 @generate
