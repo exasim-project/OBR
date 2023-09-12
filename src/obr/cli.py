@@ -63,7 +63,7 @@ def is_valid_workspace(filters: list = []) -> bool:
     - applying filters would return an empty list
     """
     project: OpenFOAMProject = OpenFOAMProject.get_project()
-    jobs: list[Job] = project.get_jobs(filter=filters)
+    jobs: list[Job] = project.filter_jobs(filter=filters)
     if len(jobs) == 0:
         if filters == []:
             logging.warning("No jobs found in workspace folder!")
@@ -407,6 +407,12 @@ def status(ctx: click.Context, **kwargs):
     ),
 )
 @click.option(
+    "--json",
+    required=False,
+    multiple=False,
+    help="Write results to a json file.",
+)
+@click.option(
     "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
 )
 @click.pass_context
@@ -427,7 +433,8 @@ def query(ctx: click.Context, **kwargs):
         logging.warning("--query argument cannot be empty!")
         return
     queries: list[Query] = build_filter_query(input_queries)
-    project.get_jobs(filter=list(filters), query=queries, output=output)
+    jobs = project.filter_jobs(filter=list(filters))
+    project.query(jobs=jobs, query=queries)
 
 
 @cli.command()

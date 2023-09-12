@@ -238,8 +238,8 @@ def query_impl(
     queries: list[Query],
     output=False,
     latest_only=True,
-) -> list[str]:
-    """Performs a query and returns corresponding job.ids"""
+) -> list[dict]:
+    """Performs a query and returns a list of records"""
     res = query_to_dict(jobs, queries, output, latest_only)
     if output:
         if len(queries) > 0:
@@ -253,7 +253,12 @@ def query_impl(
 
     query_ids = []
     for id_ in res:
-        query_ids.append(id_.id)
+        d = {"id": id_.id}
+        for q in id_.result:
+            d.update(q)
+        query_ids.append(d)
+
+    print("query_ids", query_ids)
 
     return query_ids
 

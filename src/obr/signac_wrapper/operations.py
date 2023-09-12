@@ -24,12 +24,14 @@ from obr.core.queries import filter_jobs, query_impl, input_to_queries, Query
 
 
 class OpenFOAMProject(flow.FlowProject):
+    filtered_jobs = []
+
     def print_operations(self):
         ops = sorted(self.operations.keys())
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
-    def get_jobs(
+    def filter_jobs(
         self, filter: list[str], query: Optional[list[Query]] = None, output=False
     ) -> list[Job]:
         """`get_jobs` accepts a list of filters and an optional list of queries. If `output` is set to True, results will be logged verbosely.
@@ -40,14 +42,14 @@ class OpenFOAMProject(flow.FlowProject):
 
         - Lastly, the filtered jobs will be returned as a list.
         """
-        filtered_jobs = self.filter_jobs(filters=filter, output=output)
+        self.filtered_jobs = self.filter_jobs_(filters=filter)
         if query is not None:
             if isinstance(query, str):
                 query = input_to_queries(query)
             self.query_jobs(filtered_jobs, query)
-        return filtered_jobs
+        return self.filtered_jobs
 
-    def filter_jobs(self, filters: list[str], output: bool = False):
+    def filter_jobs_(self, filters: list[str], output: bool = False):
         """Applies given `filters` to all jobs inside the `OpenFOAMProject` instance."""
         filtered_jobs: list[Job] = filter_jobs(self, filters, output)
         if output:
@@ -55,7 +57,7 @@ class OpenFOAMProject(flow.FlowProject):
                 print(f"Found Job with {job.id=}")
         return filtered_jobs
 
-    def query_jobs(self, jobs: list[Job], query: list[Query]) -> list[str]:
+    def query(self, jobs: list[Job], query: list[Query]) -> list[str]:
         """return list of job ids as result of `Query`."""
         return query_impl(jobs, query, output=True)
 
