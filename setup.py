@@ -22,7 +22,6 @@ def read(*names, **kwargs):
 
 setup(
     name="obr",
-    version="0.0.0",
     license="BSD-2-Clause",
     description="A tool to create and run OpenFOAM parameter studies",
     long_description="%s\n%s"
