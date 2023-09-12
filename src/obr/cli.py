@@ -434,7 +434,13 @@ def query(ctx: click.Context, **kwargs):
         return
     queries: list[Query] = build_filter_query(input_queries)
     jobs = project.filter_jobs(filter=list(filters))
-    project.query(jobs=jobs, query=queries)
+    query_results = project.query(jobs=jobs, query=queries)
+    for job in query_results:
+        out_str = f"{job['id']: }"
+        job.pop["id"]
+        for k, v in job.items():
+            out_str += f"{k}: {v}"
+        logging.info(out_str)
 
 
 @cli.command()

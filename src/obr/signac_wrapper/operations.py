@@ -31,33 +31,15 @@ class OpenFOAMProject(flow.FlowProject):
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
-    def filter_jobs(
-        self, filter: list[str], query: Optional[list[Query]] = None, output=False
-    ) -> list[Job]:
-        """`get_jobs` accepts a list of filters and an optional list of queries. If `output` is set to True, results will be logged verbosely.
+    def filter_jobs(self, filter: list[str]) -> list[Job]:
+        """`filter_jobs` accepts a list of filters.
 
-        - First, the filters will be applied to all jobs inside the `OpenFOAMProject` instance.
-
-        - Secondly, if queries were passed, the requested values will be logged to the terminal.
-
-        - Lastly, the filtered jobs will be returned as a list.
+        The filters will be applied to all jobs inside the `OpenFOAMProject` instance and the filtered jobs will be returned as a list.
         """
-        self.filtered_jobs = self.filter_jobs_(filters=filter)
-        if query is not None:
-            if isinstance(query, str):
-                query = input_to_queries(query)
-            self.query_jobs(filtered_jobs, query)
+        self.filtered_jobs: list[Job] = filter_jobs(self, filters, output)
         return self.filtered_jobs
 
-    def filter_jobs_(self, filters: list[str], output: bool = False):
-        """Applies given `filters` to all jobs inside the `OpenFOAMProject` instance."""
-        filtered_jobs: list[Job] = filter_jobs(self, filters, output)
-        if output:
-            for job in filtered_jobs:
-                print(f"Found Job with {job.id=}")
-        return filtered_jobs
-
-    def query(self, jobs: list[Job], query: list[Query]) -> list[str]:
+    def query(self, jobs: list[Job], query: list[Query]) -> list[dict]:
         """return list of job ids as result of `Query`."""
         return query_impl(jobs, query, output=True)
 

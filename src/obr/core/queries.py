@@ -101,7 +101,7 @@ class Query:
 
 
 def input_to_query(inp: str) -> Query:
-    """converts cli input  str to a Query object"""
+    """converts cli input str to a Query object"""
     # FIXME this fails if values are name value
     inp = (
         inp.replace("key", '"key"')
@@ -162,6 +162,8 @@ def query_flat_jobs(
     jobs: dict[str, dict], queries: list[Query], output, latest_only, strict
 ) -> list[query_result]:
     """
+    Execute queries over a dictionary where the job.id is the key and merged job.docs are the values
+
     Parameters:
     jobs -- a job dictionary ordered by job ids
     queries -- list of queries to run
