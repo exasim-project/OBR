@@ -88,16 +88,29 @@ class OpenFOAMCase(BlockMesh):
     def __init__(self, path, job):
         self.path_ = Path(path)
         self.job: Job = job
+
+        # Non-optional files system folder files
         self.controlDict = File(folder=self.system_folder, file="controlDict", job=job)
         self.fvSolution = File(folder=self.system_folder, file="fvSolution", job=job)
-        if Path(self.system_folder / "fvSchemes").exists():
-            self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
-        # decomposeParDict might not exist in some test cases
+        self.fvSchemes = File(folder=self.system_folder, file="fvSchemes", job=job)
+
+        self.transportProperties = File(
+            folder=self.constant_folder, file="transportProperties", job=job
+        )
+
+        # optional but commonly used files
         self.decomposeParDict = False
         if Path(self.system_folder / "decomposeParDict").exists():
             self.decomposeParDict = File(
                 folder=self.system_folder, file="decomposeParDict", job=job
             )
+
+        self.turbulenceProperties = False
+        if Path(self.constant_folder / "turbulenceProperties").exists():
+            self.turbulenceProperties = File(
+                folder=self.constant_folder, file="turbulenceProperties", job=job
+            )
+
         self.file_dict: dict[str, File] = dict()
         self.config_file_tree
 

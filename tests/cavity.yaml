@@ -26,3 +26,12 @@ variation:
         solver: PCG
         preconditioner: none
         executor: CPU
+  - operation: fvSchemes
+    schema: "schemes/ddt_default_{default}"
+    values:
+      - set: ddtSchemes
+        default: backward
+  - operation: transportProperties
+    schema: "transportProperties/{nu}"
+    values:
+      - nu: 10
