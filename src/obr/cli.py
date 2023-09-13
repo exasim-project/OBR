@@ -272,22 +272,13 @@ def run(ctx: click.Context, **kwargs):
     # check if given path points to valid project
     if not is_valid_workspace(filters):
         return
-    jobs = project.get_jobs(filter=filters)
+    jobs = project.filter_jobs(filters=filters)
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
 
     if kwargs.get("job"):
         os.environ["OBR_JOB"] = kwargs.get("job")
-
-    # project._reregister_aggregates()
-    # print(project.groups)
-    # val = list(project._groups.values())[0]
-    # agg = project._group_to_aggregate_store[val]
-    # print(type(project._group_to_aggregate_store[val]))
-    # print(agg._aggregates_by_id)
-    # jobs = project.groups["generate"]
-    # print(list(project.groupby("doc.is_base")))
 
     if not kwargs.get("aggregate"):
         project.run(
