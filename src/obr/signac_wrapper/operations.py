@@ -64,7 +64,8 @@ def is_job(job: Job) -> bool:
     execution of jobs if --job=id is set"""
     skip_job = os.environ.get("OBR_JOB")
     if skip_job and not str(job.id) == skip_job:
-        return "true"
+        return False
+    return True
 
 
 def operation_complete(job: Job, operation: str) -> bool:

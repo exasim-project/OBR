@@ -61,6 +61,7 @@ def final(job):
 
     NOTE as a side effect we check the number of cells
     """
+    print("check if is final")
     if not unitialised(job):
         final = not job.sp.get("has_child")
         if final:
@@ -69,6 +70,7 @@ def final(job):
                 mesh_stats = get_mesh_stats(owner_path)
                 job.doc["cache"]["nCells"] = mesh_stats["nCells"]
                 job.doc["cache"]["nFaces"] = mesh_stats["nFaces"]
+            return True
     else:
         return False
 
