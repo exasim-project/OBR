@@ -36,7 +36,9 @@ class OpenFOAMProject(flow.FlowProject):
 
         The filters will be applied to all jobs inside the `OpenFOAMProject` instance and the filtered jobs will be returned as a list.
         """
-        self.filtered_jobs: list[Job] = filter_jobs(self, filters)
+        self.filtered_jobs: list[Job] = (
+            filter_jobs(self, filters) if filters else [j for j in self]
+        )
         return self.filtered_jobs
 
     def query(self, jobs: list[Job], query: list[Query]) -> list[dict]:
