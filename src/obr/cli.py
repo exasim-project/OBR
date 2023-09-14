@@ -343,7 +343,7 @@ def status(ctx: click.Context, **kwargs):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
     filters: list[str] = kwargs.get("filter")
-    jobs = project.get_jobs(filter=filters)
+    jobs = project.filter_jobs(filters=filters)
 
     # check if given path points to valid project
     if not is_valid_workspace(filters):
