@@ -231,13 +231,16 @@ class OpenFOAMCase(BlockMesh):
         gets created"""
 
         if not self.decomposeParDict:
-            self.decomposeParDict = Path(self.system_folder / "decomposeParDict")
-            with open(self.decomposeParDict, "a") as fh:
+            decomposeParDictFile = Path(self.system_folder / "decomposeParDict")
+            with open(decomposeParDictFile, "a") as fh:
                 # call get to trigger read
                 self.controlDict.update()
                 fh.write("".join(self.controlDict.of_comment_header))
                 fh.write("".join(self.controlDict.of_header))
                 fh.write("\n")
+            self.decomposeParDict = File(
+                folder=self.system_folder, file="decomposeParDict", job=self.job
+            )
 
         method = args["method"]
         if method == "simple":
