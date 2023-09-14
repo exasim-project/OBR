@@ -227,7 +227,17 @@ class OpenFOAMCase(BlockMesh):
         return logged_execute(operation, self.path, self.job.doc)
 
     def decomposePar(self, args={}):
-        """Sets decomposeParDict and calls decomposePar"""
+        """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one
+        gets created"""
+
+        if not self.decomposeParDict:
+            with open(Path(self.system_folder / "decomposeParDict"), "a") as fh:
+                # call get to trigger read
+                self.controlDict.update()
+                fh.write("".join(self.controlDict.of_comment_header))
+                fh.write("".join(self.controlDict.of_header))
+                fh.write("\n")
+
         method = args["method"]
         if method == "simple":
             if not args.get("numberOfSubDomains"):
