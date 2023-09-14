@@ -25,7 +25,10 @@ from obr.core.queries import filter_jobs, query_impl, input_to_queries, Query
 
 class OpenFOAMProject(flow.FlowProject):
     filtered_jobs = []
-    _wd = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print(args, kwargs)
 
     def print_operations(self):
         ops = sorted(self.operations.keys())
