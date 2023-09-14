@@ -61,7 +61,6 @@ def final(job):
 
     NOTE as a side effect we check the number of cells
     """
-    print("check if is final")
     if not unitialised(job):
         final = not job.sp.get("has_child")
         if final:

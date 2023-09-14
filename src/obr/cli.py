@@ -280,6 +280,17 @@ def run(ctx: click.Context, **kwargs):
     if kwargs.get("job"):
         os.environ["OBR_JOB"] = kwargs.get("job")
 
+    if kwargs.get("operations") == "apply":
+        sys.argv.append("--aggregate")
+        sys.argv.append("-t")
+        sys.argv.append(1)
+        project.run(
+            names=operations,
+            progress=True,
+            np=1,
+        )
+        return 1
+
     if not kwargs.get("aggregate"):
         project.run(
             jobs=jobs,  # project.groupby("doc.is_base"),
