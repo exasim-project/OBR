@@ -78,6 +78,7 @@ jobs:
         obr status
 
     - name: Validate state of simulations
+      run: |
         obr query -q global --validate tests/cavity_results.json
 
     - name: Archive production artifacts
