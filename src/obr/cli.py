@@ -290,7 +290,7 @@ def run(ctx: click.Context, **kwargs):
         return
 
     if kwargs.get("operations") == "runParallelSolver":
-        # NOTE if tasks is not set explicitely we set it to 1 for parallelSolverSolver
+        # NOTE if tasks is not set explicitly we set it to 1 for parallelSolverSolver
         # to avoid oversubsrciption
         sys.argv.append("-t")
         sys.argv.append(1)

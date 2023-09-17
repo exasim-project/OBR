@@ -15,7 +15,7 @@ jobs:
     - name: Install dependencies
       run: |
         apt-get update
-        apt install -y pip
+        apt install -y pip rename
         python3 -m pip install --upgrade pip
 
     - name: Install package
