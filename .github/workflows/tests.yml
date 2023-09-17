@@ -77,6 +77,9 @@ jobs:
         obr run -o runSerialSolver -t 1
         obr status
 
+    - name: Validate state of simulations
+        obr query -q global --validate tests/cavity_results.json
+
     - name: Archive production artifacts
       uses: actions/upload-artifact@v3
       if: failure()

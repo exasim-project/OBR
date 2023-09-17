@@ -195,11 +195,14 @@ def merge_job_documents(job: Job):
     job.doc = {"data": merged_data, "history": merged_history, "cache": cache}
 
 
-def get_latest_log(job: Job):
-    """Find latest log in job.id/case/folder"""
+def get_latest_log(job: Job) -> str:
+    """Find latest log in job.id/case/folder
+
+    Returns: path to latest solver log
+    """
     from ..OpenFOAM.case import OpenFOAMCase
 
-    case_path = Path(job.path + "case")
+    case_path = Path(job.path + "/case")
     # in case obr status is called directly after initialization
     # this would also fail if there was no case directory
     if not case_path.exists():
@@ -210,7 +213,7 @@ def get_latest_log(job: Job):
 
     history = job.doc["history"]
     for entry in history[:-1]:
-        if entry.get("cmd", "").startswith(solver):
+        if solver in entry.get("cmd", ""):
             return entry["log"]
     return ""
 
@@ -304,7 +307,8 @@ def modifies_file(fns):
 
 def check_log_for_success(log: Path) -> bool:
     res = check_output(["tail", "-n", "2", log], text=True)
-    return ("Finalising" in res) or ("End" in res)
+    state = ("Finalising" in res) or ("End" in res)
+    return state
 
 
 def writes_files(fns):

@@ -174,8 +174,6 @@ def submit(ctx: click.Context, **kwargs):
     else:
         jobs = [j for j in project]
 
-    # OpenFOAMProject().main()
-    # print(dir(project.operations["runParallelSolver"]))
     # TODO find a signac way to do that
     cluster_args = {
         "partition": partition,
@@ -289,7 +287,19 @@ def run(ctx: click.Context, **kwargs):
             progress=True,
             np=1,
         )
-        return 1
+        return
+
+    if kwargs.get("operations") == "runParallelSolver":
+        # NOTE if tasks is not set explicitely we set it to 1 for parallelSolverSolver
+        # to avoid oversubsrciption
+        sys.argv.append("-t")
+        sys.argv.append(1)
+        project.run(
+            names=operations,
+            progress=True,
+            np=kwargs.get("tasks", 1),
+        )
+        return
 
     if not kwargs.get("aggregate"):
         project.run(
@@ -360,12 +370,12 @@ def status(ctx: click.Context, **kwargs):
     if not is_valid_workspace(filters):
         return
 
-    project.print_status(detailed=kwargs["detailed"], pretty=True)
+    # project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
 
     finished, unfinished = [], []
     max_view_len = 0
-    logging.info("Detailed overview:\n" + "=" * 80)
+    logging.info("Detailed overview:\n" + "=" * 90)
     for job in jobs:
         jobid = job.id
         if view := id_view_map.get(jobid):
@@ -378,11 +388,12 @@ def status(ctx: click.Context, **kwargs):
     finished.sort()
     for view, jobid, labels in finished:
         pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| F | {jobid}")
+        logging.info(f"{view}:{pad}| C | {jobid}")
     unfinished.sort()
     for view, jobid, labels in unfinished:
         pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| U | {jobid}")
+        logging.info(f"{view}:{pad}| I | {jobid}")
+    logging.info("Flags: C - Completed, I - Incomplete")
 
 
 @cli.command()

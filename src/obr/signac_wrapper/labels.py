@@ -29,19 +29,24 @@ def unitialised(job):
 
 
 @FlowProject.label
-def finished(job):
-    solver_log = get_latest_log(job)
-    if solver_log:
-        return check_log_for_success(Path(job.path) / "case" / solver_log)
-    return False
-
-
-@FlowProject.label
 def processing(job):
     return (
         job.doc["state"].get("global") == "started"
         or job.doc["state"].get("global") == "tmp_lock"
     )
+
+
+@FlowProject.label
+def finished(job):
+    if job.doc["state"]["global"] == "completed":
+        return True
+    log = get_latest_log(job)
+    if not log:
+        return False
+    if check_log_for_success(Path(job.path) / "case" / log):
+        job.doc["state"]["global"] = "completed"
+        return True
+    return False
 
 
 @FlowProject.label

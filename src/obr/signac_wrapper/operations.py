@@ -28,7 +28,6 @@ class OpenFOAMProject(flow.FlowProject):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print(args, kwargs)
 
     def print_operations(self):
         ops = sorted(self.operations.keys())
@@ -567,10 +566,14 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
         preflight_cmd = f"{preflight} > {job.path}/case/preflight_{timestamp}.log && "
         cmd_format = preflight_cmd + cmd_format
 
+    postflight_cmd = f" && echo $? > {job.path}/case/solverExitCode.log "
+
+    job.doc["state"]["global"] = "started"
+
     # NOTE we add || true such that the command never fails
     # otherwise if one execution would fail OBR exits and
     # the following solver runs would be discarded
-    return cmd_format.format(**cli_args) + "|| true"
+    return cmd_format.format(**cli_args) + "|| true" + postflight_cmd
 
 
 @simulate
