@@ -13,4 +13,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: dangoslen/changelog-enforcer@v3
-      changeLogPath: CHANGELOG.rst
+      with:
+        changeLogPath: CHANGELOG.rst
