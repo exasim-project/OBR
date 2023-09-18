@@ -142,7 +142,7 @@ def get_project(tmpdir):
 
 def test_filters(get_project: OpenFOAMProject):
     filters = ["maxIter!=0"]
-    jobs = get_project.filter_jobs(filters, output=True)
+    jobs = get_project.filter_jobs(filters)
     assert len(jobs) > 0
 
 
