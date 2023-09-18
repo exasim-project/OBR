@@ -11,6 +11,6 @@ jobs:
   # Enforces the update of a changelog file on every pull request
   changelog:
     runs-on: ubuntu-latest
-    changeLogPath: CHANGELOG.rst
     steps:
     - uses: dangoslen/changelog-enforcer@v3
+      changeLogPath: CHANGELOG.rst
