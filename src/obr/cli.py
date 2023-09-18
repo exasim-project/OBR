@@ -292,12 +292,14 @@ def run(ctx: click.Context, **kwargs):
     if kwargs.get("operations") == "runParallelSolver":
         # NOTE if tasks is not set explicitly we set it to 1 for parallelSolverSolver
         # to avoid oversubsrciption
-        sys.argv.append("-t")
-        sys.argv.append(1)
+        ntasks = kwargs.get("tasks") if kwargs.get("tasks") >= 1 else 1
+        if not kwargs.get("tasks", False):
+            sys.argv.append("-t")
+            sys.argv.append(ntasks)
         project.run(
             names=operations,
             progress=True,
-            np=kwargs.get("tasks", 1),
+            np=ntasks,
         )
         return
 
