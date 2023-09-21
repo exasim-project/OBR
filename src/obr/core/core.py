@@ -5,13 +5,13 @@ import re
 import hashlib
 import logging
 import json
-import deepcopy
 
 from pathlib import Path
 from subprocess import check_output
 from typing import Union
 from datetime import datetime
 from signac.contrib.job import Job
+from copy import deepcopy
 
 # these are to be replaced with each other
 SIGNAC_PATH_TOKEN = "_dot_"
