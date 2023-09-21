@@ -5,7 +5,7 @@ import re
 import hashlib
 import logging
 import json
-
+import deepcopy
 
 from pathlib import Path
 from subprocess import check_output
