@@ -305,12 +305,6 @@ def modifies_file(fns):
         unlink(fns)
 
 
-def check_log_for_success(log: Path) -> bool:
-    res = check_output(["tail", "-n", "2", log], text=True)
-    state = ("Finalising" in res) or ("End" in res)
-    return state
-
-
 def writes_files(fns):
     """check if this job modifies a file, thus it needs to unlink
     and copy the file if it is a symlink

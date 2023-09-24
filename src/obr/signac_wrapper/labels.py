@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
+import re
 
 from pathlib import Path
 from flow import FlowProject
 from subprocess import check_output
+from Owls.parser import LogParser
 
 from ..core.core import check_log_for_success, get_latest_log, get_mesh_stats
-
-import re
 
 
 @FlowProject.label
@@ -43,8 +43,12 @@ def finished(job):
     log = get_latest_log(job)
     if not log:
         return False
-    if check_log_for_success(Path(job.path) / "case" / log):
+    lp = LogParser(log, matcher=[])
+    if lp.footer.completed:
         job.doc["state"]["global"] = "completed"
+    job.doc["state"]["latestTime"] = lp.latestTime.time
+    job.doc["state"]["continuity_errors"] = lp.latestTime.continuity_errors
+    if check_log_for_success(Path(job.path) / "case" / log):
         return True
     return False
 
