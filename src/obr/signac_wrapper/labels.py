@@ -47,7 +47,7 @@ def finished(job):
     if lp.footer.completed:
         job.doc["state"]["global"] = "completed"
     job.doc["state"]["latestTime"] = lp.latestTime.time
-    job.doc["state"]["continuity_errors"] = lp.latestTime.continuity_errors
+    job.doc["state"]["continuityErrors"] = lp.latestTime.continuity_errors
     if check_log_for_success(Path(job.path) / "case" / log):
         return True
     return False
