@@ -6,7 +6,7 @@ from flow import FlowProject
 from subprocess import check_output
 from Owls.parser import LogFile
 
-from ..core.core import check_log_for_success, get_latest_log, get_mesh_stats
+from ..core.core import get_latest_log, get_mesh_stats
 
 
 @FlowProject.label
@@ -48,7 +48,7 @@ def finished(job):
         job.doc["state"]["global"] = "completed"
     job.doc["state"]["latestTime"] = lp.latestTime.time
     job.doc["state"]["continuityErrors"] = lp.latestTime.continuity_errors
-    if check_log_for_success(Path(job.path) / "case" / log):
+    if lp.footer.completed:
         return True
     return False
 
