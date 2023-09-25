@@ -288,13 +288,23 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
     if isinstance(args, str):
         return
     if uses := args.pop("uses", False):
-        check_output(
-            [
-                "cp",
-                "{}/case/{}/{}".format(job.path, path, uses),
-                "{}/case/{}/{}".format(job.path, path, target),
-            ]
-        )
+        if path:
+            check_output(
+                [
+                    "cp",
+                    "{}/case/{}/{}".format(job.path, path, uses),
+                    "{}/case/{}/{}".format(job.path, path, target),
+                ]
+            )
+        else:
+            check_output(
+                [
+                    "cp",
+                    "-r",
+                    "{}/case/{}".format(job.path, uses),
+                    "{}/case/{}".format(job.path, target),
+                ]
+            )
 
 
 @generate
@@ -341,6 +351,19 @@ def shell(job: Job, args={}):
     else:
         steps = [args]
     execute(steps, job)
+
+
+@generate
+@OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
+@OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
+@OpenFOAMProject.pre(lambda job: basic_eligible(job, "zero"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "zero"))
+@OpenFOAMProject.operation
+def initialConditions(job: Job, args={}):
+    """A special operation to allow copying from 0.orig folders"""
+    args = get_args(job, args)
+    copy_on_uses(args, job, "", "0")
 
 
 @generate
