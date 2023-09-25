@@ -208,8 +208,10 @@ class OpenFOAMCase(BlockMesh):
             self.file_dict[rel_path] = file
         for file, rel_path in self.config_files_in_folder(self.system_include_folder):
             self.file_dict[rel_path] = file
-        for file, rel_path in self.config_files_in_folder(self.const_polyMesh_folder):
-            self.file_dict[rel_path] = file
+        # TODO dont try to create File object for polyMesh files because that might
+        # take very long
+        # for file, rel_path in self.config_files_in_folder(self.const_polyMesh_folder):
+        #     self.file_dict[rel_path] = file
         return list(self.file_dict.keys())
 
     def get(self, key: str) -> Union[File, None]:
