@@ -297,14 +297,19 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
                 ]
             )
         else:
-            check_output(
-                [
-                    "cp",
-                    "-r",
-                    "{}/case/{}".format(job.path, uses),
-                    "{}/case/{}".format(job.path, target),
-                ]
-            )
+            src_path = "{}/case/{}".format(job.path, uses)
+            trg_path = "{}/case/{}".format(job.path, target)
+            # It should be alright if the source path does not exists
+            # as long as the target path exists
+            if not Path(trg_path).exists() and Path(src_path).exists():
+                check_output(
+                    [
+                        "cp",
+                        "-r",
+                        src_path,
+                        trg_path
+                    ]
+                )
 
 
 @generate
