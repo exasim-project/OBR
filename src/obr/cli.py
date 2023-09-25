@@ -476,14 +476,21 @@ def query(ctx: click.Context, **kwargs):
         with open(validation_file, "r") as infile:
             # json_data refers to the above JSON
             validation_dict = json.load(infile)
-            from deepdiff import DeepDiff
+            if validation_dict.get("$schema"):
+                logging.info("using json schema for validation")
+                from jsonschema import validate
 
-            difference_dict = DeepDiff(validation_dict, query_results)
+                validate(query_results, validation_dict)
+            else:
+                from deepdiff import DeepDiff
 
-            if difference_dict:
-                print(difference_dict)
-                logging.warn("validation failed")
-                sys.exit(1)
+                logging.info("using deepdiff for validation")
+                difference_dict = DeepDiff(validation_dict, query_results)
+
+                if difference_dict:
+                    print(difference_dict)
+                    logging.warn("validation failed")
+                    sys.exit(1)
 
 
 @cli.command()
