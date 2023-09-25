@@ -335,11 +335,9 @@ def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
         return {}
     for root, folder, file in os.walk(view_folder):
         for i, fold in enumerate(folder):
-            print("fold", fold)
             path = Path(root) / fold
             job_id = None
             if path.is_symlink():
-                print("fold is symlink", fold)
                 job_id = path.resolve().name
                 # only keep path parts relative to the start of of the view
                 # folder
