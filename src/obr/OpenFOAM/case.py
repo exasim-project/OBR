@@ -259,7 +259,7 @@ class OpenFOAMCase(BlockMesh):
                 {
                     "method": method,
                     "numberOfSubdomains": numberSubDomains,
-                    "coeffs": {"n": coeffs},
+                    "simpleCoeffs": {"n": coeffs},
                 }
             )
         else:
