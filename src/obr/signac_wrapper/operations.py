@@ -212,6 +212,7 @@ def execute_operation(job: Job, operation_name: str, operations) -> Literal[True
 
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
+
     """
     if not operations:
         return True
@@ -302,14 +303,7 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
             # It should be alright if the source path does not exists
             # as long as the target path exists
             if not Path(trg_path).exists() and Path(src_path).exists():
-                check_output(
-                    [
-                        "cp",
-                        "-r",
-                        src_path,
-                        trg_path
-                    ]
-                )
+                check_output(["cp", "-r", src_path, trg_path])
 
 
 @generate
