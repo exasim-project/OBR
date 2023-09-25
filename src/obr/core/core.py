@@ -164,8 +164,8 @@ def get_mesh_stats(owner_path: str) -> dict:
                 if is_foamFile and "note" in line:
                     found_note = line
         note_line = found_note
-        nCells = int(re.findall("nCells:([0-9]+)", note_line)[0])
-        nFaces = int(re.findall("Faces:([0-9]+)", note_line)[0])
+        nCells = int(re.findall("nCells:[ ]*([0-9]+)", note_line)[0])
+        nFaces = int(re.findall("Faces:[ ]*([0-9]+)", note_line)[0])
     return {"nCells": nCells, "nFaces": nFaces}
 
 
