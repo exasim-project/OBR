@@ -8,7 +8,7 @@ import json
 
 from pathlib import Path
 from subprocess import check_output
-from typing import Union
+from typing import Union, Generator
 from datetime import datetime
 from signac.contrib.job import Job
 from copy import deepcopy
@@ -225,7 +225,7 @@ def get_timestamp_from_log(log) -> str:
     return log_name.replace(before + "_", "")
 
 
-def find_solver_logs(job: Job) -> tuple[str, str, str]:
+def find_solver_logs(job: Job) -> Generator[tuple, None, None]:
     """Find and return all solver log files, campaign info and tags from job instances"""
     case_path = Path(job.path)
     if not case_path.exists():

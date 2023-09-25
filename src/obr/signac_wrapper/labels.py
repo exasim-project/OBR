@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 from flow import FlowProject
 from subprocess import check_output
-from Owls.parser import LogFile
+from Owls.parser.LogFile import LogFile
 
 from ..core.core import get_latest_log, get_mesh_stats
 
@@ -43,7 +43,7 @@ def finished(job):
     log = get_latest_log(job)
     if not log:
         return False
-    lp = LogFile(log, matcher=[])
+    lp = LogFile(job.path + "/case/" + log, matcher=[])
     if lp.footer.completed:
         job.doc["state"]["global"] = "completed"
     job.doc["state"]["latestTime"] = lp.latestTime.time
