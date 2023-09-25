@@ -266,7 +266,7 @@ def run(ctx: click.Context, **kwargs):
     if not check_cli_operations(project, operations, list_operations):
         return
 
-    filters: list[str] = kwargs.get("filter")
+    filters: list[str] = kwargs.get("filter", [])
     # check if given path points to valid project
     if not is_valid_workspace(filters):
         return
@@ -276,12 +276,12 @@ def run(ctx: click.Context, **kwargs):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
 
     if kwargs.get("job"):
-        os.environ["OBR_JOB"] = kwargs.get("job")
+        os.environ["OBR_JOB"] = kwargs.get("job", "")
 
     if kwargs.get("operations") == "apply":
         sys.argv.append("--aggregate")
         sys.argv.append("-t")
-        sys.argv.append(1)
+        sys.argv.append("1")
         project.run(
             names=operations,
             progress=True,
@@ -292,10 +292,10 @@ def run(ctx: click.Context, **kwargs):
     if kwargs.get("operations") == "runParallelSolver":
         # NOTE if tasks is not set explicitly we set it to 1 for parallelSolverSolver
         # to avoid oversubsrciption
-        ntasks = kwargs.get("tasks") if kwargs.get("tasks") >= 1 else 1
+        ntasks: int = kwargs["tasks"] if kwargs.get("tasks", 0) >= 1 else 1
         if not kwargs.get("tasks", False):
             sys.argv.append("-t")
-            sys.argv.append(ntasks)
+            sys.argv.append(str(ntasks))
         project.run(
             names=operations,
             progress=True,
@@ -365,7 +365,7 @@ def status(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
-    filters: list[str] = kwargs.get("filter")
+    filters: list[str] = kwargs.get("filter", [])
     jobs = project.filter_jobs(filters=filters)
 
     # check if given path points to valid project
