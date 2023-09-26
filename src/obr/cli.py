@@ -424,13 +424,13 @@ def status(ctx: click.Context, **kwargs):
     ),
 )
 @click.option(
-    "--json",
+    "--export-to",
     required=False,
     multiple=False,
     help="Write results to a json file.",
 )
 @click.option(
-    "--validate",
+    "--validate-against",
     required=False,
     multiple=False,
     help="Validate the query output against the specified file.",
@@ -465,12 +465,12 @@ def query(ctx: click.Context, **kwargs):
                 out_str += f" {k}: {v}"
             logging.info(out_str)
 
-    json_file: str = kwargs.get("json", "")
+    json_file: str = kwargs.get("export-to", "")
     if json_file:
         with open(json_file, "w") as outfile:
             # json_data refers to the above JSON
             json.dump(query_results, outfile)
-    validation_file: str = kwargs.get("validate", "")
+    validation_file: str = kwargs.get("validation-against", "")
     if validation_file:
         with open(validation_file, "r") as infile:
             # json_data refers to the above JSON
