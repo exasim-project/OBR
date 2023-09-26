@@ -461,9 +461,8 @@ def query(ctx: click.Context, **kwargs):
     if not quiet:
         for job_id, query_res in deepcopy(query_results).items():
             out_str = f"{job_id}:"
-            for q in query_res:
-                for k, v in q.items():
-                    out_str += f" {k}: {v}"
+            for k, v in query_res.items():
+                out_str += f" {k}: {v}"
             logging.info(out_str)
 
     json_file: str = kwargs.get("json", "")

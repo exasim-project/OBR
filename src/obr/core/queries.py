@@ -241,11 +241,11 @@ def query_impl(
     output=False,
     latest_only=True,
 ) -> list[dict]:
-    """Performs a query and returns a list of records"""
+    """Performs a query and returns a list of records ie for each job the query result"""
     res = query_to_dict(jobs, queries, output, latest_only)
     query_ids = {}
     for id_ in res:
-        query_ids[id_.id] = id_.result
+        query_ids[id_.id] = id_.result[0]
     return query_ids
 
 
