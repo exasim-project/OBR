@@ -49,6 +49,8 @@ def finished(job):
     job.doc["state"]["latestTime"] = lp.latestTime.time
     job.doc["state"]["continuityErrors"] = lp.latestTime.continuity_errors
     job.doc["state"]["CourantNumber"] = lp.latestTime.Courant_number
+    job.doc["state"]["ExecutionTime"] = lp.latestTime.execution_time["ExecutionTime"]
+    job.doc["state"]["ClockTime"] = lp.latestTime.execution_time["ClockTime"]
     if lp.footer.completed:
         return True
     return False
