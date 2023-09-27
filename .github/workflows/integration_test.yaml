@@ -1,8 +1,13 @@
-name: Tests
+name: Integration tests
+run-name: Integration test on ${{github.ref_name}}
 
 on:
-  - push
-  - pull_request
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    types: synchronize
 
 env:
   BUILD_TYPE: Release
@@ -58,12 +63,12 @@ jobs:
 
         obr init --config tests/cavity.yaml
         obr run -o generate
-        obr run -o runSerialSolver -t 1
+        obr run -o runSerialSolver
         obr status
 
     - name: Validate state of simulations
       run: |
-        obr query -q global --validate tests/cavity_results.json
+        obr query -q global --validate-against tests/cavity_results.json
 
     - name: Rename log files
       if: always()
