@@ -24,38 +24,27 @@ from obr.core.queries import filter_jobs, query_impl, input_to_queries, Query
 
 
 class OpenFOAMProject(flow.FlowProject):
+    filtered_jobs: list[Job] = []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def print_operations(self):
         ops = sorted(self.operations.keys())
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
-    def get_jobs(
-        self, filter: list[str], query: Optional[list[Query]] = None, output=False
-    ) -> list[Job]:
-        """`get_jobs` accepts a list of filters and an optional list of queries. If `output` is set to True, results will be logged verbosely.
+    def filter_jobs(self, filters: list[str]) -> list[Job]:
+        """`filter_jobs` accepts a list of filters.
 
-        - First, the filters will be applied to all jobs inside the `OpenFOAMProject` instance.
-
-        - Secondly, if queries were passed, the requested values will be logged to the terminal.
-
-        - Lastly, the filtered jobs will be returned as a list.
+        The filters will be applied to all jobs inside the `OpenFOAMProject` instance and the filtered jobs will be returned as a list.
         """
-        filtered_jobs = self.filter_jobs(filters=filter, output=output)
-        if query is not None:
-            if isinstance(query, str):
-                query = input_to_queries(query)
-            self.query_jobs(filtered_jobs, query)
-        return filtered_jobs
+        self.filtered_jobs = (
+            filter_jobs(self, filters) if filters else [j for j in self]
+        )
+        return self.filtered_jobs
 
-    def filter_jobs(self, filters: list[str], output: bool = False):
-        """Applies given `filters` to all jobs inside the `OpenFOAMProject` instance."""
-        filtered_jobs: list[Job] = filter_jobs(self, filters, output)
-        if output:
-            for job in filtered_jobs:
-                print(f"Found Job with {job.id=}")
-        return filtered_jobs
-
-    def query_jobs(self, jobs: list[Job], query: list[Query]) -> list[str]:
+    def query(self, jobs: list[Job], query: list[Query]) -> list[dict]:
         """return list of job ids as result of `Query`."""
         return query_impl(jobs, query, output=True)
 
@@ -74,7 +63,8 @@ def is_job(job: Job) -> bool:
     execution of jobs if --job=id is set"""
     skip_job = os.environ.get("OBR_JOB")
     if skip_job and not str(job.id) == skip_job:
-        return "true"
+        return False
+    return True
 
 
 def operation_complete(job: Job, operation: str) -> bool:
@@ -222,6 +212,7 @@ def execute_operation(job: Job, operation_name: str, operations) -> Literal[True
 
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
+
     """
     if not operations:
         return True
@@ -298,13 +289,21 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
     if isinstance(args, str):
         return
     if uses := args.pop("uses", False):
-        check_output(
-            [
-                "cp",
-                "{}/case/{}/{}".format(job.path, path, uses),
-                "{}/case/{}/{}".format(job.path, path, target),
-            ]
-        )
+        if path:
+            check_output(
+                [
+                    "cp",
+                    "{}/case/{}/{}".format(job.path, path, uses),
+                    "{}/case/{}/{}".format(job.path, path, target),
+                ]
+            )
+        else:
+            src_path = "{}/case/{}".format(job.path, uses)
+            trg_path = "{}/case/{}".format(job.path, target)
+            # It should be alright if the source path does not exists
+            # as long as the target path exists
+            if not Path(trg_path).exists() and Path(src_path).exists():
+                check_output(["cp", "-r", src_path, trg_path])
 
 
 @generate
@@ -351,6 +350,19 @@ def shell(job: Job, args={}):
     else:
         steps = [args]
     execute(steps, job)
+
+
+@generate
+@OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
+@OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
+@OpenFOAMProject.pre(lambda job: basic_eligible(job, "zero"))
+@OpenFOAMProject.post(lambda job: operation_complete(job, "zero"))
+@OpenFOAMProject.operation
+def initialConditions(job: Job, args={}):
+    """A special operation to allow copying from 0.orig folders"""
+    args = get_args(job, args)
+    copy_on_uses(args, job, "", "0")
 
 
 @generate
@@ -576,10 +588,14 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
         preflight_cmd = f"{preflight} > {job.path}/case/preflight_{timestamp}.log && "
         cmd_format = preflight_cmd + cmd_format
 
+    postflight_cmd = f" && echo $? > {job.path}/case/solverExitCode.log "
+
+    job.doc["state"]["global"] = "started"
+
     # NOTE we add || true such that the command never fails
     # otherwise if one execution would fail OBR exits and
     # the following solver runs would be discarded
-    return cmd_format.format(**cli_args) + "|| true"
+    return cmd_format.format(**cli_args) + "|| true" + postflight_cmd
 
 
 @simulate

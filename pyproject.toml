@@ -1,6 +1,6 @@
 [project]
 name = "obr"
-version = "0.1.1"
+version = "0.2.0"
 
 dependencies = [
     "click",
@@ -9,6 +9,8 @@ dependencies = [
     "signac-flow==0.23.0",
     "GitPython==3.1.31",
     "pandas",
+    "DeepDiff",
+    "jsonschema==4.19.1",
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
 ]
 

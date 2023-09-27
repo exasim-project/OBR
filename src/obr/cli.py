@@ -19,6 +19,8 @@ import yaml  # type: ignore[import]
 import os
 import time
 import sys
+import json
+import logging
 
 from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
@@ -27,13 +29,13 @@ from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl, build_filter_query, Query
 from .core.core import map_view_folder_to_job_id
 from pathlib import Path
-import logging
 from subprocess import check_output
 from git.repo import Repo
 from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union, Optional, Any
+from copy import deepcopy
 
 
 def check_cli_operations(
@@ -63,7 +65,7 @@ def is_valid_workspace(filters: list = []) -> bool:
     - applying filters would return an empty list
     """
     project: OpenFOAMProject = OpenFOAMProject.get_project()
-    jobs: list[Job] = project.get_jobs(filter=filters)
+    jobs: list[Job] = project.filter_jobs(filters=filters)
     if len(jobs) == 0:
         if filters == []:
             logging.warning("No jobs found in workspace folder!")
@@ -172,8 +174,6 @@ def submit(ctx: click.Context, **kwargs):
     else:
         jobs = [j for j in project]
 
-    # OpenFOAMProject().main()
-    # print(dir(project.operations["runParallelSolver"]))
     # TODO find a signac way to do that
     cluster_args = {
         "partition": partition,
@@ -266,26 +266,42 @@ def run(ctx: click.Context, **kwargs):
     if not check_cli_operations(project, operations, list_operations):
         return
 
-    filters: list[str] = kwargs.get("filter")
+    filters: list[str] = kwargs.get("filter", [])
     # check if given path points to valid project
     if not is_valid_workspace(filters):
         return
-    jobs = project.get_jobs(filter=filters)
+    jobs = project.filter_jobs(filters=filters)
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
 
     if kwargs.get("job"):
-        os.environ["OBR_JOB"] = kwargs.get("job")
+        os.environ["OBR_JOB"] = kwargs.get("job", "")
 
-    # project._reregister_aggregates()
-    # print(project.groups)
-    # val = list(project._groups.values())[0]
-    # agg = project._group_to_aggregate_store[val]
-    # print(type(project._group_to_aggregate_store[val]))
-    # print(agg._aggregates_by_id)
-    # jobs = project.groups["generate"]
-    # print(list(project.groupby("doc.is_base")))
+    if kwargs.get("operations") == "apply":
+        sys.argv.append("--aggregate")
+        sys.argv.append("-t")
+        sys.argv.append("1")
+        project.run(
+            names=operations,
+            progress=True,
+            np=1,
+        )
+        return
+
+    if kwargs.get("operations") == "runParallelSolver":
+        # NOTE if tasks is not set explicitly we set it to 1 for parallelSolverSolver
+        # to avoid oversubsrciption
+        ntasks: int = kwargs["tasks"] if kwargs.get("tasks", 0) >= 1 else 1
+        if not kwargs.get("tasks", False):
+            sys.argv.append("-t")
+            sys.argv.append(str(ntasks))
+        project.run(
+            names=operations,
+            progress=True,
+            np=ntasks,
+        )
+        return
 
     if not kwargs.get("aggregate"):
         project.run(
@@ -349,19 +365,19 @@ def status(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
-    filters: list[str] = kwargs.get("filter")
-    jobs = project.get_jobs(filter=filters)
+    filters: list[str] = kwargs.get("filter", [])
+    jobs = project.filter_jobs(filters=filters)
 
     # check if given path points to valid project
     if not is_valid_workspace(filters):
         return
 
-    project.print_status(detailed=kwargs["detailed"], pretty=True)
+    # project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
 
     finished, unfinished = [], []
     max_view_len = 0
-    logging.info("Detailed overview:\n" + "=" * 80)
+    logging.info("Detailed overview:\n" + "=" * 90)
     for job in jobs:
         jobid = job.id
         if view := id_view_map.get(jobid):
@@ -374,11 +390,12 @@ def status(ctx: click.Context, **kwargs):
     finished.sort()
     for view, jobid, labels in finished:
         pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| F | {jobid}")
+        logging.info(f"{view}:{pad}| C | {jobid}")
     unfinished.sort()
     for view, jobid, labels in unfinished:
         pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| U | {jobid}")
+        logging.info(f"{view}:{pad}| I | {jobid}")
+    logging.info("Flags: C - Completed, I - Incomplete")
 
 
 @cli.command()
@@ -407,7 +424,19 @@ def status(ctx: click.Context, **kwargs):
     ),
 )
 @click.option(
-    "-v", "--verbose", required=False, is_flag=True, help="Set for additional output."
+    "--export-to",
+    required=False,
+    multiple=False,
+    help="Write results to a json file.",
+)
+@click.option(
+    "--validate-against",
+    required=False,
+    multiple=False,
+    help="Validate the query output against the specified file.",
+)
+@click.option(
+    "--quiet", required=False, is_flag=True, help="Don't print out query results."
 )
 @click.pass_context
 def query(ctx: click.Context, **kwargs):
@@ -421,13 +450,46 @@ def query(ctx: click.Context, **kwargs):
         return
 
     input_queries: tuple[str] = kwargs.get("query", ())
-    output: bool = kwargs.get("verbose", False)
+    quiet: bool = kwargs.get("quiet", False)
 
     if input_queries == "":
         logging.warning("--query argument cannot be empty!")
         return
     queries: list[Query] = build_filter_query(input_queries)
-    project.get_jobs(filter=list(filters), query=queries, output=output)
+    jobs = project.filter_jobs(filters=list(filters))
+    query_results = project.query(jobs=jobs, query=queries)
+    if not quiet:
+        for job_id, query_res in deepcopy(query_results).items():
+            out_str = f"{job_id}:"
+            for k, v in query_res.items():
+                out_str += f" {k}: {v}"
+            logging.info(out_str)
+
+    json_file: str = kwargs.get("export-to", "")
+    if json_file:
+        with open(json_file, "w") as outfile:
+            # json_data refers to the above JSON
+            json.dump(query_results, outfile)
+    validation_file: str = kwargs.get("validation-against", "")
+    if validation_file:
+        with open(validation_file, "r") as infile:
+            # json_data refers to the above JSON
+            validation_dict = json.load(infile)
+            if validation_dict.get("$schema"):
+                logging.info("using json schema for validation")
+                from jsonschema import validate
+
+                validate(query_results, validation_dict)
+            else:
+                from deepdiff import DeepDiff
+
+                logging.info("using deepdiff for validation")
+                difference_dict = DeepDiff(validation_dict, query_results)
+
+                if difference_dict:
+                    print(difference_dict)
+                    logging.warn("validation failed")
+                    sys.exit(1)
 
 
 @cli.command()

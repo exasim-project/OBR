@@ -101,7 +101,7 @@ class Query:
 
 
 def input_to_query(inp: str) -> Query:
-    """converts cli input  str to a Query object"""
+    """converts cli input str to a Query object"""
     # FIXME this fails if values are name value
     inp = (
         inp.replace("key", '"key"')
@@ -162,6 +162,8 @@ def query_flat_jobs(
     jobs: dict[str, dict], queries: list[Query], output, latest_only, strict
 ) -> list[query_result]:
     """
+    Execute queries over a dictionary where the job.id is the key and merged job.docs are the values
+
     Parameters:
     jobs -- a job dictionary ordered by job ids
     queries -- list of queries to run
@@ -238,23 +240,12 @@ def query_impl(
     queries: list[Query],
     output=False,
     latest_only=True,
-) -> list[str]:
-    """Performs a query and returns corresponding job.ids"""
+) -> list[dict]:
+    """Performs a query and returns a list of records ie for each job the query result"""
     res = query_to_dict(jobs, queries, output, latest_only)
-    if output:
-        if len(queries) > 0:
-            q = queries[0]
-            if len(res) == 0:
-                logging.info(f"No results for Query {q}")
-            else:
-                logging.info(f"Query results for {q}:")
-        for r in res:
-            logging.info(f"\t{r}")
-
-    query_ids = []
+    query_ids = {}
     for id_ in res:
-        query_ids.append(id_.id)
-
+        query_ids[id_.id] = id_.result[0]
     return query_ids
 
 

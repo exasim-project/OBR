@@ -2,6 +2,14 @@
 Changelog
 =========
 
+0.2.0 (2023-09-14)
+------------------
+- Add --json=file.json option to obr query, which writes the result of the query to a json file.
+- Add --validate=file.json option to obr query. If the query results are not identical to the provided json file it will return with a failure exit code.
+  For validation either raw json files can be used or json schema, cf. json-schema.org
+- Fixes Issue #144 of non working obr run command
+- Make -t=1 the default option for obr run -o runParallelSolver
+
 0.0.0 (2022-01-13)
 ------------------
 

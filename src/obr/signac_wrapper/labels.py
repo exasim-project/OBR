@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
+import re
 
 from pathlib import Path
 from flow import FlowProject
 from subprocess import check_output
+from Owls.parser.LogFile import LogFile
 
-from ..core.core import check_log_for_success, get_latest_log, get_mesh_stats
-
-import re
+from ..core.core import get_latest_log, get_mesh_stats
 
 
 @FlowProject.label
@@ -29,19 +29,31 @@ def unitialised(job):
 
 
 @FlowProject.label
-def finished(job):
-    solver_log = get_latest_log(job)
-    if solver_log:
-        return check_log_for_success(Path(job.path) / "case" / solver_log)
-    return False
-
-
-@FlowProject.label
 def processing(job):
     return (
         job.doc["state"].get("global") == "started"
         or job.doc["state"].get("global") == "tmp_lock"
     )
+
+
+@FlowProject.label
+def finished(job):
+    if job.doc["state"]["global"] == "completed":
+        return True
+    log = get_latest_log(job)
+    if not log:
+        return False
+    lp = LogFile(job.path + "/case/" + log, matcher=[])
+    if lp.footer.completed:
+        job.doc["state"]["global"] = "completed"
+    job.doc["state"]["latestTime"] = lp.latestTime.time
+    job.doc["state"]["continuityErrors"] = lp.latestTime.continuity_errors
+    job.doc["state"]["CourantNumber"] = lp.latestTime.Courant_number
+    job.doc["state"]["ExecutionTime"] = lp.latestTime.execution_time["ExecutionTime"]
+    job.doc["state"]["ClockTime"] = lp.latestTime.execution_time["ClockTime"]
+    if lp.footer.completed:
+        return True
+    return False
 
 
 @FlowProject.label
@@ -69,6 +81,7 @@ def final(job):
                 mesh_stats = get_mesh_stats(owner_path)
                 job.doc["cache"]["nCells"] = mesh_stats["nCells"]
                 job.doc["cache"]["nFaces"] = mesh_stats["nFaces"]
+            return True
     else:
         return False
 

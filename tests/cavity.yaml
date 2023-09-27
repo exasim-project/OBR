@@ -9,7 +9,6 @@ case:
            libs: ["libOGL.so"]
       - fvSolution:
             set: solvers/p
-            clear: True
             tolerance: 1e-04
             relTol: 0
             maxIter: 5000
@@ -34,4 +33,4 @@ variation:
   - operation: transportProperties
     schema: "transportProperties/{nu}"
     values:
-      - nu: 10
+      - nu: 0.02
