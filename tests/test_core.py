@@ -1,3 +1,4 @@
+import obr
 from obr.core.core import get_mesh_stats
 from pathlib import Path
 import pytest
@@ -72,3 +73,8 @@ def test_default_owner(tmpdir, create_of_default_owner):
     mesh_stats = get_mesh_stats(f"{tmpdir}/owner")
     assert mesh_stats["nCells"] == 25228544
     assert mesh_stats["nFaces"] == 76530828
+
+
+def test_obr_has_a_version():
+    assert obr.__version__ != ""
+    assert obr.__version__ != "0.0.0"
