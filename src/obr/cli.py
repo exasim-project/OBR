@@ -470,7 +470,7 @@ def query(ctx: click.Context, **kwargs):
         with open(json_file, "w") as outfile:
             # json_data refers to the above JSON
             json.dump(query_results, outfile)
-    validation_file: str = kwargs.get("validation-against", "")
+    validation_file: str = kwargs.get("validate-against", "")
     if validation_file:
         with open(validation_file, "r") as infile:
             # json_data refers to the above JSON
