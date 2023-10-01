@@ -121,7 +121,7 @@ def cli(ctx: click.Context, debug: bool):
 )
 @click.option(
     "-l",
-    "--list-operations",
+    "--list_operations",
     is_flag=True,
     help="Prints all available operations and returns.",
 )
@@ -234,7 +234,7 @@ def submit(ctx: click.Context, **kwargs):
 )
 @click.option(
     "-l",
-    "--list-operations",
+    "--list_operations",
     is_flag=True,
     help="Prints all available operations and returns.",
 )
@@ -424,13 +424,13 @@ def status(ctx: click.Context, **kwargs):
     ),
 )
 @click.option(
-    "--export-to",
+    "--export_to",
     required=False,
     multiple=False,
     help="Write results to a json file.",
 )
 @click.option(
-    "--validate-against",
+    "--validate_against",
     required=False,
     multiple=False,
     help="Validate the query output against the specified file.",
@@ -465,12 +465,12 @@ def query(ctx: click.Context, **kwargs):
                 out_str += f" {k}: {v}"
             logging.info(out_str)
 
-    json_file: str = kwargs.get("export-to", "")
+    json_file: str = kwargs.get("export_to", "")
     if json_file:
         with open(json_file, "w") as outfile:
             # json_data refers to the above JSON
             json.dump(query_results, outfile)
-    validation_file: str = kwargs.get("validate-against", "")
+    validation_file: str = kwargs.get("validate_against", "")
     if validation_file:
         with open(validation_file, "r") as infile:
             # json_data refers to the above JSON
