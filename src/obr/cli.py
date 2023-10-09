@@ -380,6 +380,7 @@ def status(ctx: click.Context, **kwargs):
     logging.info("Detailed overview:\n" + "=" * 90)
     for job in jobs:
         jobid = job.id
+        job.doc["state"]["view"] = id_view_map.get(jobid)
         if view := id_view_map.get(jobid):
             labels = project.labels(job)
             max_view_len = max(len(view), max_view_len)
