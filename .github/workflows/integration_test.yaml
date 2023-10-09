@@ -68,7 +68,7 @@ jobs:
 
     - name: Validate state of simulations
       run: |
-        obr query -q global --validate-against tests/cavity_results.json
+        obr query -q global --validate_against tests/cavity_results.json
 
     - name: Rename log files
       if: always()
