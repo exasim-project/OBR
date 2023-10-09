@@ -202,18 +202,27 @@ def get_latest_log(job: Job) -> str:
     """
     from ..OpenFOAM.case import OpenFOAMCase
 
+    print("get_latest_log")
+
     case_path = Path(job.path + "/case")
     # in case obr status is called directly after initialization
     # this would also fail if there was no case directory
     if not case_path.exists():
         return ""
+    print("get_latest_log case path exists")
 
     case = OpenFOAMCase(case_path, job)
     solver = case.controlDict.get("application")
 
     history = job.doc["history"]
-    for entry in history[:-1]:
+    for entry in history[::-1]:
+        print("entry", entry)
         if solver in entry.get("cmd", ""):
+            log_path = case_path / entry["log"]
+            print("test ", log_path)
+            if not log_path.exists():
+                continue
+            print("found ", entry["log"])
             return entry["log"]
     return ""
 
