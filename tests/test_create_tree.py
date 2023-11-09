@@ -1,4 +1,4 @@
-from obr.create_tree import create_tree
+from obr.create_tree import create_tree, add_variations, extract_from_operation
 from obr.signac_wrapper.operations import OpenFOAMProject
 
 import pytest
@@ -31,6 +31,62 @@ def emit_test_config():
             ],
         },
     }
+
+
+def test_extract_from_operation():
+    operation = {"operation": "op1", "key": "foo", "values": [1, 2, 3]}
+    res = extract_from_operation(operation, 1)
+    assert res == {"keys": ["foo"], "path": "foo/1/", "args": {"foo": 1}}
+
+    operation = {
+        "operation": "op1",
+        "schema": "path/{foo}",
+        "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}],
+    }
+    res = extract_from_operation(operation, {"foo": 1})
+    assert res == {"keys": ["foo"], "path": "path/1/", "args": {"foo": 1}}
+
+    operation = {
+        "operation": "op1",
+        "schema": "path/{foo}",
+        "common": {"c1": "v1"},
+        "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}],
+    }
+    res = extract_from_operation(operation, {"foo": 1})
+    assert res == {
+        "keys": ["foo", "c1"],
+        "path": "path/1/",
+        "args": {"foo": 1, "c1": "v1"},
+    }
+
+
+def test_add_variations():
+    class MockJob:
+        id = "0"
+        sp = {}
+        doc = {}
+
+        def init(self):
+            pass
+
+    class MockProject:
+        def open_job(self, statepoint):
+            return MockJob()
+
+    operations = []
+    test_variation = [
+        {
+            "operation": "n/a",
+            "schema": "n/a",
+            "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}],
+        }
+    ]
+    id_path_mapping = {}
+    operations = add_variations(
+        operations, MockProject(), test_variation, MockJob(), id_path_mapping
+    )
+
+    assert operations == ["n/a"]
 
 
 def test_create_tree(tmpdir, emit_test_config):

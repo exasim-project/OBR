@@ -38,7 +38,11 @@ def flatten(d, parent_key="", sep="/"):
     return dict(items)
 
 
-def get_path_from(operation: dict, value) -> str:
+def get_path_from(operation: dict, value: dict) -> str:
+    """Derive a view path from schema and the value dict
+
+    Returns: a view path as string
+    """
     if not operation.get("schema"):
         logging.error("Error Schema missing for Set schema to allow creating views")
         raise KeyError
@@ -46,9 +50,28 @@ def get_path_from(operation: dict, value) -> str:
     return operation["schema"].format(**flatten(value)) + "/"
 
 
-def extract_from_operation(operation, value):
-    """takes an operation"""
+def extract_from_operation(operation: dict, value) -> dict:
+    """takes an operation dictionary and do some processing
+    It extracts keys path and args from the operation dictionary
+    based on given value. The passed value is used as a selector
+    to create keys path and args.
+
+    - args are later used to pass it to the selected operation,
+    either the operation contains:
+    1. {key: key, values: [v1, v2, ...]} or
+    2. {values: [{k:v1},{k:v2}] }
+    2. {common: {c1:v1, c2:v2}, values: [{k:v1},{k:v2}] }
+
+    -  the path is derived from the schema key value pair
+    a entry {schema: path/{foo}, values: [{foo: 1}]} will be formated
+    to path/1
+
+    Returns: a dictionary with keys, path and args
+    """
     key = operation.get("key", "").replace(".", "_dot_")
+    common = operation.get("common", {})
+    if isinstance(value, dict) and common:
+        value.update(common)
     if not key:
         path = get_path_from(operation, value)
         args = value
@@ -63,7 +86,7 @@ def extract_from_operation(operation, value):
         path = "{}/{}/".format(key_, value)
         keys = [key]
 
-    return keys, path, args
+    return {"keys": keys, "path": path, "args": args}
 
 
 def generate_view(
@@ -142,7 +165,10 @@ def add_variations(
     parent_job: Job,
     id_path_mapping: dict,
 ) -> list:
-    """Recursively adds variations to the project"""
+    """Recursively adds variations to the project
+
+    Returns: A list of all operation names
+    """
     for operation in variation:
         sub_variation = operation.get("variation", {})
 
@@ -155,27 +181,29 @@ def add_variations(
                 continue
 
             # derive path name from schema or key value
-            keys, path, args = extract_from_operation(operation, value)
-            path = clean_path(path)
+            parse_res = extract_from_operation(operation, value)
+            path = clean_path(parse_res["path"])
             base_dict = deepcopy(to_dict(parent_job.sp))
 
             statepoint = {
-                "keys": keys,
+                "keys": parse_res["keys"],
                 "parent_id": parent_job.id,
                 "operation": operation["operation"],
                 "has_child": True if sub_variation else False,
                 "pre_build": operation.get("pre_build", []),
                 "post_build": operation.get("post_build", []),
-                **args,
+                **parse_res["args"],
             }
             statepoint["parent"] = base_dict
 
             job = project.open_job(statepoint)
-            setup_job_doc(job, value)
+            setup_job_doc(job)
             job.init()
             job.doc["state"]["global"] = ""
 
-            id_path_mapping[job.id] = id_path_mapping.get(parent_job.id, "") + path
+            id_path_mapping[job.id] = (
+                id_path_mapping.get(parent_job.id, "") + parse_res["path"]
+            )
 
             if sub_variation:
                 operations = add_variations(
@@ -186,7 +214,7 @@ def add_variations(
     return operations
 
 
-def setup_job_doc(job, value, reset=False):
+def setup_job_doc(job, reset=False):
     """Sets basic information in the job document"""
 
     # dont overwrite old job state on init so that we can update a tree without
@@ -221,7 +249,7 @@ def create_tree(
     base_case_state.update({k: v for k, v in config["case"].items()})
     of_case = project.open_job(base_case_state)
 
-    setup_job_doc(of_case, value=[])
+    setup_job_doc(of_case)
     of_case.init()
 
     operations: list = []
