@@ -63,7 +63,7 @@ def extract_from_operation(operation: dict, value) -> dict:
     2. {common: {c1:v1, c2:v2}, values: [{k:v1},{k:v2}] }
 
     -  the path is derived from the schema key value pair
-    a entry {schema: path/{foo}, values: [{foo: 1}]} will be formated
+    a entry {schema: path/{foo}, values: [{foo: 1}]} will be formatted
     to path/1
 
     Returns: a dictionary with keys, path and args
