@@ -2,6 +2,10 @@
 Changelog
 =========
 
+0.3.0 (2023-09-14)
+------------------
+- Add common notation see https://github.com/hpsim/OBR/pull/146
+
 0.2.0 (2023-09-14)
 ------------------
 - Add --json=file.json option to obr query, which writes the result of the query to a json file.
