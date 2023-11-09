@@ -164,8 +164,9 @@ def add_variations(
     variation: list,
     parent_job: Job,
     id_path_mapping: dict,
-) -> list:
-    """Recursively adds variations to the project
+) -> list[str]:
+    """Recursively adds variations to the project and initialises the jobs. This
+    creates the workspace/uid folder and signac files as sideeffect.
 
     Returns: A list of all operation names
     """
