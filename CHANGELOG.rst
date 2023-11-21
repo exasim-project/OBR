@@ -5,7 +5,7 @@ Changelog
 0.3.0 (2023-09-14)
 ------------------
 - Add common notation see https://github.com/hpsim/OBR/pull/146
-- Make numberOfSubdomains argument in yaml consistend see https://github.com/hpsim/OBR/pull/148
+- Make numberOfSubdomains argument in yaml consistent see https://github.com/hpsim/OBR/pull/148
 
 0.2.0 (2023-09-14)
 ------------------
