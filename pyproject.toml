@@ -41,7 +41,6 @@ dependencies = [
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
 ]
 
-dynamic = ["scripts", "requires-python", "urls", "classifiers"]
 
 [project_urls]
 Documentation= "https://obr.readthedocs.io/"
@@ -66,3 +65,6 @@ preview = true
 [tool.flake8]
 max-line-length = 88
 extend-ignore = ["E203"]
+
+[tool.setuptools]
+dynamic = ["scripts", "requires-python", "urls", "classifiers"]
