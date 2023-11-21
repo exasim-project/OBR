@@ -6,7 +6,6 @@ authors = [
 ]
 description="A tool to create and run OpenFOAM parameter studies"
 readme="README.md"
-requires-python = ">=3.6"
 keywords=[
    "OpenFOAM", "Parameter Studies", "Simulation Provisioning", "Workflow Manager"
 ]
