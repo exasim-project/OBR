@@ -66,5 +66,5 @@ preview = true
 max-line-length = 88
 extend-ignore = ["E203"]
 
-[tool.setuptools]
-dynamic = ["scripts", "requires-python", "urls", "classifiers"]
+# [tool.setuptools]
+# dynamic = ["scripts", "requires-python", "urls", "classifiers"]
