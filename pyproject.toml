@@ -30,7 +30,6 @@ classifiers=[
     "Topic :: Utilities",
 ]
 
-
 dependencies = [
     "click",
     "PyYAML",
@@ -46,9 +45,9 @@ dependencies = [
 dynamic = ["scripts"]
 
 [project_urls]
-    Documentation= "https://obr.readthedocs.io/"
-    Changelog= "https://obr.readthedocs.io/en/latest/changelog.html"
-    Issues= "https://github.com/hpsim/obr/issues"
+Documentation= "https://obr.readthedocs.io/"
+Changelog= "https://obr.readthedocs.io/en/latest/changelog.html"
+Issues= "https://github.com/hpsim/obr/issues"
 
 [project.optional-dependencies]
 doc = [
