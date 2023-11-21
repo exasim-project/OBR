@@ -21,8 +21,6 @@ def read(*names, **kwargs):
 
 
 setup(
-    name="obr",
-    license="BSD-2-Clause",
     long_description="%s\n%s"
     % (
         re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub(
@@ -30,8 +28,6 @@ setup(
         ),
         re.sub(":[a-z]+:`~?(.*?)`", r"``\1``", read("CHANGELOG.rst")),
     ),
-    author="Gregor Olenik",
-    author_email="go@hpsim.de",
     url="https://github.com/hpsim/obr",
     packages=find_packages("src"),
     package_dir={"": "src"},

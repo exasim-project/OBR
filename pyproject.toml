@@ -2,6 +2,10 @@
 name = "obr"
 version = "0.3.0"
 description="A tool to create and run OpenFOAM parameter studies"
+authors = [
+    {name = "Gregor Olenik", email = "go@hpsim.de"},
+]
+license="BSD-2-Clause"
 
 dependencies = [
     "click",
