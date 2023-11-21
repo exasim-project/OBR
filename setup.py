@@ -21,7 +21,7 @@ def read(*names, **kwargs):
 
 
 setup(
-    version='0.3.0',
+    python_requires=">=3.6",
     long_description="%s\n%s"
     % (
         re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub(
