@@ -1,18 +1,18 @@
 [project]
 name = "obr"
 version = "0.3.0"
-dynamic = ["scripts", "classifiers" ]
-description="A tool to create and run OpenFOAM parameter studies"
-requires-python = ">=3.6"
+description = "A tool to create and run OpenFOAM parameter studies"
 authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"}
 ]
 license = {text = "BSD-2-Clause"}
-keywords=[
-   "OpenFOAM", "Parameter Studies", "Simulation Provisioning", "Workflow Manager"
-]
 readme="Readme.md"
-
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.6"
 dependencies = [
     "click",
     "PyYAML",
@@ -22,9 +22,8 @@ dependencies = [
     "pandas",
     "DeepDiff",
     "jsonschema==4.19.1",
-    "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
+    "Owls @ git+https://github.com/greole/Owls.git@Owls2.0",
 ]
-
 
 [project_urls]
 Documentation= "https://obr.readthedocs.io/"
