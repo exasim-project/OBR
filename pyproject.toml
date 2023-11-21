@@ -6,7 +6,7 @@ authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"},
 ]
 license = {text = "BSD-2-Clause"}
-python_requires=">=3.6"
+requires_python=">=3.6"
 keywords=[
    "OpenFOAM", "Parameter Studies", "Simulation Provisioning", "Workflow Manager"
 ]
