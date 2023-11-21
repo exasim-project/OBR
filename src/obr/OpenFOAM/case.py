@@ -247,7 +247,7 @@ class OpenFOAMCase(BlockMesh):
         method = args["method"]
         numberSubDomains = int(args.get("numberOfSubdomains", 0))
         if method == "simple":
-            if not args.get("numberOfSubdomains"):
+            if not numberSubDomains:
                 coeffs = [int(i) for i in args["coeffs"]]
                 numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
             else:
