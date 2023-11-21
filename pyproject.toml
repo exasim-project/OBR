@@ -1,17 +1,15 @@
-[build-system]
-requires = ["setuptools", "wheel"]
 [project]
 name = "obr"
-version = "0.3.0"
-dynamic = ["scripts", "classifiers", "version"]
+authors = [
+    {name = "Gregor Olenik", email = "go@hpsim.de"}
+]
 description="A tool to create and run OpenFOAM parameter studies"
 readme="README.md"
 requires-python = ">=3.6"
-
-license = {text = "BSD-2-Clause"}
 keywords=[
    "OpenFOAM", "Parameter Studies", "Simulation Provisioning", "Workflow Manager"
 ]
+license = {text = "BSD-2-Clause"}
 
 dependencies = [
     "click",
@@ -25,6 +23,7 @@ dependencies = [
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
 ]
 
+dynamic = ["scripts", "classifiers" ]
 
 [project_urls]
 Documentation= "https://obr.readthedocs.io/"
@@ -49,5 +48,3 @@ preview = true
 [tool.flake8]
 max-line-length = 88
 extend-ignore = ["E203"]
-
-# [tool.setuptools]
