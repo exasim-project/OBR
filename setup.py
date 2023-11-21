@@ -38,6 +38,13 @@ setup(
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],
     },
+    classifiers=[
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: Unix",
+        "Operating System :: POSIX",
+        "Operating System :: Microsoft :: Windows",
+        "Topic :: Utilities",
+    ],
     entry_points={
         "console_scripts": [
             "obr = obr.cli:main",
