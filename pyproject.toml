@@ -10,7 +10,7 @@ keywords=[
    "OpenFOAM", "Parameter Studies", "Simulation Provisioning", "Workflow Manager"
 ]
 readme="Readme.md"
-dynamic = ["scripts", "classifiers"]
+dynamic = ["scripts", "classifiers",  "requires-python"]
 
 dependencies = [
     "click",
