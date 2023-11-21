@@ -55,7 +55,6 @@ setup(
         "Programming Language :: Python :: Implementation :: PyPy",
         "Topic :: Utilities",
     ],
-    python_requires=">=3.6",
     entry_points={
         "console_scripts": [
             "obr = obr.cli:main",
