@@ -25,6 +25,12 @@ variation:
         solver: PCG
         preconditioner: none
         executor: CPU
+    variation:
+      - operation: decomposePar
+        schema: "decomposition/{method}-{numberOfSubdomains}"
+        values:
+          - method: scotch
+            numberOfSubdomains: 9
   - operation: fvSchemes
     schema: "schemes/ddt_default_{default}"
     values:
