@@ -1,6 +1,7 @@
 [project]
 name = "obr"
 version = "0.3.0"
+dynamic = ["scripts", "classifiers",  "requires-python"]
 description="A tool to create and run OpenFOAM parameter studies"
 authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"}
@@ -10,7 +11,6 @@ keywords=[
    "OpenFOAM", "Parameter Studies", "Simulation Provisioning", "Workflow Manager"
 ]
 readme="Readme.md"
-dynamic = ["scripts", "classifiers",  "requires-python"]
 
 dependencies = [
     "click",
