@@ -215,7 +215,7 @@ def add_variations(
     return operations
 
 
-def setup_job_doc(job: Job, reset: bool =False) -> None:
+def setup_job_doc(job: Job, reset: bool = False) -> None:
     """Sets basic information in the job document"""
 
     # dont overwrite old job state on init so that we can update a tree without
