@@ -10,7 +10,7 @@ keywords=[
    "OpenFOAM", "Parameter Studies", "Simulation Provisioning", "Workflow Manager"
 ]
 license = {text = "BSD-2-Clause"}
-
+requires-python = ">=3.6"
 dependencies = [
     "click",
     "PyYAML",
@@ -23,7 +23,7 @@ dependencies = [
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
 ]
 
-dynamic = ["scripts", "classifiers", "python_requires" ]
+dynamic = ["scripts", "classifiers" ]
 
 [project_urls]
 Documentation= "https://obr.readthedocs.io/"
