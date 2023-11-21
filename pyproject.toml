@@ -1,5 +1,6 @@
 [project]
 name = "obr"
+version = "0.3.0"
 authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"}
 ]
