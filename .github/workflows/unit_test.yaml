@@ -20,7 +20,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest tox tox-gh-actions coverage
+        pip install pytest tox tox-gh-actions coverage setuptools
+        pip install setuptools --upgrade
     - name: Install package
       run: |
         python -m pip install .
