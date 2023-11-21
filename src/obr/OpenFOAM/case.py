@@ -251,7 +251,6 @@ class OpenFOAMCase(BlockMesh):
                 coeffs = [int(i) for i in args["coeffs"]]
                 numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
             else:
-                numberSubDomains = int(args["numberOfSubdomains"])
                 coeffs = args.get("coeffs", None)
                 if not coeffs:
                     coeffs = calculate_simple_partition(numberSubDomains, [1, 1, 1])
