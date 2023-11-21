@@ -24,7 +24,7 @@ dependencies = [
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
 ]
 
-dynamic = ["scripts", "classifiers",  "requies-python" ]
+dynamic = ["scripts", "classifiers",  "requires-python" ]
 
 [project_urls]
 Documentation= "https://obr.readthedocs.io/"
