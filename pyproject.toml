@@ -1,7 +1,7 @@
 [project]
 name = "obr"
 version = "0.3.0"
-
+dynamic=["description"]
 dependencies = [
     "click",
     "PyYAML",
