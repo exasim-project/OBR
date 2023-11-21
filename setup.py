@@ -23,7 +23,6 @@ def read(*names, **kwargs):
 setup(
     name="obr",
     license="BSD-2-Clause",
-    description="A tool to create and run OpenFOAM parameter studies",
     long_description="%s\n%s"
     % (
         re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub(

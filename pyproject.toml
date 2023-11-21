@@ -1,6 +1,7 @@
 [project]
 name = "obr"
 version = "0.3.0"
+description="A tool to create and run OpenFOAM parameter studies"
 
 dependencies = [
     "click",
