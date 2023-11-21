@@ -263,7 +263,6 @@ class OpenFOAMCase(BlockMesh):
                 }
             )
         else:
-            numberSubDomains = int(args["numberOfSubdomains"])
             self.decomposeParDict.set(
                 {
                     "method": method,
