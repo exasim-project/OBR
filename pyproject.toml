@@ -10,6 +10,7 @@ keywords=[
    "OpenFOAM", "Parameter Studies", "Simulation Provisioning", "Workflow Manager"
 ]
 readme="Readme.md"
+requires-python= ">=3.6"
 classifiers=[
     # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
     "License :: OSI Approved :: BSD License",
@@ -28,7 +29,6 @@ classifiers=[
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Utilities"
 ]
-requires-python= ">=3.6"
 dynamic = ["scripts", "urls"]
 
 dependencies = [
