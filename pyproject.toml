@@ -5,7 +5,7 @@ description="A tool to create and run OpenFOAM parameter studies"
 authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"},
 ]
-license="BSD-2-Clause"
+license = {text = "BSD-2-Clause"}
 
 dependencies = [
     "click",
