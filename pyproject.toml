@@ -30,6 +30,9 @@ Documentation= "https://obr.readthedocs.io/"
 Changelog= "https://obr.readthedocs.io/en/latest/changelog.html"
 Issues= "https://github.com/hpsim/obr/issues"
 
+[project.scripts]
+obr = "obr.cli:main"
+
 [project.optional-dependencies]
 doc = [
     "sphinx~=4.2.0",
