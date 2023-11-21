@@ -3,7 +3,7 @@ name = "obr"
 version = "0.3.0"
 description="A tool to create and run OpenFOAM parameter studies"
 authors = [
-    {name = "Gregor Olenik", email = "go@hpsim.de"},
+    {name = "Gregor Olenik", email = "go@hpsim.de"}
 ]
 license = {text = "BSD-2-Clause"}
 requires-python=">=3.6"
@@ -27,7 +27,7 @@ classifiers=[
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
-    "Topic :: Utilities",
+    "Topic :: Utilities"
 ]
 
 dependencies = [
