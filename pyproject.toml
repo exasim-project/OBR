@@ -28,7 +28,8 @@ readme="Readme.md"
 #     "Programming Language :: Python :: Implementation :: PyPy",
 #     "Topic :: Utilities"
 # ]
-dynamic = ["scripts", "requires-python", "urls", "classifiers"]
+requires-python= ">=3.6"
+dynamic = ["scripts", "urls", "classifiers"]
 
 dependencies = [
     "click",
