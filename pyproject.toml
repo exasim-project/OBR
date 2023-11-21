@@ -3,6 +3,7 @@ name = "obr"
 version = "0.3.0"
 dynamic = ["scripts", "classifiers",  "requires-python"]
 description="A tool to create and run OpenFOAM parameter studies"
+requires-python = ">=3.6"
 authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"}
 ]
