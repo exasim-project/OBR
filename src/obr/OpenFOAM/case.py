@@ -245,31 +245,26 @@ class OpenFOAMCase(BlockMesh):
             )
 
         method = args["method"]
+        numberSubDomains = int(args.get("numberOfSubdomains", 0))
         if method == "simple":
-            if not args.get("numberOfSubDomains"):
+            if not numberSubDomains:
                 coeffs = [int(i) for i in args["coeffs"]]
                 numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
             else:
-                numberSubDomains = int(args["numberOfSubDomains"])
                 coeffs = args.get("coeffs", None)
                 if not coeffs:
                     coeffs = calculate_simple_partition(numberSubDomains, [1, 1, 1])
 
-            self.decomposeParDict.set(
-                {
-                    "method": method,
-                    "numberOfSubdomains": numberSubDomains,
-                    "simpleCoeffs": {"n": coeffs},
-                }
-            )
+            self.decomposeParDict.set({
+                "method": method,
+                "numberOfSubdomains": numberSubDomains,
+                "simpleCoeffs": {"n": coeffs},
+            })
         else:
-            numberSubDomains = int(args["numberOfSubDomains"])
-            self.decomposeParDict.set(
-                {
-                    "method": method,
-                    "numberOfSubdomains": numberSubDomains,
-                }
-            )
+            self.decomposeParDict.set({
+                "method": method,
+                "numberOfSubdomains": numberSubDomains,
+            })
 
         log = self._exec_operation(["decomposePar", "-force"])
         fvSolutionArgs = args.get("fvSolution", {})

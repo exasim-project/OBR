@@ -1,7 +1,18 @@
 [project]
 name = "obr"
-version = "0.3.0"
-
+version = "0.3.1"
+description = "A tool to create and run OpenFOAM parameter studies"
+authors = [
+    {name = "Gregor Olenik", email = "go@hpsim.de"}
+]
+license = {text = "BSD-2-Clause"}
+readme="Readme.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.6"
 dependencies = [
     "click",
     "PyYAML",
@@ -11,8 +22,16 @@ dependencies = [
     "pandas",
     "DeepDiff",
     "jsonschema==4.19.1",
-    "Owls @ git+https://github.com/greole/Owls.git@Owls2.0"
+    "Owls @ git+https://github.com/greole/Owls.git@Owls2.0",
 ]
+
+[project_urls]
+Documentation= "https://obr.readthedocs.io/"
+Changelog= "https://obr.readthedocs.io/en/latest/changelog.html"
+Issues= "https://github.com/hpsim/obr/issues"
+
+[project.scripts]
+obr = "obr.cli:main"
 
 [project.optional-dependencies]
 doc = [
@@ -32,3 +51,5 @@ preview = true
 [tool.flake8]
 max-line-length = 88
 extend-ignore = ["E203"]
+
+# [tool.setuptools]
