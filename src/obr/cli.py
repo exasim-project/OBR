@@ -22,6 +22,7 @@ import time
 import sys
 import json
 import logging
+import shutil
 
 from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
@@ -60,7 +61,7 @@ def check_cli_operations(
     return True
 
 
-def is_valid_workspace(filters: list = []) -> bool:
+def is_valid_workspace(filters: list[str] = []) -> bool:
     """This function checks if:
     - the `workspace` folder is not empty, and
     - applying filters would return an empty list
@@ -218,6 +219,29 @@ def submit(ctx: click.Context, **kwargs):
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
     #
+
+
+@cli.command()
+@click.option("-a", "--all", default="remove all obr project files")
+@click.option(
+    "-v", "--view", default="remove case completely specified by a view folder"
+)
+@click.pass_context
+def purge(ctx: click.Context, **kwargs):
+    """deletes workspace or cases"""
+
+    def safe_delete(fn):
+        path = Path(fn)
+        if path.exists():
+            shutil.rmtree(path)
+
+    if kwargs.get("all"):
+        safe_delete("workspace")
+        safe_delete("view")
+        safe_delete("signac.rc")
+
+    # TODO implement a procedure  that checks if it is inside
+    # a obr project. To allow 'obr purge .' within a view
 
 
 @cli.command()
