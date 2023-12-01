@@ -30,7 +30,7 @@ class OpenFOAMProject(flow.FlowProject):
         super().__init__(*args, **kwargs)
 
     def print_operations(self):
-        ops = sorted(self.operations.keys())
+        ops = sorted(self.groups.keys())
         logging.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
