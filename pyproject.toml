@@ -3,7 +3,8 @@ name = "obr"
 version = "0.3.1"
 description = "A tool to create and run OpenFOAM parameter studies"
 authors = [
-    {name = "Gregor Olenik", email = "go@hpsim.de"}
+    {name = "Gregor Olenik", email = "go@hpsim.de"},
+    {name = "Lukas Petermann", email = "lukas.petermann13@gmail.com"}
 ]
 license = {text = "BSD-2-Clause"}
 readme="Readme.md"
