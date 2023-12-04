@@ -193,32 +193,6 @@ def merge_job_documents(job: Job):
     job.doc = {"data": merged_data, "history": merged_history, "cache": cache}
 
 
-def get_latest_log(job: Job) -> str:
-    """Find latest log in job.id/case/folder
-
-    Returns: path to latest solver log
-    """
-    from ..OpenFOAM.case import OpenFOAMCase
-
-    case_path = Path(job.path + "/case")
-    # in case obr status is called directly after initialization
-    # this would also fail if there was no case directory
-    if not case_path.exists():
-        return ""
-
-    case = OpenFOAMCase(case_path, job)
-    solver = case.controlDict.get("application")
-
-    history = job.doc["history"]
-    for entry in history[::-1]:
-        if solver in entry().get("cmd", ""):
-            log_path = case_path / entry["log"]
-            if not log_path.exists():
-                continue
-            return entry["log"]
-    return ""
-
-
 def get_timestamp_from_log(log) -> str:
     """gets the timestamp part from an log file"""
     log_name = Path(log).stem

@@ -395,15 +395,22 @@ def status(ctx: click.Context, **kwargs):
         with open(status_file, "r") as infile:
             job_records = json.load(infile)
     else:
+        # TODO plan on user hooks for properties
         # build status json
         logging.info("building status")
         id_view_map = map_view_folder_to_job_id("view")
         job_records = []
         for job in jobs:
+            case_folder = Path(job.path) / "case"
+            case = OpenFOAMCase(str(case_folder), job)
             job_record = {}
             job_record["job_id"] = job.id
             job_record["view_path"] = id_view_map.get(job.id)
             job_record["labels"] = list(project.labels(job))
+            job_record["properties"] = {
+                "endTime": case.controlDict.get("endTime"),
+                "progress": case.progress,
+            }
             job_records.append(job_record)
 
         with open(status_file_name, "w") as outfile:

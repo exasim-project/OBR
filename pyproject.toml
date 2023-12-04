@@ -21,7 +21,7 @@ dependencies = [
     "GitPython==3.1.31",
     "pandas",
     "DeepDiff",
-    "jsonschema==4.19.1",
+    "jsonschema>=4.19.1",
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0",
 ]
 

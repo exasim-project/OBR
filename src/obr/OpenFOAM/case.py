@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-
-from typing import Union, Generator, Tuple, Any
 import os
-from pathlib import Path
-from subprocess import check_output
 import re
-from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
-from signac.contrib.job import Job
-from .BlockMesh import BlockMesh, calculate_simple_partition
-from datetime import datetime
-from Owls.parser.FoamDict import FileParser
 import logging
+
+from Owls.parser.FoamDict import FileParser
+from typing import Union, Generator, Tuple, Any
+from subprocess import check_output
+from pathlib import Path
+from datetime import datetime
+from signac.contrib.job import Job
+
+from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
+from .BlockMesh import BlockMesh, calculate_simple_partition
 
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
 (\||)\s*=========                 \|(\s*\||)
@@ -177,6 +178,68 @@ class OpenFOAMCase(BlockMesh):
         return ret
 
     @property
+    def current_time(self) -> float:
+        """Returns the current timestep of the simulation"""
+        # TODO DONT MERGE implement
+        return 0.0
+
+    @property
+    def progress(self) -> float:
+        """Returns the progress of the simulation in percent"""
+        # TODO DONT MERGE implement
+        return 0.0
+
+    @property
+    def latest_solver_log_path(self) -> Path:
+        """Returns the absolute path to the latest log"""
+        self.fetch_latest_log()
+        return self.latest_log_path_
+
+    @property
+    def latest_log(self) -> Path:
+        """Returns handle to the latest log"""
+        log = self.latest_log_path
+        if not log:
+            return
+        self.latest_log_handle_ = LogFile(self.latest_log_path, matcher=[])
+        return self.latest_log_handle_
+
+    @property
+    def finished(self) -> bool:
+        """check if the latest simulation run has finished gracefully"""
+        # TODO should also check if last time approx end time
+        self.process_latest_time_stats()
+        if lp.footer.completed:
+            return True
+        return False
+
+    def fetch_latest_log(self) -> None:
+        solver = self.controlDict.get("application")
+
+        root, _, files = next(os.walk(self.path))
+        log_files = [f for f in files if f.endswith(".log") and f.startswith(solver)]
+        log_files.sort()
+        print("files", log_files)
+        if log_files:
+            self.latest_log_path_ = Path(root) / log_files[-1]
+
+    def process_latest_time_stats(self) -> None:
+        """This function parses the latest time step log and stores the results in the job document"""
+        if not self.latest_log:
+            return
+        job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
+        job.doc["state"][
+            "continuityErrors"
+        ] = self.latest_log.latestTime.continuity_errors
+        job.doc["state"]["CourantNumber"] = self.latest_log.latestTime.Courant_number
+        job.doc["state"]["ExecutionTime"] = self.latest_log.latestTime.execution_time[
+            "ExecutionTime"
+        ]
+        job.doc["state"]["ClockTime"] = self.latest_log.latestTime.execution_time[
+            "ClockTime"
+        ]
+
+    @property
     def processor_folder(self) -> list[Path]:
         if not self.is_decomposed:
             return []
@@ -287,13 +350,15 @@ class OpenFOAMCase(BlockMesh):
         """
         checks if a file has been modified by comparing the current md5sum with the previously saved one inside `self.job.dict`
         """
-        if "md5sum" not in self.job.doc["obr"]:
+        if "md5sum" not in self.job.doc["cache"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum, last_modified = self.job.doc["obr"]["md5sum"].get(path)
-        if os.path.getmtime(path) == last_modified:
+        safe_path = path.replace(".", "_dot_")
+        current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(safe_path)
+        file_path = self.path / path
+        if os.path.getmtime(file_path) == last_modified:
             # if modification dates dont differ, the md5sums wont, either
             return False
-        md5sum = check_output(["md5sum", path], text=True)
+        md5sum = check_output(["md5sum", file_path], text=True)
         return current_md5sum != md5sum
 
     def is_tree_modified(self) -> list[str]:
