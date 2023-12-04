@@ -4,6 +4,7 @@ import re
 import logging
 
 from Owls.parser.FoamDict import FileParser
+from Owls.parser.LogFile import LogFile
 from typing import Union, Generator, Tuple, Any
 from subprocess import check_output
 from pathlib import Path
@@ -85,6 +86,8 @@ class File(FileParser):
 
 class OpenFOAMCase(BlockMesh):
     """A class for simple access to typical OpenFOAM files"""
+
+    latest_log_path_: Path = Path()
 
     def __init__(self, path, job):
         self.path_ = Path(path)
@@ -196,21 +199,20 @@ class OpenFOAMCase(BlockMesh):
         return self.latest_log_path_
 
     @property
-    def latest_log(self) -> Path:
+    def latest_log(self) -> Union[None, LogFile]:
         """Returns handle to the latest log"""
-        log = self.latest_log_path
-        if not log:
-            return
-        self.latest_log_handle_ = LogFile(self.latest_log_path, matcher=[])
+        log = self.latest_solver_log_path
+        if not log.exists():
+            return None
+        self.latest_log_handle_ = LogFile(log, matcher=[])
         return self.latest_log_handle_
 
     @property
     def finished(self) -> bool:
         """check if the latest simulation run has finished gracefully"""
         # TODO should also check if last time approx end time
-        self.process_latest_time_stats()
-        if lp.footer.completed:
-            return True
+        if self.process_latest_time_stats():
+            return self.latest_log.footer.completed
         return False
 
     def fetch_latest_log(self) -> None:
@@ -219,25 +221,33 @@ class OpenFOAMCase(BlockMesh):
         root, _, files = next(os.walk(self.path))
         log_files = [f for f in files if f.endswith(".log") and f.startswith(solver)]
         log_files.sort()
-        print("files", log_files)
         if log_files:
             self.latest_log_path_ = Path(root) / log_files[-1]
 
-    def process_latest_time_stats(self) -> None:
-        """This function parses the latest time step log and stores the results in the job document"""
+    def process_latest_time_stats(self) -> bool:
+        """This function parses the latest time step log and stores the results in the job document
+
+        Return: A boolean indication whether processing was succesful
+        """
         if not self.latest_log:
-            return
-        job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
-        job.doc["state"][
-            "continuityErrors"
-        ] = self.latest_log.latestTime.continuity_errors
-        job.doc["state"]["CourantNumber"] = self.latest_log.latestTime.Courant_number
-        job.doc["state"]["ExecutionTime"] = self.latest_log.latestTime.execution_time[
-            "ExecutionTime"
-        ]
-        job.doc["state"]["ClockTime"] = self.latest_log.latestTime.execution_time[
-            "ClockTime"
-        ]
+            return False
+        try:
+            self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
+            self.job.doc["state"][
+                "continuityErrors"
+            ] = self.latest_log.latestTime.continuity_errors
+            self.job.doc["state"][
+                "CourantNumber"
+            ] = self.latest_log.latestTime.Courant_number
+            self.job.doc["state"]["ExecutionTime"] = (
+                self.latest_log.latestTime.execution_time["ExecutionTime"]
+            )
+            self.job.doc["state"]["ClockTime"] = (
+                self.latest_log.latestTime.execution_time["ClockTime"]
+            )
+            return True
+        except:
+            return False
 
     @property
     def processor_folder(self) -> list[Path]:

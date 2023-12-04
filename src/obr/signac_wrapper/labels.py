@@ -6,7 +6,7 @@ from flow import FlowProject
 from subprocess import check_output
 from Owls.parser.LogFile import LogFile
 
-from ..core.core import get_latest_log, get_mesh_stats
+from ..core.core import get_mesh_stats
 from ..OpenFOAM.case import OpenFOAMCase
 
 
