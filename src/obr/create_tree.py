@@ -104,7 +104,6 @@ def generate_view(
         dst = Path(dst).absolute()
         relpath = os.path.relpath(src, dst)
         # for some reason the relpath has one ../ too much
-        # relpath = Path("/".join(relpath.parts[1:]))
         relpath = relpath[3:]
         dst.symlink_to(relpath)
 
