@@ -4,6 +4,8 @@ from obr.signac_wrapper.operations import OpenFOAMProject
 import pytest
 import os
 
+from pathlib import Path
+
 
 @pytest.fixture
 def emit_test_config():
@@ -131,7 +133,10 @@ def test_call_generate_tree(tmpdir, emit_test_config):
 
     assert workspace_dir.exists() == True
     assert view_dir.exists() == True
-    assert (view_dir / "base").exists() == True
+    assert (view_dir / "base" / "100").exists() == True
+    assert Path(view_dir / "base" / "100").is_symlink() == True
+
+    import os
 
     project.run(names=["generate"])
 
