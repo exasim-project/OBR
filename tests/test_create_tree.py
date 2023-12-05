@@ -116,7 +116,6 @@ def test_create_tree(tmpdir, emit_test_config):
     assert shell_file.exists() == True
 
 
-
 def test_call_generate_tree(tmpdir, emit_test_config):
     project = OpenFOAMProject.init_project(root=tmpdir)
     workspace_dir = tmpdir / "workspace"
@@ -139,5 +138,3 @@ def test_call_generate_tree(tmpdir, emit_test_config):
     # should have two folders now
     _, folder_after, _ = next(os.walk(workspace_dir))
     assert len(folder_after) == 2
-
-
