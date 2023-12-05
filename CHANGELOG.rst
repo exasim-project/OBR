@@ -2,6 +2,10 @@
 Changelog
 =========
 
+0.3.2 (unreleased)
+------------------
+- Fix missing of groups in `obr run --list-operations` view, see https://github.com/hpsim/OBR/pull/159. 
+
 0.3.0 (unreleased)
 ------------------
 - Add common notation see https://github.com/hpsim/OBR/pull/146
