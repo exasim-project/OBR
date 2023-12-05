@@ -116,9 +116,11 @@ def test_create_tree(tmpdir, emit_test_config):
     assert shell_file.exists() == True
 
 
+
 def test_call_generate_tree(tmpdir, emit_test_config):
     project = OpenFOAMProject.init_project(root=tmpdir)
     workspace_dir = tmpdir / "workspace"
+    view_dir = tmpdir / "view"
 
     operation = {
         "operation": "controlDict",
@@ -129,9 +131,13 @@ def test_call_generate_tree(tmpdir, emit_test_config):
     create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
 
     assert workspace_dir.exists() == True
+    assert view_dir.exists() == True
+    assert (view_dir / "base").exists() == True
 
     project.run(names=["generate"])
 
     # should have two folders now
     _, folder_after, _ = next(os.walk(workspace_dir))
     assert len(folder_after) == 2
+
+
