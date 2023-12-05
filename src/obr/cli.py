@@ -350,11 +350,16 @@ def init(ctx: click.Context, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-d", "--detailed", is_flag=True)
+@click.option(
+    "-d",
+    "--detailed",
+    is_flag=True,
+    help="If set a full update of the job document is performed",
+)
 @click.option(
     "--cache-expiry",
     type=int,
-    default=120,
+    default=300,
     help="Recreate status cash if older than expiry in seconds",
 )
 @click.option(
@@ -404,6 +409,8 @@ def status(ctx: click.Context, **kwargs):
         for job in jobs:
             case_folder = Path(job.path) / "case"
             case = OpenFOAMCase(str(case_folder), job)
+            if kwargs.get("detailed"):
+                case.detailed_update()
             job_record = {}
             job_record["job_id"] = job.id
             job_record["view_path"] = id_view_map.get(job.id)

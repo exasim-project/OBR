@@ -199,11 +199,11 @@ class OpenFOAMCase(BlockMesh):
         return self.latest_log_path_
 
     @property
-    def latest_log(self) -> Union[None, LogFile]:
+    def latest_log(self) -> LogFile:
         """Returns handle to the latest log"""
         log = self.latest_solver_log_path
         if not log.exists():
-            return None
+            raise ValueError("No Logfile found")
         self.latest_log_handle_ = LogFile(log, matcher=[])
         return self.latest_log_handle_
 
@@ -245,9 +245,15 @@ class OpenFOAMCase(BlockMesh):
             self.job.doc["state"]["ClockTime"] = (
                 self.latest_log.latestTime.execution_time["ClockTime"]
             )
+            if self.latest_log.footer.completed:
+                self.job.doc["state"]["global"] = "completed"
             return True
         except:
             return False
+
+    def detailed_update(self):
+        """perform a detailed update on the job doc state"""
+        self.process_latest_time_stats()
 
     @property
     def processor_folder(self) -> list[Path]:

@@ -39,16 +39,12 @@ def processing(job):
 
 @FlowProject.label
 def finished(job):
-    if job.doc["state"]["global"] == "completed":
-        return True
-    case = OpenFOAMCase(job.path + "/case", job)
-    return case.finished
+    return job.doc["state"]["global"] == "completed"
 
 
 @FlowProject.label
 def dirty(job):
-    case = OpenFOAMCase(job.path + "/case", job)
-    return case.is_tree_modified()
+    return job.doc["state"]["global"] == "dirty"
 
 
 @FlowProject.label
