@@ -28,7 +28,7 @@ from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl, build_filter_query, Query
-from .core.core import map_view_folder_to_job_id
+from .core.core import map_view_folder_to_job_id, merge_job_documents
 from pathlib import Path
 from subprocess import check_output
 from git.repo import Repo
@@ -92,6 +92,30 @@ def copy_to_archive(
     check_output(["cp", src_file, target_file])
     if use_git_repo and repo:
         repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
+
+
+def archive_view(
+    repo: Union[Repo, None],
+    use_git_repo: bool,
+    campaign_target_path: Path,
+    view_name: Path,
+    target_folder: Path,
+):
+    """Creates a new view folder in the archival folder"""
+    dst = campaign_target_path.absolute()
+    print("create view folder", view_name.parent)
+    view_name.parent.mkdir(parents=True, exist_ok=True)
+
+    relpath = os.path.relpath(dst, view_name)
+    # for some reason the relpath has one ../ too much
+    relpath = relpath[3:]
+    print("create_view_link", dst, view_name, relpath)
+
+    if not Path(view_name).exists():
+        view_name.symlink_to(relpath)
+
+    if use_git_repo and repo:
+        repo.git.add(view_name)  # NOTE do _not_ do repo.git.add(all=True)
 
 
 @click.group()
@@ -426,6 +450,12 @@ def status(ctx: click.Context, **kwargs):
     ),
 )
 @click.option(
+    "--campaign",
+    required=False,
+    multiple=False,
+    help="Run query only on job document of a specific campaign.",
+)
+@click.option(
     "--export_to",
     required=False,
     multiple=False,
@@ -459,6 +489,11 @@ def query(ctx: click.Context, **kwargs):
         return
     queries: list[Query] = build_filter_query(input_queries)
     jobs = project.filter_jobs(filters=list(filters))
+
+    if kwargs.get("campaign"):
+        for job in jobs:
+            merge_job_documents(job, kwargs.get("campaign"))
+
     query_results = project.query(jobs=jobs, query=queries)
     if not quiet:
         for job_id, query_res in deepcopy(query_results).items():
@@ -642,6 +677,8 @@ def archive(ctx: click.Context, **kwargs):
                 logging.info(f"checkout {branch_name}")
                 repo.git.checkout("HEAD", b=branch_name)
 
+    id_view_map = map_view_folder_to_job_id("view")
+
     # setup target folder
     if not target_folder.exists():
         if dry_run:
@@ -674,7 +711,8 @@ def archive(ctx: click.Context, **kwargs):
                 ["md5sum", str(signac_job_document)], text=True
             ).split()[0]
             target_file = (
-                target_folder / f"workspace/{job.id}/signac_job_document_{md5sum}.json"
+                target_folder
+                / f"workspace/{job.id}/signac_job_document_{md5sum}_{campaign}.json"
             )
             if dry_run:
                 logging.info(f"Would copy {signac_job_document} to {target_file}.")
@@ -698,14 +736,15 @@ def archive(ctx: click.Context, **kwargs):
 
             root, _, files = next(os.walk(case_folder))
             tags = "/".join(tag.split(","))
+            campaign_target_path = (
+                target_folder / f"workspace/{job.id}/{campaign}/{tags}"
+            )
             for file in files:
                 src_file = Path(root) / file
                 if src_file.is_relative_to(current_path):
                     src_file = src_file.relative_to(current_path)
                 if file.endswith("log"):
-                    target_file = (
-                        target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
-                    )
+                    target_file = campaign_target_path / file
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
                     if dry_run:
@@ -713,13 +752,18 @@ def archive(ctx: click.Context, **kwargs):
                     else:
                         copy_to_archive(repo, use_git_repo, src_file, target_file)
 
+            view_path = id_view_map.get(job.id)
+            if view_path:
+                view_path = target_folder / "view" / view_path / f"{campaign}/{tags}"
+                archive_view(
+                    repo, use_git_repo, campaign_target_path, view_path, target_folder
+                )
+
             # copy CLI-passed files into data repo and add if possible
             extra_files: tuple[str] = kwargs.get("file", ())
             for file in extra_files:
                 f = case_folder / file
-                target_file = (
-                    target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
-                )
+                target_file = campaign_target_path / file
                 if not f.exists():
                     logging.info(f"invalid path {f}. Skipping.")
                     continue

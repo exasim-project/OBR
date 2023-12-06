@@ -167,8 +167,8 @@ def get_mesh_stats(owner_path: str) -> dict:
     return {"nCells": nCells, "nFaces": nFaces}
 
 
-def merge_job_documents(job: Job):
-    """Merge multiple job_document_hash.json files into job_document.json"""
+def merge_job_documents(job: Job, campaign: str = ""):
+    """Merge multiple job_document_hash_campaign.json files into job_document.json"""
     root, _, files = next(os.walk(job.path))
 
     def is_job_sub_document(fn):
@@ -179,18 +179,36 @@ def merge_job_documents(job: Job):
     files = [f for f in files if is_job_sub_document(f)]
     merged_data = []
     merged_history = []
+    merged_state = []
     cache = None
+    # TODO add campaign kvp
     for f in files:
+        uid = f.split("_")[3]
+        if campaign and not f.endswith(f"{campaign}.json"):
+            continue
         with open(Path(root) / f) as fh:
             job_doc = json.load(fh)
+            state = job_doc["state"]
+            state["campaign"] = campaign
+            state["uid"] = uid
+            merged_state.append(state)
             for record in job_doc["data"]:
+                record["campaign"] = campaign
+                record["uid"] = uid
                 merged_data.append(record)
             for record in job_doc["history"]:
+                record["campaign"] = campaign
+                record["uid"] = uid
                 merged_history.append(record)
             # TODO handle inconsistent cache
             if not cache:
                 cache = job_doc["cache"]
-    job.doc = {"data": merged_data, "history": merged_history, "cache": cache}
+    job.doc = {
+        "state": merged_state,
+        "data": merged_data,
+        "history": merged_history,
+        "cache": cache,
+    }
 
 
 def get_latest_log(job: Job) -> str:
