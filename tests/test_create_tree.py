@@ -3,6 +3,7 @@ from obr.signac_wrapper.operations import OpenFOAMProject
 
 import pytest
 import os
+from pathlib import Path
 
 
 @pytest.fixture
@@ -135,3 +136,28 @@ def test_call_generate_tree(tmpdir, emit_test_config):
     # should have two folders now
     _, folder_after, _ = next(os.walk(workspace_dir))
     assert len(folder_after) == 2
+
+
+def test_cache_folder(tmpdir, emit_test_config):
+    emit_test_config["case"]["cache_folder"] = f"{tmpdir}/tmp"
+    project = OpenFOAMProject.init_project(root=tmpdir)
+
+    create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
+
+    workspace_dir = tmpdir / "workspace"
+
+    assert workspace_dir.exists()
+
+    _, folder, _ = next(os.walk(workspace_dir))
+
+    assert len(folder) == 1
+    fold = folder[0]
+    case_base_fold = workspace_dir / fold
+    assert case_base_fold.exists() is True
+
+    project.run(names=["fetchCase"])
+
+    # after fetch case the cache folder should be filled
+    cache_folder = Path(tmpdir.strpath + "/tmp")
+    assert cache_folder.exists()
+    assert any(cache_folder.iterdir())

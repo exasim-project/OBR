@@ -290,11 +290,13 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
         return
     if uses := args.pop("uses", False):
         if path:
-            check_output([
-                "cp",
-                "{}/case/{}/{}".format(job.path, path, uses),
-                "{}/case/{}/{}".format(job.path, path, target),
-            ])
+            check_output(
+                [
+                    "cp",
+                    "{}/case/{}/{}".format(job.path, path, uses),
+                    "{}/case/{}/{}".format(job.path, path, target),
+                ]
+            )
         else:
             src_path = "{}/case/{}".format(job.path, uses)
             trg_path = "{}/case/{}".format(job.path, target)
@@ -476,8 +478,10 @@ def fetchCase(job: Job, args={}):
     args = get_args(job, args)
 
     uses = args.pop("uses", [])
-    case_type = job.sp()["type"]
-    fetch_case_handler = getattr(caseOrigins, case_type)(**args)
+    case_type = job.sp["type"]
+    fetch_case_handler = caseOrigins.instantiate_origin_class(case_type, args)
+    if fetch_case_handler is None:  # invalid type was specified in yaml
+        return
     fetch_case_handler.init(path=job.path)
 
     # if we find any entries in the list of 'uses' forward it to the
@@ -562,15 +566,17 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
         "np": get_number_of_procs(job),
     }
     cmd_str = cmd_format.format(**cli_args)
-    res.append({
-        "cmd": cmd_str,
-        "type": "shell",
-        "log": f"{solver}_{timestamp}.log",
-        "state": "started",
-        "timestamp": timestamp,
-        "user": os.environ.get("USER"),
-        "hostname": os.environ.get("HOST"),
-    })
+    res.append(
+        {
+            "cmd": cmd_str,
+            "type": "shell",
+            "log": f"{solver}_{timestamp}.log",
+            "state": "started",
+            "timestamp": timestamp,
+            "user": os.environ.get("USER"),
+            "hostname": os.environ.get("HOST"),
+        }
+    )
     job.doc["history"] = res
 
     cli_args = {

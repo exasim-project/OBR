@@ -4,6 +4,10 @@ from distutils.dir_util import copy_tree
 from pathlib import Path
 from typing import Union
 from subprocess import check_output
+import logging
+from git.repo import Repo
+from git import InvalidGitRepositoryError
+
 
 
 class CaseOnDisk:
@@ -71,17 +75,61 @@ class GitRepo:
 
     def init(self, path):
         if self.cache_folder and Path(self.cache_folder).exists():
-            check_output(["cp", "-r", self.cache_folder, path + "/case"])
-            return
+            # if cache folder has been cloned into before, check for new commmits
+            # either way, copy from cache folder to $path/case
+            # if repo init or copying fails for some reason,
+
+            if Path(self.cache_folder + "/.git").exists():
+                repo = Repo(self.cache_folder)
+                default_remote: str = repo.git.symbolic_ref("refs/remotes/origin/HEAD", "--short")
+                latest_commit = repo.git.rev_parse(self.branch or default_remote)
+                current_commit = repo.git.rev_parse("HEAD")
+                origin_branchname = default_remote.split("/")
+                # @greole: is it better to compare against self.commit or <defaultBranch>:latest ? 
+                if self.commit and self.commit != current_commit:
+                    repo.git.pull(origin_branchname[0], origin_branchname[-1])
+                check_output(["cp", "-r", f"{self.cache_folder}/{self.folder}", path + "/case"])
+                return
+            else:
+                logging.warning("Could not from cache_folder to case, will git clone into it instead.")
+
+        # No specific subfolder is specified, clone to self.path
         if not self.folder:
             check_output(["git", "clone", self.url, "case"], cwd=path)
+            # also copy to cache folder if specified
             if self.commit:
                 check_output(["git", "checkout", self.commit], cwd=Path(path) / "case")
-        else:
+            # also copy to cache folder if specified
+            if self.cache_folder:
+                check_output(["cp", "-r", path + "/case/.", self.cache_folder])
+
+        else:  # clone to specific subfolder
             check_output(["git", "clone", self.url, "repo"], cwd=path)
             if self.commit:
                 check_output(["git", "checkout", self.commit], cwd=Path(path) / "repo")
+            # also copy to cache folder if specified
+            if self.cache_folder:
+                check_output(["cp", "-r", path + "/repo/.", self.cache_folder])
             check_output(["cp", "-r", f"repo/{self.folder}", "case"], cwd=path)
-
+        # checkout specified branch
         if self.branch:
             check_output(["git", "checkout", self.branch], cwd=Path(path) / "case")
+            check_output(["git", "checkout", self.branch], cwd=self.cache_folder)
+
+
+def instantiate_origin_class(class_name: str, args: dict) -> Union[CaseOnDisk, OpenFOAMTutorialCase, GitRepo, None]:
+    """
+    Quick factory function to instantiate the wanted class handler.
+    Returns: 
+        - CaseOnDisk, OpenFOAMTutorialCase, or GitRepo on success
+        - None on failure.
+    """
+    if class_name == "GitRepo":
+        return GitRepo(**args)
+    elif class_name == "OpenFOAMTutorialCase":
+        return OpenFOAMTutorialCase(**args)
+    elif class_name == "CaseOnDisk":
+        return CaseOnDisk(**args)
+    else:
+        logging.error("'type' must be 'GitRepo', 'OpenFOAMTutorialCase', or 'CaseOnDisk'!")
+        return None
