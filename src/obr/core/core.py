@@ -237,19 +237,18 @@ def get_latest_log(job: Job) -> str:
     return ""
 
 
-def get_timestamp_from_log(log) -> str:
+def get_timestamp_from_log(log: Path) -> str:
     """gets the timestamp part from an log file"""
-    log_name = Path(log).stem
+    log_name = log.stem
     before = log_name.split("_")[0]
     return log_name.replace(before + "_", "")
 
 
-def find_solver_logs(job: Job) -> Generator[tuple, None, None]:
+def find_solver_logs(job: Job, campaign_in: str = "") -> Generator[tuple, None, None]:
     """Find and return all solver log files, campaign info and tags from job instances"""
     case_path = Path(job.path)
     if not case_path.exists():
         return
-
     root, campaigns, _ = next(os.walk(case_path))
 
     def find_tags(path: Path, tags: list, tag_mapping):
@@ -259,7 +258,7 @@ def find_solver_logs(job: Job) -> Generator[tuple, None, None]:
           Dictionary mapping paths to tags -> tag
         """
         _, folder, _ = next(os.walk(path))
-        is_case = len(folder) == 0
+        is_case = "system" in folder
         if is_case:
             tag_mapping[str(path)] = tags
         else:
@@ -270,6 +269,8 @@ def find_solver_logs(job: Job) -> Generator[tuple, None, None]:
         return tag_mapping
 
     for campaign in campaigns:
+        if campaign_in and str(campaign_in) != str(campaign):
+            continue
         # check if case folder
         tag_mapping = find_tags(case_path / campaign, [], {})
 
@@ -277,6 +278,7 @@ def find_solver_logs(job: Job) -> Generator[tuple, None, None]:
             root, _, files = next(os.walk(path))
             for file in files:
                 if "Foam" in file and file.endswith("log"):
+                    print("file:", file)
                     yield f"{root}/{file}", campaign, tags
 
 
@@ -339,6 +341,47 @@ def writes_files(fns):
             unlink(fn)
     else:
         unlink(fns)
+
+
+def find_logs(job: Job) -> Generator[tuple[str, str, str, str], None, None]:
+    """Find and return all solver log files, campaign info and tags from  job instances"""
+    case_path = Path(job.path)
+    if not case_path.exists():
+        return
+
+    root, campaigns, _ = next(os.walk(case_path))
+
+    def find_tags(path: Path, tags: list, tag_mapping):
+        """Recurses into subfolders of path until log files are found
+
+        Returns:
+          Dictionary mapping paths to tags -> tag
+        """
+        _, folder, files = next(os.walk(path))
+        is_case = False
+        for file in files:
+            if ".log" in file:
+                is_case = True
+                break
+
+        if is_case:
+            tag_mapping[str(path)] = tags
+        else:
+            for f in folder:
+                tags_copy = deepcopy(tags)
+                tags_copy.append(f)
+                find_tags(path / f, tags_copy, tag_mapping)
+        return tag_mapping
+
+    for campaign in campaigns:
+        # check if case folder
+        tag_mapping = find_tags(case_path / campaign, [], {})
+
+        for path, tags in tag_mapping.items():
+            root, _, files = next(os.walk(path))
+            for file in files:
+                if "Foam" in file and file.endswith("log"):
+                    yield root, f"{root}/{file}", campaign, tags
 
 
 def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:

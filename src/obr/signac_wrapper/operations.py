@@ -643,12 +643,15 @@ def archive(job: Job, args={}) -> Literal[True]:
 
 
 @OpenFOAMProject.operation(aggregator=flow.aggregator())
-def apply(*jobs, args={}):
+def apply(*jobs):
+    """ """
     import importlib.util
 
-    fp = Path(os.environ.get("OBR_CALL_ARGS"))
+    fp = Path(os.environ.get("OBR_APPLY_FILE"))
+    campaign = Path(os.environ.get("OBR_APPLY_CAMPAIGN"))
+
     spec = importlib.util.spec_from_file_location("apply_func", fp)
     apply_functor = importlib.util.module_from_spec(spec)
     # sys.modules["apply_func"] = apply_functor
     spec.loader.exec_module(apply_functor)
-    apply_functor.call(jobs)
+    apply_functor.call(jobs, {"campaign": campaign})

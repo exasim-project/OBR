@@ -304,14 +304,7 @@ def run(ctx: click.Context, **kwargs):
         os.environ["OBR_JOB"] = kwargs.get("job", "")
 
     if kwargs.get("operations") == "apply":
-        sys.argv.append("--aggregate")
-        sys.argv.append("-t")
-        sys.argv.append("1")
-        project.run(
-            names=operations,
-            progress=True,
-            np=1,
-        )
+        logging.warning("Run 'obr apply' directly")
         return
 
     if kwargs.get("operations") == "runParallelSolver":
@@ -342,6 +335,52 @@ def run(ctx: click.Context, **kwargs):
             np=kwargs.get("tasks", -1),
         )
     logging.info("completed all operations")
+
+
+@cli.command()
+@click.option(
+    "-c",
+    "--campaign",
+    type=str,
+    multiple=False,
+    help="",
+)
+@click.option(
+    "-f",
+    "--file",
+    type=str,
+    multiple=False,
+    help="",
+)
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
+        ' runParallelSolver --filter "solver==pisoFoam"'
+    ),
+)
+@click.pass_context
+def apply(ctx: click.Context, **kwargs):
+    project = OpenFOAMProject().init_project()
+
+    filters: list[str] = kwargs.get("filter", [])
+    # check if given path points to valid project
+    if not is_valid_workspace(filters):
+        return
+    jobs = project.filter_jobs(filters=filters)
+    os.environ["OBR_APPLY_FILE"] = kwargs.get("file", "")
+    os.environ["OBR_APPLY_CAMPAIGN"] = kwargs.get("campaign", "")
+    sys.argv.append("--aggregate")
+    sys.argv.append("-t")
+    sys.argv.append("1")
+    project.run(
+        names=["apply"],
+        progress=True,
+        np=1,
+    )
 
 
 @cli.command()
