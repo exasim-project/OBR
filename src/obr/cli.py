@@ -22,6 +22,7 @@ import time
 import sys
 import json
 import logging
+import pandas as pd
 
 from signac.contrib.job import Job
 from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
@@ -498,7 +499,13 @@ def status(ctx: click.Context, **kwargs):
     "--export_to",
     required=False,
     multiple=False,
-    help="Write results to a json file.",
+    help="Write results to a file. Valid choices json, markdown",
+)
+@click.option(
+    "--markdown_formater",
+    required=False,
+    multiple=False,
+    help="Format ",
 )
 @click.option(
     "--validate_against",
@@ -541,11 +548,24 @@ def query(ctx: click.Context, **kwargs):
                 out_str += f" {k}: {v}"
             logging.info(out_str)
 
-    json_file: str = kwargs.get("export_to", "")
-    if json_file:
-        with open(json_file, "w") as outfile:
-            # json_data refers to the above JSON
-            json.dump(query_results, outfile)
+    export_to: str = kwargs.get("export_to", "")
+    if export_to:
+        if export_to.endswith(".json"):
+            with open(export_to, "w") as outfile:
+                # json_data refers to the above JSON
+                json.dump(query_results, outfile)
+        if export_to.endswith(".md"):
+            # convert query results to records
+            records = []
+            for jobid, entries in query_results.items():
+                record = {"jobid": jobid}
+                record.update(entries)
+                records.append(record)
+
+            df = pd.DataFrame.from_records(records)
+            with open(export_to, "w") as outfile:
+                df.to_markdown(outfile)
+
     validation_file: str = kwargs.get("validate_against", "")
     if validation_file:
         with open(validation_file, "r") as infile:
