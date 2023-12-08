@@ -100,7 +100,7 @@ class GitRepo:
             if self.commit:
                 check_output(["git", "checkout", self.commit], cwd=Path(path) / "case")
             # also copy to cache folder if specified
-            if self.cache_folder:
+            if self.cache_folder and "None" not in self.cache_folder:
                 check_output(["cp", "-r", path + "/case/.", self.cache_folder])
 
         else:  # clone to specific subfolder
@@ -108,7 +108,7 @@ class GitRepo:
             if self.commit:
                 check_output(["git", "checkout", self.commit], cwd=Path(path) / "repo")
             # also copy to cache folder if specified
-            if self.cache_folder:
+            if self.cache_folder and "None" not in self.cache_folder:
                 check_output(["cp", "-r", path + "/repo/.", self.cache_folder])
             check_output(["cp", "-r", f"repo/{self.folder}", "case"], cwd=path)
         # checkout specified branch
