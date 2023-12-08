@@ -430,6 +430,11 @@ def init(ctx: click.Context, **kwargs):
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("--detailed", is_flag=True)
 @click.option(
+    "--hide",
+    default="",
+    help="Hide default values like jobid from output.",
+)
+@click.option(
     "--extra",
     default="",
     help="Pass a comma separated list to set extra values",
@@ -465,8 +470,9 @@ def status(ctx: click.Context, **kwargs):
     id_view_map = map_view_folder_to_job_id("view")
     sort_by = kwargs.get("sort_by", "").split(",")
     extra = kwargs.get("extra", "").split(",")
+    hide = kwargs.get("hide", "").split(",")
 
-    input_queries = ["global"] + sort_by + extra
+    input_queries = sort_by + extra
     queries: list[Query] = build_filter_query(input_queries)
     # convert query results to records
     records = []
@@ -479,6 +485,8 @@ def status(ctx: click.Context, **kwargs):
     query_results = project.query(jobs=jobs, query=queries)
     df = pd.DataFrame.from_records(records)
     df["view"] = df["jobid"].apply(lambda x: id_view_map.get(x, None))
+    if hide:
+        df.drop(columns=hide, inplace=True, axis=0)
     if sort_by:
         # df.dropna(inplace=True)
         df = df.set_index(sort_by).sort_index().reset_index()
