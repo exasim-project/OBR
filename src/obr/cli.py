@@ -470,7 +470,8 @@ def status(ctx: click.Context, **kwargs):
     id_view_map = map_view_folder_to_job_id("view")
     sort_by = kwargs.get("sort_by", "").split(",")
     extra = kwargs.get("extra", "").split(",")
-    hide = kwargs.get("hide", "").split(",")
+    hide = kwargs.get("hide", "")
+    hide = hide.split(",") if hide else []
 
     input_queries = sort_by + extra
     queries: list[Query] = build_filter_query(input_queries)
