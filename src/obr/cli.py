@@ -119,6 +119,20 @@ def archive_view(
         repo.git.add(view_name)  # NOTE do _not_ do repo.git.add(all=True)
 
 
+def cli_cmd_setup(kwargs):
+    """ """
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+    project = OpenFOAMProject.get_project()
+    filters: list[str] = kwargs.get("filter", [])
+    jobs = project.filter_jobs(filters=filters)
+    # check if given path points to valid project
+    if not is_valid_workspace(filters):
+        sys.exit(1)
+
+    return project, jobs
+
+
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
@@ -414,6 +428,17 @@ def init(ctx: click.Context, **kwargs):
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
+@click.option("--detailed", is_flag=True)
+@click.option(
+    "--extra",
+    default="",
+    help="Pass a comma separated list to set extra values",
+)
+@click.option(
+    "--sort_by",
+    default="",
+    help="Pass a comma separated list to set the ordering of the output",
+)
 @click.option(
     "--filter",
     type=str,
@@ -425,43 +450,45 @@ def init(ctx: click.Context, **kwargs):
         ' "solver==pisoFoam"'
     ),
 )
+@click.option(
+    "--export_to",
+    required=False,
+    multiple=False,
+    default="markdown",
+    help="Output format. Valid choices: markdown, json",
+)
 @click.pass_context
 def status(ctx: click.Context, **kwargs):
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-    project = OpenFOAMProject.get_project()
-    filters: list[str] = kwargs.get("filter", [])
-    jobs = project.filter_jobs(filters=filters)
-
-    # check if given path points to valid project
-    if not is_valid_workspace(filters):
-        return
+    project, jobs = cli_cmd_setup(kwargs)
 
     # project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
+    sort_by = kwargs.get("sort_by", "").split(",")
+    extra = kwargs.get("extra", "").split(",")
 
-    finished, unfinished = [], []
-    max_view_len = 0
-    logging.info("Detailed overview:\n" + "=" * 90)
-    for job in jobs:
-        jobid = job.id
-        job.doc["state"]["view"] = id_view_map.get(jobid)
-        if view := id_view_map.get(jobid):
-            labels = project.labels(job)
-            max_view_len = max(len(view), max_view_len)
-            if "finished" in labels:
-                finished.append((view, jobid, labels))
-            else:
-                unfinished.append((view, jobid, labels))
-    finished.sort()
-    for view, jobid, labels in finished:
-        pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| C | {jobid}")
-    unfinished.sort()
-    for view, jobid, labels in unfinished:
-        pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| I | {jobid}")
-    logging.info("Flags: C - Completed, I - Incomplete")
+    input_queries = ["global"] + sort_by + extra
+    queries: list[Query] = build_filter_query(input_queries)
+    # convert query results to records
+    records = []
+    query_results = project.query(jobs=jobs, query=queries)
+    for jobid, entries in query_results.items():
+        record = {"jobid": jobid}
+        record.update(entries)
+        records.append(record)
+
+    query_results = project.query(jobs=jobs, query=queries)
+    df = pd.DataFrame.from_records(records)
+    df["view"] = df["jobid"].apply(lambda x: id_view_map.get(x, None))
+    if sort_by:
+        # df.dropna(inplace=True)
+        df = df.set_index(sort_by).sort_index().reset_index()
+        if not kwargs.get("detailed"):
+            df.dropna(inplace=True)
+    # with open(export_to, "w") as outfile:
+    if kwargs.get("export_to") == "markdown":
+        print(df.to_markdown(tablefmt="github"))
+    if kwargs.get("export_to") == "json":
+        print(df.to_json())
 
 
 @cli.command()
@@ -563,6 +590,9 @@ def query(ctx: click.Context, **kwargs):
                 records.append(record)
 
             df = pd.DataFrame.from_records(records)
+            df.dropna(inplace=True)
+            df.set_index(["nCells"], inplace=True)
+            df.sort_index(inplace=True)
             with open(export_to, "w") as outfile:
                 df.to_markdown(outfile)
 
