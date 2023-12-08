@@ -8,7 +8,7 @@ import pytest
 )
 def test_OpenFOAMTutorialCase(tmp_path):
     ofcase = OpenFOAMTutorialCase(
-        domain="incompressible", solver="icoFoam", case="cavity/cavity"
+        domain="incompressible", application="icoFoam", case="cavity/cavity"
     )
     ofcase.init(tmp_path)
 
@@ -23,7 +23,7 @@ def test_OpenFOAMTutorialCase(tmp_path):
 )
 def test_OpenFOAMTutorialCase_raises_if_nonexistent(tmp_path):
     ofcase = OpenFOAMTutorialCase(
-        domain="compressible", solver="icoFoam", case="cavity/cavity"
+        domain="compressible", application="icoFoam", case="cavity/cavity"
     )
     ofcase.init(tmp_path)
 

@@ -30,21 +30,21 @@ class OpenFOAMTutorialCase(CaseOnDisk):
     needs a dict specifying:
     """
 
-    def __init__(self, domain: str, solver: str, case: str, **args_dict):
+    def __init__(self, domain: str, application: str, case: str, **args_dict):
         """
         Args:
             domain: eg. incompressible
-            solver: eg. icoFoam
+            application: eg. icoFoam
             case: eg. cavity/cavity
         """
         self.tutorial_domain = domain
-        self.solver = solver
+        self.application = application
         self.case = case
         super().__init__(origin=self.resolve_of_path())
 
     def resolve_of_path(self):
         foam_tutorials = Path(environ["FOAM_TUTORIALS"])
-        return foam_tutorials / self.tutorial_domain / self.solver / self.case
+        return foam_tutorials / self.tutorial_domain / self.application / self.case
 
 
 class GitRepo:
