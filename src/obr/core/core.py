@@ -391,6 +391,12 @@ def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
     ========
         A dictionary with jobid: view_folder
     """
+
+    def get_job_id_from_path(path: Path):
+        """finds the name after workspace"""
+        full_path = path.resolve().parts
+        return full_path[full_path.index("workspace") + 1]
+
     ret = {}
     base = Path(view_folder)
     if not base.exists():
@@ -400,7 +406,7 @@ def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
             path = Path(root) / fold
             job_id = None
             if path.is_symlink():
-                job_id = path.resolve().name
+                job_id = get_job_id_from_path(path)
                 # only keep path parts relative to the start of of the view
                 # folder
                 if path.absolute().is_relative_to(base.absolute()):
