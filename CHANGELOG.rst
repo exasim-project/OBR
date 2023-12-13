@@ -10,6 +10,7 @@ Changelog
 ------------------
 - Add common notation see https://github.com/hpsim/OBR/pull/146
 - Make numberOfSubdomains argument in yaml consistent see https://github.com/hpsim/OBR/pull/148
+- Make view folders relative see https://github.com/hpsim/OBR/pull/164
 
 0.2.0 (2023-09-14)
 ------------------
