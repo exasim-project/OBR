@@ -29,6 +29,7 @@ class Predicates(Enum):
     gt = ">"
     leq = "<="
     lt = "<"
+    short_eq = "="
 
 
 @dataclass
@@ -50,6 +51,7 @@ class Query:
             "lt": lambda a, b: a < b,
             "geq": lambda a, b: a >= b,
             "leq": lambda a, b: a <= b,
+            "short_eq": lambda a, b: a == b
         }
 
         self.predicate_op = predicate_map[self.predicate]
@@ -73,13 +75,20 @@ class Query:
             # so, quickly convert value to a float to avoid casting errors
             if isinstance(value, (int, float)):
                 value = float(value)
-            # convert value to target type to avoid TypeErrors
-            self.value = type(value)(self.value)
-            if not self.state and self.predicate_op(
-                value,
-                self.value,
-            ):
-                self.state = {key: value}
+
+            # differentiate between dicts and "scalar" values 
+            if not isinstance(value, dict):
+                # convert value to target type to avoid TypeErrors
+                self.value = type(value)(self.value)
+                if not self.state and self.predicate_op(
+                    value,
+                    self.value,
+                ):
+                    self.state = {key: value}
+            else:
+                for k, v in value.items():
+                    if k == self.value or v == self.value:
+                        self.state = {k: v}
         except TypeError as e:
             # After the prior type conversion, this case should not happen anymore.
             logging.error(f"{e}:")

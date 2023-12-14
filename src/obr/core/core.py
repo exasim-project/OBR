@@ -71,7 +71,7 @@ def logged_execute(cmd, path, doc):
             + __file__
             + __name__
             + str(e)
-            + " check: 'obr find --state failure' for more info",
+            + " check: 'obr query --query state==failure' or for more info",
         )
         log = e.output.decode("utf-8")
         state = "failure"
