@@ -1,5 +1,5 @@
 from os import environ
-from os.path import expandvars
+from os.path import expandvars, isdir
 from distutils.dir_util import copy_tree
 from pathlib import Path
 from typing import Union
@@ -22,6 +22,9 @@ class CaseOnDisk:
         self.path = Path(origin).expanduser()
 
     def init(self, path):
+        if not isdir(self.path):
+            logging.warning(f"{self.path.absolute} or some parent directory does not exist!")
+            return
         copy_tree(str(self.path), str(Path(path) / "case"))
 
 
