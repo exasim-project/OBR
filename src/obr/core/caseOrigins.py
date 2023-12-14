@@ -78,7 +78,7 @@ class GitRepo:
 
     def init(self, path):
         if self.cache_folder and Path(self.cache_folder).exists():
-            # if cache folder has been cloned into before, check for new commmits
+            # if cache folder has been cloned into before, check for new commits
             # either way, copy from cache folder to $path/case
             # if repo init or copying fails for some reason,
 
