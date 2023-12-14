@@ -4,7 +4,7 @@ from obr.signac_wrapper.operations import OpenFOAMProject
 import pytest
 import os
 from pathlib import Path
-
+import shutil
 from pathlib import Path
 
 
@@ -169,3 +169,13 @@ def test_cache_folder(tmpdir, emit_test_config):
     cache_folder = Path(tmpdir.strpath + "/tmp")
     assert cache_folder.exists()
     assert any(cache_folder.iterdir())
+
+    Path(f"{tmpdir}/tmp/test").touch()
+    shutil.rmtree(workspace_dir)
+    os.remove(f"{tmpdir}/signac.rc")
+    project = OpenFOAMProject.init_project(root=tmpdir)
+    create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
+    project.run(names=["fetchCase"])
+
+    job_folder = Path(workspace_dir).iterdir().__next__()
+    assert Path(job_folder/"case"/"test").exists()

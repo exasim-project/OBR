@@ -88,7 +88,6 @@ class GitRepo:
                 default_remote: str = repo.git.symbolic_ref(
                     "refs/remotes/origin/HEAD", "--short"
                 )
-                latest_commit = repo.git.rev_parse(self.branch or default_remote)
                 current_commit = repo.git.rev_parse("HEAD")
                 origin_branchname = default_remote.split("/")
                 # @greole: is it better to compare against self.commit or <defaultBranch>:latest ?
