@@ -101,8 +101,11 @@ def generate_view(
 
     def ln(src, dst):
         src = Path(src)
-        dst = Path(dst)
-        check_output(["ln", "-s", src, dst])
+        dst = Path(dst).absolute()
+        relpath = os.path.relpath(src, dst)
+        # for some reason the relpath has one ../ too much
+        relpath = relpath[3:]
+        dst.symlink_to(relpath)
 
     if (view_path).exists():
         check_output(["rm", "-rf", str(view_path)])
