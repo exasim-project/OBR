@@ -87,7 +87,7 @@ class Query:
                     self.state = {key: value}
             else:
                 for k, v in value.items():
-                    if k == self.value or v == self.value:
+                    if not self.state and self.predicate_op(v, self.value):
                         self.state = {k: v}
         except TypeError as e:
             # After the prior type conversion, this case should not happen anymore.
