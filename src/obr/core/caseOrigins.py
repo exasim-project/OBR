@@ -9,7 +9,6 @@ from git.repo import Repo
 from git import InvalidGitRepositoryError
 
 
-
 class CaseOnDisk:
     """Copies an OpenFOAM case from disk and copies it into the workspace
     needs origin, solver to be specified
@@ -23,7 +22,9 @@ class CaseOnDisk:
 
     def init(self, path):
         if not isdir(self.path):
-            logging.warning(f"{self.path.absolute} or some parent directory does not exist!")
+            logging.warning(
+                f"{self.path.absolute} or some parent directory does not exist!"
+            )
             return
         copy_tree(str(self.path), str(Path(path) / "case"))
 
@@ -84,17 +85,24 @@ class GitRepo:
 
             if Path(self.cache_folder + "/.git").exists():
                 repo = Repo(self.cache_folder)
-                default_remote: str = repo.git.symbolic_ref("refs/remotes/origin/HEAD", "--short")
+                default_remote: str = repo.git.symbolic_ref(
+                    "refs/remotes/origin/HEAD", "--short"
+                )
                 latest_commit = repo.git.rev_parse(self.branch or default_remote)
                 current_commit = repo.git.rev_parse("HEAD")
                 origin_branchname = default_remote.split("/")
-                # @greole: is it better to compare against self.commit or <defaultBranch>:latest ? 
+                # @greole: is it better to compare against self.commit or <defaultBranch>:latest ?
                 if self.commit and self.commit != current_commit:
                     repo.git.pull(origin_branchname[0], origin_branchname[-1])
-                check_output(["cp", "-r", f"{self.cache_folder}/{self.folder}", path + "/case"])
+                check_output(
+                    ["cp", "-r", f"{self.cache_folder}/{self.folder}", path + "/case"]
+                )
                 return
             else:
-                logging.warning("Could not from cache_folder to case, will git clone into it instead.")
+                logging.warning(
+                    "Could not from cache_folder to case, will git clone into it"
+                    " instead."
+                )
 
         # No specific subfolder is specified, clone to self.path
         if not self.folder:
@@ -120,10 +128,12 @@ class GitRepo:
             check_output(["git", "checkout", self.branch], cwd=self.cache_folder)
 
 
-def instantiate_origin_class(class_name: str, args: dict) -> Union[CaseOnDisk, OpenFOAMTutorialCase, GitRepo, None]:
+def instantiate_origin_class(
+    class_name: str, args: dict
+) -> Union[CaseOnDisk, OpenFOAMTutorialCase, GitRepo, None]:
     """
     Quick factory function to instantiate the wanted class handler.
-    Returns: 
+    Returns:
         - CaseOnDisk, OpenFOAMTutorialCase, or GitRepo on success
         - None on failure.
     """
@@ -134,5 +144,7 @@ def instantiate_origin_class(class_name: str, args: dict) -> Union[CaseOnDisk, O
     elif class_name == "CaseOnDisk":
         return CaseOnDisk(**args)
     else:
-        logging.error("'type' must be 'GitRepo', 'OpenFOAMTutorialCase', or 'CaseOnDisk'!")
+        logging.error(
+            "'type' must be 'GitRepo', 'OpenFOAMTutorialCase', or 'CaseOnDisk'!"
+        )
         return None
