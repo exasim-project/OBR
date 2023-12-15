@@ -178,4 +178,4 @@ def test_cache_folder(tmpdir, emit_test_config):
     project.run(names=["fetchCase"])
 
     job_folder = Path(workspace_dir).iterdir().__next__()
-    assert Path(job_folder/"case"/"test").exists()
+    assert Path(job_folder / "case" / "test").exists()
