@@ -90,8 +90,12 @@ class GitRepo:
                 )
                 current_commit = repo.git.rev_parse("HEAD")
                 origin_branchname = default_remote.split("/")
-                # @greole: is it better to compare against self.commit or <defaultBranch>:latest ?
+                # if commit is specified and if the current one does not equal, checkout given commit
                 if self.commit and self.commit != current_commit:
+                    repo.git.checkout(self.commit)
+                # if current == self.commit, do nothing
+                # if no commit is specified, simply get latest
+                if not self.commit:
                     repo.git.pull(origin_branchname[0], origin_branchname[-1])
                 check_output(
                     ["cp", "-r", f"{self.cache_folder}/{self.folder}", path + "/case"]
@@ -99,7 +103,7 @@ class GitRepo:
                 return
             else:
                 logging.warning(
-                    "Could not from cache_folder to case, will git clone into it"
+                    "Could not copy from cache_folder to case, will git clone into it"
                     " instead."
                 )
 

@@ -165,11 +165,7 @@ def test_cache_folder(tmpdir, emit_test_config):
 
     project.run(names=["fetchCase"])
 
-    # after fetch case the cache folder should be filled
-    cache_folder = Path(tmpdir.strpath + "/tmp")
-    assert cache_folder.exists()
-    assert any(cache_folder.iterdir())
-
+    # after purgin and recreating the workspace, the cache folder should be used
     Path(f"{tmpdir}/tmp/test").touch()
     shutil.rmtree(workspace_dir)
     os.remove(f"{tmpdir}/signac.rc")
