@@ -120,8 +120,8 @@ def archive_view(
         repo.git.add(view_name)  # NOTE do _not_ do repo.git.add(all=True)
 
 
-def cli_cmd_setup(kwargs):
-    """ """
+def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
+    """This function performs the common pattern of checking project folders for existence and creating the project and extracting the jobs."""
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
@@ -130,7 +130,6 @@ def cli_cmd_setup(kwargs):
     # check if given path points to valid project
     if not is_valid_workspace(filters):
         sys.exit(1)
-
     return project, jobs
 
 
@@ -187,14 +186,7 @@ def cli(ctx: click.Context, debug: bool):
 )
 @click.pass_context
 def submit(ctx: click.Context, **kwargs):
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-
-    project = OpenFOAMProject().init_project()
-
-    # check if given path points to valid project
-    if not is_valid_workspace():
-        return
+    project, jobs = cli_cmd_setup(kwargs)
 
     project._entrypoint = {"executable": "", "path": "obr"}
 
@@ -203,17 +195,8 @@ def submit(ctx: click.Context, **kwargs):
     if not check_cli_operations(project, operations, list_operations):
         return
 
-    queries_str = kwargs.get("query")
-    bundling_key = kwargs.get("bundling_key")
     partition = kwargs.get("partition")
     account = kwargs.get("account")
-
-    if queries_str:
-        queries = input_to_queries(queries_str)
-        sel_jobs = query_impl(project, queries, output=False)
-        jobs = [j for j in project if j.id in sel_jobs]
-    else:
-        jobs = [j for j in project]
 
     # TODO find a signac way to do that
     cluster_args = {
@@ -229,6 +212,7 @@ def submit(ctx: click.Context, **kwargs):
         for i in range(0, len(split), 2):
             cluster_args.update({split[i]: split[i + 1]})
 
+    bundling_key = kwargs.get("bundling_key")
     if bundling_key:
         bundling_values = get_values(jobs, bundling_key)
         for bundle_value in bundling_values:
@@ -261,23 +245,46 @@ def submit(ctx: click.Context, **kwargs):
 
 
 @cli.command()
-@click.option("-a", "--all", default="remove all obr project files")
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
+        ' runParallelSolver --filter "solver==pisoFoam"'
+    ),
+)
+@click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
+@click.option("-c", "--case", default="remove all obr project files")
 @click.option(
     "-v", "--view", default="remove case completely specified by a view folder"
 )
 @click.pass_context
-def purge(ctx: click.Context, **kwargs):
+def reset(ctx: click.Context, **kwargs):
     """deletes workspace or cases"""
 
     def safe_delete(fn):
         path = Path(fn)
         if path.exists():
-            shutil.rmtree(path)
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
 
-    if kwargs.get("all"):
+    project, jobs = cli_cmd_setup(kwargs)
+
+    if kwargs.get("workspace"):
         safe_delete("workspace")
         safe_delete("view")
         safe_delete("signac.rc")
+        return
+    if kwargs.get("case"):
+        project.run(
+            names=["reset"],
+            progress=True,
+            np=-1,
+        )
 
     # TODO implement a procedure  that checks if it is inside
     # a obr project. To allow 'obr purge .' within a view
@@ -320,21 +327,12 @@ def purge(ctx: click.Context, **kwargs):
 @click.pass_context
 def run(ctx: click.Context, **kwargs):
     """Run specified operations"""
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-
-    project = OpenFOAMProject().init_project()
+    project, jobs = cli_cmd_setup(kwargs)
 
     operations = kwargs.get("operations", "").split(",")
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
-
-    filters: list[str] = kwargs.get("filter", [])
-    # check if given path points to valid project
-    if not is_valid_workspace(filters):
-        return
-    jobs = project.filter_jobs(filters=filters)
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
@@ -429,7 +427,12 @@ def apply(ctx: click.Context, **kwargs):
     default=".",
     help="Where to create the worspace and view. Default: '.' ",
 )
-@click.option("-e", "--execute", default=False)
+@click.option(
+    "-g", "--generate", is_flag=True, help="Call generate directly after init."
+)
+@click.option(
+    "-w", "--workflow", default="", help="Call a given workflow command after generate."
+)
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
 @click.option("-t", "--tasks", default=-1, help="Number of tasks to run concurrently.")
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
@@ -447,6 +450,13 @@ def init(ctx: click.Context, **kwargs):
     create_tree(project, config, kwargs)
 
     logging.info("successfully initialised")
+
+    if kwargs.get("generate"):
+        project.run(
+            names=["generate"],
+            progress=True,
+            np=kwargs.get("tasks", -1),
+        )
 
 
 @cli.command()
