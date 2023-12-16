@@ -476,8 +476,10 @@ def fetchCase(job: Job, args={}):
     args = get_args(job, args)
 
     uses = args.pop("uses", [])
-    case_type = job.sp()["type"]
-    fetch_case_handler = getattr(caseOrigins, case_type)(**args)
+    case_type = job.sp["type"]
+    fetch_case_handler = caseOrigins.instantiate_origin_class(case_type, args)
+    if fetch_case_handler is None:  # invalid type was specified in yaml
+        return
     fetch_case_handler.init(path=job.path)
 
     # if we find any entries in the list of 'uses' forward it to the

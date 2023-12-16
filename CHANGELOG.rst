@@ -8,6 +8,7 @@ Changelog
 - Make numberOfSubdomains argument in yaml consistent see https://github.com/hpsim/OBR/pull/148
 - Fix missing of groups in `obr run --list-operations` view, see https://github.com/hpsim/OBR/pull/159. 
 - Make view folders relative see https://github.com/hpsim/OBR/pull/164
+- Use cached version of git repo instead of cloning, see https://github.com/hpsim/OBR/pull/166
 
 0.2.0 (2023-09-14)
 ------------------

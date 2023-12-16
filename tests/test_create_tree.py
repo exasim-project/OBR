@@ -3,7 +3,8 @@ from obr.signac_wrapper.operations import OpenFOAMProject
 
 import pytest
 import os
-
+from pathlib import Path
+import shutil
 from pathlib import Path
 
 
@@ -143,3 +144,34 @@ def test_call_generate_tree(tmpdir, emit_test_config):
     # should have two folders now
     _, folder_after, _ = next(os.walk(workspace_dir))
     assert len(folder_after) == 2
+
+
+def test_cache_folder(tmpdir, emit_test_config):
+    emit_test_config["case"]["cache_folder"] = f"{tmpdir}/tmp"
+    project = OpenFOAMProject.init_project(root=tmpdir)
+
+    create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
+
+    workspace_dir = tmpdir / "workspace"
+
+    assert workspace_dir.exists()
+
+    _, folder, _ = next(os.walk(workspace_dir))
+
+    assert len(folder) == 1
+    fold = folder[0]
+    case_base_fold = workspace_dir / fold
+    assert case_base_fold.exists() is True
+
+    project.run(names=["fetchCase"])
+
+    # after purgin and recreating the workspace, the cache folder should be used
+    Path(f"{tmpdir}/tmp/test").touch()
+    shutil.rmtree(workspace_dir)
+    os.remove(f"{tmpdir}/signac.rc")
+    project = OpenFOAMProject.init_project(root=tmpdir)
+    create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
+    project.run(names=["fetchCase"])
+
+    job_folder = Path(workspace_dir).iterdir().__next__()
+    assert Path(job_folder / "case" / "test").exists()
