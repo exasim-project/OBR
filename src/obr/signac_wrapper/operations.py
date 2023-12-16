@@ -526,6 +526,14 @@ def checkMesh(job: Job, args={}):
     )
     job.doc["cache"]["nCells"] = int(cells)
 
+@OpenFOAMProject.operation
+def reset(job: Job, args={}):
+    """Deletes all files that have been added since creation, thus performing a Allclean
+    """
+    pass
+
+
+
 
 def get_number_of_procs(job: Job) -> int:
     np = int(job.sp().get("numberSubDomains", 0))
