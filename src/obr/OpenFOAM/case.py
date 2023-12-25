@@ -85,6 +85,8 @@ class File(FileParser):
 class OpenFOAMCase(BlockMesh):
     """A class for simple access to typical OpenFOAM files"""
 
+    latest_log_path_: Path = Path()
+
     def __init__(self, path, job):
         self.path_ = Path(path)
         self.job: Job = job
@@ -198,6 +200,50 @@ class OpenFOAMCase(BlockMesh):
                         rel_path = str(f_path.relative_to(self.path))
                         file_obj = File(folder=folder, file=f_path.name, job=self.job)
                         yield file_obj, rel_path
+
+    @property
+    def current_time(self) -> float:
+        """Returns the current timestep of the simulation"""
+        # TODO DONT MERGE implement
+        return 0.0
+
+    @property
+    def progress(self) -> float:
+        """Returns the progress of the simulation in percent"""
+        # TODO DONT MERGE implement
+        return 0.0
+
+    @property
+    def latest_solver_log_path(self) -> Path:
+        """Returns the absolute path to the latest log"""
+        self.fetch_latest_log()
+        return self.latest_log_path_
+
+    @property
+    def latest_log(self) -> LogFile:
+        """Returns handle to the latest log"""
+        log = self.latest_solver_log_path
+        if not log.exists():
+            raise ValueError("No Logfile found")
+        self.latest_log_handle_ = LogFile(log, matcher=[])
+        return self.latest_log_handle_
+
+    @property
+    def finished(self) -> bool:
+        """check if the latest simulation run has finished gracefully"""
+        # TODO should also check if last time approx end time
+        if self.process_latest_time_stats():
+            return self.latest_log.footer.completed
+        return False
+
+    def fetch_latest_log(self) -> None:
+        solver = self.controlDict.get("application")
+
+        root, _, files = next(os.walk(self.path))
+        log_files = [f for f in files if f.endswith(".log") and f.startswith(solver)]
+        log_files.sort()
+        if log_files:
+            self.latest_log_path_ = Path(root) / log_files[-1]
 
     @property
     def config_file_tree(self) -> list[str]:

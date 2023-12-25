@@ -551,6 +551,14 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
 
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
+        logging.info(f"Skipping Job {job.id} since it is completed.")
+        return "true"
+
+    # if the case folder contains any modified files
+    # skip
+    if case.is_tree_modified():
+        logging.info(f"Skipping Job {job.id} since it is has modified files.")
+        job.doc["state"]["global"] = "dirty"
         return "true"
 
     case = OpenFOAMCase(str(job.path) + "/case", job)
@@ -612,6 +620,7 @@ def validate_state(_: str, job: Job) -> str:
 @OpenFOAMProject.operation(
     cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
 )
+@OpenFOAMProject.operation_hooks.on_exit(validate_state)
 def runParallelSolver(job: Job, args={}) -> str:
     env_run_template = os.environ.get("OBR_RUN_CMD")
     solver_cmd = (
@@ -629,6 +638,7 @@ def runParallelSolver(job: Job, args={}) -> str:
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.operation(cmd=True)
+@OpenFOAMProject.operation_hooks.on_exit(validate_state)
 def runSerialSolver(job: Job, args={}):
     env_run_template = os.environ.get("OBR_SERIAL_RUN_CMD")
     solver_cmd = (
