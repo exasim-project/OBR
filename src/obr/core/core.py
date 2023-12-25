@@ -96,16 +96,18 @@ def logged_execute(cmd, path, doc):
         log = fn
         log_path = path / fn
 
-    d.append({
-        "cmd": cmd_str,
-        "type": "shell",
-        "log": log,
-        "state": state,
-        "flags": flags,
-        "timestamp": timestamp,
-        "user": os.environ.get("USER"),
-        "hostname": os.environ.get("HOST"),
-    })
+    d.append(
+        {
+            "cmd": cmd_str,
+            "type": "shell",
+            "log": log,
+            "state": state,
+            "flags": flags,
+            "timestamp": timestamp,
+            "user": os.environ.get("USER"),
+            "hostname": os.environ.get("HOST"),
+        }
+    )
 
     doc["history"] = d
 

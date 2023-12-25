@@ -290,11 +290,13 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
         return
     if uses := args.pop("uses", False):
         if path:
-            check_output([
-                "cp",
-                "{}/case/{}/{}".format(job.path, path, uses),
-                "{}/case/{}/{}".format(job.path, path, target),
-            ])
+            check_output(
+                [
+                    "cp",
+                    "{}/case/{}/{}".format(job.path, path, uses),
+                    "{}/case/{}/{}".format(job.path, path, target),
+                ]
+            )
         else:
             src_path = "{}/case/{}".format(job.path, uses)
             trg_path = "{}/case/{}".format(job.path, target)
@@ -564,15 +566,17 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
         "np": get_number_of_procs(job),
     }
     cmd_str = cmd_format.format(**cli_args)
-    res.append({
-        "cmd": cmd_str,
-        "type": "shell",
-        "log": f"{solver}_{timestamp}.log",
-        "state": "started",
-        "timestamp": timestamp,
-        "user": os.environ.get("USER"),
-        "hostname": os.environ.get("HOST"),
-    })
+    res.append(
+        {
+            "cmd": cmd_str,
+            "type": "shell",
+            "log": f"{solver}_{timestamp}.log",
+            "state": "started",
+            "timestamp": timestamp,
+            "user": os.environ.get("USER"),
+            "hostname": os.environ.get("HOST"),
+        }
+    )
     job.doc["history"] = res
 
     cli_args = {
@@ -594,6 +598,12 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     # otherwise if one execution would fail OBR exits and
     # the following solver runs would be discarded
     return cmd_format.format(**cli_args) + "|| true" + postflight_cmd
+
+
+def validate_state(_: str, job: Job) -> str:
+    """Perform a detailed update of the job state"""
+    case = OpenFOAMCase(str(job.path) + "/case", job)
+    case.detailed_update()
 
 
 @simulate

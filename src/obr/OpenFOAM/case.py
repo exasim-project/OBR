@@ -255,16 +255,20 @@ class OpenFOAMCase(BlockMesh):
                 if not coeffs:
                     coeffs = calculate_simple_partition(numberSubDomains, [1, 1, 1])
 
-            self.decomposeParDict.set({
-                "method": method,
-                "numberOfSubdomains": numberSubDomains,
-                "simpleCoeffs": {"n": coeffs},
-            })
+            self.decomposeParDict.set(
+                {
+                    "method": method,
+                    "numberOfSubdomains": numberSubDomains,
+                    "simpleCoeffs": {"n": coeffs},
+                }
+            )
         else:
-            self.decomposeParDict.set({
-                "method": method,
-                "numberOfSubdomains": numberSubDomains,
-            })
+            self.decomposeParDict.set(
+                {
+                    "method": method,
+                    "numberOfSubdomains": numberSubDomains,
+                }
+            )
 
         log = self._exec_operation(["decomposePar", "-force"])
         fvSolutionArgs = args.get("fvSolution", {})
@@ -297,14 +301,42 @@ class OpenFOAMCase(BlockMesh):
         return current_md5sum != md5sum
 
     def is_tree_modified(self) -> list[str]:
-        """
-        iterates all files inside the case tree and returns a list of files that were modified, based on their md5sum.
-        """
+        """Iterates all files inside the case tree and returns a list of files that were modified, based on their md5sum."""
         m_files = []
         for file in self.config_file_tree:
             if self.is_file_modified(file):
                 m_files.append(file)
         return m_files
+
+    def process_latest_time_stats(self) -> bool:
+        """This function parses the latest time step log and stores the results in the job document
+        Return: A boolean indication whether processing was successful
+        """
+        if not self.latest_log:
+            return False
+        try:
+            self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
+            self.job.doc["state"][
+                "continuityErrors"
+            ] = self.latest_log.latestTime.continuity_errors
+            self.job.doc["state"][
+                "CourantNumber"
+            ] = self.latest_log.latestTime.Courant_number
+            self.job.doc["state"]["ExecutionTime"] = (
+                self.latest_log.latestTime.execution_time["ExecutionTime"]
+            )
+            self.job.doc["state"]["ClockTime"] = (
+                self.latest_log.latestTime.execution_time["ClockTime"]
+            )
+            if self.latest_log.footer.completed:
+                self.job.doc["state"]["global"] = "completed"
+            return True
+        except:
+            return False
+
+    def detailed_update(self):
+        """Perform a detailed update on the job doc state"""
+        self.process_latest_time_stats()
 
     def perform_post_md5sum_calculations(self):
         """

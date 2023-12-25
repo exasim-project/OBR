@@ -8,6 +8,19 @@ import shutil
 from git.repo import Repo
 
 
+def create_logs(path):
+    log_names = [
+        "blockMesh_2023-11-30_22:13:31.log",
+        "icoFoam_2023-11-30_22:14:31.log",
+        "icoFoam_2023-11-30_22:15:31.log",
+        "icoFoam_2023-11-30_22:13:31.log",
+    ]
+
+    for log in log_names:
+        with open(path / log, "a"):
+            continue
+
+
 @pytest.fixture
 def set_up_of_case(tmpdir):
     """If OF exists and is sourced return tutorial path else download"""
@@ -19,8 +32,10 @@ def set_up_of_case(tmpdir):
         dst = tmpdir / lid_driven_cavity
 
         shutil.copytree(src, dst)
+        create_logs(dst)
         return dst
 
+    # OpenFOAM might exists but not being sourced
     of_dir = Path("~/OpenFOAM/OpenFOAM-10")
     if of_dir.exists():
         shutil.copytree(of_dir, tmpdir)
@@ -31,6 +46,14 @@ def set_up_of_case(tmpdir):
 
     rval = of_dir / "tutorials" / lid_driven_cavity
     return rval
+
+
+def test_OpenFOAMCaseFindsLatestLog(set_up_of_case):
+    of_case = OpenFOAMCase(set_up_of_case, {})
+    assert (
+        of_case.latest_solver_log_path
+        == set_up_of_case / "icoFoam_2023-11-30_22:15:31.log"
+    )
 
 
 def test_OpenFOAMCaseProperties(set_up_of_case):
