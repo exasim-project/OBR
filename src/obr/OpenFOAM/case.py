@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-
-from typing import Union, Generator, Tuple, Any
 import os
-from pathlib import Path
-from subprocess import check_output
 import re
-from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
-from signac.contrib.job import Job
-from .BlockMesh import BlockMesh, calculate_simple_partition
-from datetime import datetime
-from Owls.parser.FoamDict import FileParser
 import logging
+
+from Owls.parser.FoamDict import FileParser
+from Owls.parser.LogFile import LogFile
+from typing import Union, Generator, Tuple, Any
+from subprocess import check_output
+from pathlib import Path
+from datetime import datetime
+from signac.contrib.job import Job
+
+from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
+from .BlockMesh import BlockMesh, calculate_simple_partition
 
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
 (\||)\s*=========                 \|(\s*\||)
@@ -84,6 +86,8 @@ class File(FileParser):
 
 class OpenFOAMCase(BlockMesh):
     """A class for simple access to typical OpenFOAM files"""
+
+    latest_log_path_: Path = Path()
 
     def __init__(self, path, job):
         self.path_ = Path(path)
@@ -175,6 +179,81 @@ class OpenFOAMCase(BlockMesh):
         ret = [self.path / f for f in fs if is_time(f)]
         ret.sort()
         return ret
+
+    @property
+    def current_time(self) -> float:
+        """Returns the current timestep of the simulation"""
+        # TODO DONT MERGE implement
+        return 0.0
+
+    @property
+    def progress(self) -> float:
+        """Returns the progress of the simulation in percent"""
+        # TODO DONT MERGE implement
+        return 0.0
+
+    @property
+    def latest_solver_log_path(self) -> Path:
+        """Returns the absolute path to the latest log"""
+        self.fetch_latest_log()
+        return self.latest_log_path_
+
+    @property
+    def latest_log(self) -> LogFile:
+        """Returns handle to the latest log"""
+        log = self.latest_solver_log_path
+        if not log.exists():
+            raise ValueError("No Logfile found")
+        self.latest_log_handle_ = LogFile(log, matcher=[])
+        return self.latest_log_handle_
+
+    @property
+    def finished(self) -> bool:
+        """check if the latest simulation run has finished gracefully"""
+        # TODO should also check if last time approx end time
+        if self.process_latest_time_stats():
+            return self.latest_log.footer.completed
+        return False
+
+    def fetch_latest_log(self) -> None:
+        solver = self.controlDict.get("application")
+
+        root, _, files = next(os.walk(self.path))
+        log_files = [f for f in files if f.endswith(".log") and f.startswith(solver)]
+        log_files.sort()
+        if log_files:
+            self.latest_log_path_ = Path(root) / log_files[-1]
+
+    def process_latest_time_stats(self) -> bool:
+        """This function parses the latest time step log and stores the results in the job document
+
+        Return: A boolean indication whether processing was succesful
+        """
+        if not self.latest_log:
+            return False
+        try:
+            self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
+            self.job.doc["state"][
+                "continuityErrors"
+            ] = self.latest_log.latestTime.continuity_errors
+            self.job.doc["state"][
+                "CourantNumber"
+            ] = self.latest_log.latestTime.Courant_number
+            self.job.doc["state"]["ExecutionTime"] = (
+                self.latest_log.latestTime.execution_time["ExecutionTime"]
+            )
+            self.job.doc["state"]["ClockTime"] = (
+                self.latest_log.latestTime.execution_time["ClockTime"]
+            )
+            if self.latest_log.footer.completed:
+                self.job.doc["state"]["global"] = "completed"
+            return True
+        except:
+            return False
+
+    def detailed_update(self):
+        """perform a detailed update on the job doc state"""
+        self.process_latest_time_stats()
 
     @property
     def processor_folder(self) -> list[Path]:
@@ -287,13 +366,15 @@ class OpenFOAMCase(BlockMesh):
         """
         checks if a file has been modified by comparing the current md5sum with the previously saved one inside `self.job.dict`
         """
-        if "md5sum" not in self.job.doc["obr"]:
+        if "md5sum" not in self.job.doc["cache"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum, last_modified = self.job.doc["obr"]["md5sum"].get(path)
-        if os.path.getmtime(path) == last_modified:
+        safe_path = path.replace(".", "_dot_")
+        current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(safe_path)
+        file_path = self.path / path
+        if os.path.getmtime(file_path) == last_modified:
             # if modification dates dont differ, the md5sums wont, either
             return False
-        md5sum = check_output(["md5sum", path], text=True)
+        md5sum = check_output(["md5sum", file_path], text=True)
         return current_md5sum != md5sum
 
     def is_tree_modified(self) -> list[str]:

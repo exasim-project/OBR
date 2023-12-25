@@ -8,6 +8,19 @@ import shutil
 from git.repo import Repo
 
 
+def create_logs(path):
+    log_names = [
+        "blockMesh_2023-11-30_22:13:31.log",
+        "icoFoam_2023-11-30_22:14:31.log",
+        "icoFoam_2023-11-30_22:15:31.log",
+        "icoFoam_2023-11-30_22:13:31.log",
+    ]
+
+    for log in log_names:
+        with open(path / log, "a"):
+            continue
+
+
 @pytest.fixture
 def set_up_of_case(tmpdir):
     """If OF exists and is sourced return tutorial path else download"""
@@ -17,10 +30,11 @@ def set_up_of_case(tmpdir):
     if os.environ.get("FOAM_TUTORIALS"):
         src = Path(os.environ.get("FOAM_TUTORIALS")) / lid_driven_cavity
         dst = tmpdir / lid_driven_cavity
-
         shutil.copytree(src, dst)
+        create_logs(dst)
         return dst
 
+    # OpenFOAM might exists but not being sourced
     of_dir = Path("~/OpenFOAM/OpenFOAM-10")
     if of_dir.exists():
         shutil.copytree(of_dir, tmpdir)
@@ -30,6 +44,7 @@ def set_up_of_case(tmpdir):
         Repo.clone_from(url=url, to_path=tmpdir, multi_options=["--depth 1"])
 
     rval = of_dir / "tutorials" / lid_driven_cavity
+    create_logs(rval)
     return rval
 
 
@@ -65,6 +80,14 @@ def test_OpenFOAMCasefvSolutionDictGetter(set_up_of_case):
     of_case = OpenFOAMCase(set_up_of_case, {})
     assert of_case.fvSolution.get("solvers")["p"]["solver"] == "PCG"
     assert of_case.fvSolution.get("solvers")["U"]["solver"] == "smoothSolver"
+
+
+def test_OpenFOAMCaseFindsLatestLog(set_up_of_case):
+    of_case = OpenFOAMCase(set_up_of_case, {})
+    assert (
+        of_case.latest_solver_log_path
+        == set_up_of_case / "icoFoam_2023-11-30_22:15:31.log"
+    )
 
 
 def test_OpenFOAMCaseFvSchemesGetter(set_up_of_case):

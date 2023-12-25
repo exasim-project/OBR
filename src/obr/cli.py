@@ -298,6 +298,7 @@ def run(ctx: click.Context, **kwargs):
             sys.argv.append("-t")
             sys.argv.append(str(ntasks))
         project.run(
+            jobs=jobs,
             names=operations,
             progress=True,
             np=ntasks,
@@ -349,7 +350,18 @@ def init(ctx: click.Context, **kwargs):
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
-@click.option("-d", "--detailed", is_flag=True)
+@click.option(
+    "-d",
+    "--detailed",
+    is_flag=True,
+    help="If set a full update of the job document is performed",
+)
+@click.option(
+    "--cache-expiry",
+    type=int,
+    default=300,
+    help="Recreate status cash if older than expiry in seconds",
+)
 @click.option(
     "--filter",
     type=str,
@@ -374,30 +386,45 @@ def status(ctx: click.Context, **kwargs):
         return
 
     # project.print_status(detailed=kwargs["detailed"], pretty=True)
-    id_view_map = map_view_folder_to_job_id("view")
 
-    finished, unfinished = [], []
-    max_view_len = 0
-    logging.info("Detailed overview:\n" + "=" * 90)
-    for job in jobs:
-        jobid = job.id
-        job.doc["state"]["view"] = id_view_map.get(jobid)
-        if view := id_view_map.get(jobid):
-            labels = project.labels(job)
-            max_view_len = max(len(view), max_view_len)
-            if "finished" in labels:
-                finished.append((view, jobid, labels))
-            else:
-                unfinished.append((view, jobid, labels))
-    finished.sort()
-    for view, jobid, labels in finished:
-        pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| C | {jobid}")
-    unfinished.sort()
-    for view, jobid, labels in unfinished:
-        pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| I | {jobid}")
-    logging.info("Flags: C - Completed, I - Incomplete")
+    status_file_name = ".obr_status.json"
+    status_file = Path(status_file_name)
+
+    if status_file.exists():
+        age = time.time() - status_file.stat().st_mtime
+        if int(age) > kwargs.get("cache-expiry", 120):
+            logging.info(".obr_status.json is too old, regenerating status")
+            status_file.unlink()
+
+    if status_file.exists():
+        logging.info("reading status from cache file")
+        with open(status_file, "r") as infile:
+            job_records = json.load(infile)
+    else:
+        # TODO plan on user hooks for properties
+        # build status json
+        logging.info("building status")
+        id_view_map = map_view_folder_to_job_id("view")
+        job_records = []
+        for job in jobs:
+            case_folder = Path(job.path) / "case"
+            case = OpenFOAMCase(str(case_folder), job)
+            if kwargs.get("detailed"):
+                case.detailed_update()
+            job_record = {}
+            job_record["job_id"] = job.id
+            job_record["view_path"] = id_view_map.get(job.id)
+            job_record["labels"] = list(project.labels(job))
+            job_record["properties"] = {
+                "endTime": case.controlDict.get("endTime"),
+                "progress": case.progress,
+            }
+            job_records.append(job_record)
+
+        with open(status_file_name, "w") as outfile:
+            json.dump(job_records, outfile)
+
+    print(job_records)
 
 
 @cli.command()
