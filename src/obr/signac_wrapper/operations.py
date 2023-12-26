@@ -554,14 +554,14 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
         logging.info(f"Skipping Job {job.id} since it is completed.")
         return "true"
 
-    # if the case folder contains any modified files
-    # skip
+    case = OpenFOAMCase(str(job.path) + "/case", job)
+
+    # if the case folder contains any modified files skip execution
     if case.is_tree_modified():
         logging.info(f"Skipping Job {job.id} since it is has modified files.")
         job.doc["state"]["global"] = "dirty"
         return "true"
 
-    case = OpenFOAMCase(str(job.path) + "/case", job)
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
