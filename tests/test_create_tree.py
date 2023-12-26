@@ -93,7 +93,7 @@ def test_add_variations():
 
 
 def test_create_tree(tmpdir, emit_test_config):
-    project = OpenFOAMProject.init_project(root=tmpdir)
+    project = OpenFOAMProject.init_project(path=tmpdir)
 
     create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
 
@@ -120,7 +120,7 @@ def test_create_tree(tmpdir, emit_test_config):
 
 
 def test_call_generate_tree(tmpdir, emit_test_config):
-    project = OpenFOAMProject.init_project(root=tmpdir)
+    project = OpenFOAMProject.init_project(path=tmpdir)
     workspace_dir = tmpdir / "workspace"
     view_dir = tmpdir / "view"
 
@@ -148,7 +148,7 @@ def test_call_generate_tree(tmpdir, emit_test_config):
 
 def test_cache_folder(tmpdir, emit_test_config):
     emit_test_config["case"]["cache_folder"] = f"{tmpdir}/tmp"
-    project = OpenFOAMProject.init_project(root=tmpdir)
+    project = OpenFOAMProject.init_project(path=tmpdir)
 
     create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
 
@@ -169,7 +169,7 @@ def test_cache_folder(tmpdir, emit_test_config):
     Path(f"{tmpdir}/tmp/test").touch()
     shutil.rmtree(workspace_dir)
     os.remove(f"{tmpdir}/signac.rc")
-    project = OpenFOAMProject.init_project(root=tmpdir)
+    project = OpenFOAMProject.init_project(path=tmpdir)
     create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
     project.run(names=["fetchCase"])
 

@@ -341,7 +341,7 @@ def init(ctx: click.Context, **kwargs):
     if kwargs.get("verbose", 0) >= 1:
         logging.info(config)
 
-    project = OpenFOAMProject.init_project(root=kwargs["folder"])
+    project = OpenFOAMProject.init_project(path=kwargs["folder"])
     create_tree(project, config, kwargs)
 
     logging.info("successfully initialised")
