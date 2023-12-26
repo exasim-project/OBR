@@ -112,7 +112,7 @@ def basic_eligible(job: Job, operation: str) -> bool:
 def parent_job_is_ready(job: Job) -> str:
     """Checks whether the parent of the given job is ready"""
     if job.sp().get("parent_id"):
-        project = OpenFOAMProject.get_project(root=job.path + "/../..")
+        project = OpenFOAMProject.get_project(path=job.path + "/../..")
         parent_job = project.open_job(id=job.sp().get("parent_id"))
         return parent_job.doc["state"].get("global", "")
     return ""
