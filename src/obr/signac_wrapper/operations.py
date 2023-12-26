@@ -9,7 +9,7 @@ from subprocess import check_output
 from ..core.core import execute
 from .labels import owns_mesh, final, finished
 from obr.OpenFOAM.case import OpenFOAMCase
-from signac.contrib.job import Job
+from signac.job import Job
 from typing import Union, Literal
 from datetime import datetime
 import logging
