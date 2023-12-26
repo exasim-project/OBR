@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
+import os
+import re
+import logging
 
 from typing import Union, Generator, Tuple, Any
-import os
 from pathlib import Path
 from subprocess import check_output
-import re
-from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
 from signac.contrib.job import Job
-from .BlockMesh import BlockMesh, calculate_simple_partition
 from datetime import datetime
 from Owls.parser.FoamDict import FileParser
-import logging
+from Owls.parser.LogFile import LogFile
+
+from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
+from .BlockMesh import BlockMesh, calculate_simple_partition
 
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
 (\||)\s*=========                 \|(\s*\||)
