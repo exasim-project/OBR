@@ -17,7 +17,7 @@ requires-python = ">=3.6"
 dependencies = [
     "click",
     "PyYAML",
-    "signac==2.2.0",
+    "signac==2.1.0",
     "signac-flow==0.26.1",
     "GitPython==3.1.31",
     "pandas",
