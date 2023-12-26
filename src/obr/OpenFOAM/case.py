@@ -34,13 +34,14 @@ class File(FileParser):
             self.path = kwargs["path"]
             self.missing = True  # indicate that the file is currently missing
             return
-        super().__init__(**kwargs)
+        super().__init__(**kwargs, skip_update=True)
         self._md5sum = None
 
     def get(self, name: str):
         """Get a value from an OpenFOAM dictionary file"""
         # TODO replace with a safer option
         # also consider moving that to Owls
+        self.update()
         try:
             return eval(super().get(name))
         except:
@@ -70,6 +71,7 @@ class File(FileParser):
         args_copy = {k: v for k, v in args.items()}
 
         modifies_file(self.path)
+        self.update()
         if self.job:
             logged_func(
                 self.set_key_value_pairs,
