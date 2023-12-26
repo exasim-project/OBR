@@ -329,9 +329,9 @@ class OpenFOAMCase(BlockMesh):
         """
         checks if a file has been modified by comparing the current md5sum with the previously saved one inside `self.job.dict`
         """
-        if "md5sum" not in self.job.doc["obr"]:
+        if "md5sum" not in self.job.doc["cache"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum, last_modified = self.job.doc["obr"]["md5sum"].get(path)
+        current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(path)
         if os.path.getmtime(path) == last_modified:
             # if modification dates dont differ, the md5sums wont, either
             return False
@@ -406,14 +406,14 @@ class OpenFOAMCase(BlockMesh):
         """Returns True, if both its label and the last OBR operation returned successful, False otherwise."""
         # check state of last obr operation
         last_op_state = "Failure"
-        if "obr" not in self.job.doc:
-            logging.info(f"Job with {self.job.id} has no OBR key.")
+        if "cache" not in self.job.doc:
+            logging.info(f"Job with {self.job.id} has no cache key.")
             # TODO possibly debatable if this should return false
             return False
         else:
             # find last obr operation
             last_time = datetime(1, 1, 1, 1, 1, 1)
-            for k, v in self.job.doc["obr"].items():
+            for k, v in self.job.doc["cache"].items():
                 # skip md5sums
                 if k == "md5sum":
                     continue
