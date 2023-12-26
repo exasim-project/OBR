@@ -6,7 +6,7 @@ from pathlib import Path
 from subprocess import check_output
 import re
 from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
-from signac.contrib.job import Job
+from signac.job import Job
 from .BlockMesh import BlockMesh, calculate_simple_partition
 from datetime import datetime
 from Owls.parser.FoamDict import FileParser
