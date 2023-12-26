@@ -45,6 +45,7 @@ def set_up_of_case(tmpdir):
         Repo.clone_from(url=url, to_path=tmpdir, multi_options=["--depth 1"])
 
     rval = of_dir / "tutorials" / lid_driven_cavity
+    create_logs(rval)
     return rval
 
 
@@ -108,3 +109,45 @@ def test_OpenFOAMCaseSetter(set_up_of_case):
     assert of_case.controlDict.get("startTime") == 10
 
     assert of_case.is_decomposed is False
+
+
+def test_detailed_update(set_up_of_case):
+    class mock_job:
+        doc = {"state": {}}
+
+    of_case = OpenFOAMCase(set_up_of_case, mock_job())
+
+    # copy log file with failure
+    log_folder = Path(__file__).parent
+    shutil.copyfile(
+        log_folder / "logs/icoFoamIncomplete.log",
+        of_case.path / "icoFoam_2023-12-30_22:13:31.log",
+    )
+    assert of_case.finished == False
+    assert of_case.job.doc["state"]["global"] == "incomplete"
+
+    # copy log file with failure
+    log_folder = Path(__file__).parent
+    shutil.copyfile(
+        log_folder / "logs/icoFoamFailure.log",
+        of_case.path / "icoFoam_2023-12-30_22:13:31.log",
+    )
+
+    # Logs with failures return false
+    with open(of_case.path / "solverExitCode.log", "w") as exitCodeLog:
+        exitCodeLog.write("1")
+    assert of_case.process_latest_time_stats() == False
+    assert of_case.finished == False
+    assert of_case.job.doc["state"]["global"] == "failure"
+
+    # copy log files
+    log_folder = Path(__file__).parent
+    shutil.copyfile(
+        log_folder / "logs/icoFoamSuccess.log",
+        of_case.path / "icoFoam_2023-12-30_22:13:31.log",
+    )
+
+    # Logs with failures return false
+    assert of_case.process_latest_time_stats() == True
+    assert of_case.finished == True
+    assert of_case.job.doc["state"]["global"] == "completed"

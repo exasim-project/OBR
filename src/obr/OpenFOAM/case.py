@@ -119,46 +119,40 @@ class OpenFOAMCase(BlockMesh):
         self.config_file_tree
 
     @property
-    def path(self):
+    def path(self) -> Path:
         return self.path_
 
     @property
-    def system_folder(self):
+    def system_folder(self) -> Path:
         return self.path / "system"
 
     @property
-    def constant_folder(self):
+    def constant_folder(self) -> Path:
         return self.path / "constant"
 
     @property
-    def const_polyMesh_folder(self):
-        cpf = self.constant_folder / "polyMesh"
-        if cpf.exists():
-            return cpf
-        return None
+    def const_polyMesh_folder(self) -> Path:
+        return self.constant_folder / "polyMesh"
 
     @property
-    def system_include_folder(self):
-        cpf = self.system_folder / "include"
-        if cpf.exists():
-            return cpf
-        return None
+    def system_include_folder(self) -> Path:
+        return self.system_folder / "include"
 
     @property
-    def zero_folder(self):
+    def zero_folder(self) -> Path:
         """TODO check for 0.orig folder"""
         return self.path / "0"
 
     @property
-    def init_p(self):
+    def init_p(self) -> Path:
         return self.zero_folder / "p"
 
     @property
-    def init_U(self):
+    def init_U(self) -> Path:
         return self.zero_folder / "U.orig"
 
     @property
-    def is_decomposed(self):
+    def is_decomposed(self) -> bool:
         proc_zero = self.path / "processor0"
         if not proc_zero.exists():
             return False
@@ -363,6 +357,7 @@ class OpenFOAMCase(BlockMesh):
         if not self.latest_log:
             return False
         try:
+            self.job.doc["state"]["global"] = "incomplete"
             self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
             self.job.doc["state"][
                 "continuityErrors"
@@ -379,7 +374,14 @@ class OpenFOAMCase(BlockMesh):
             if self.latest_log.footer.completed:
                 self.job.doc["state"]["global"] = "completed"
             return True
-        except:
+        except Exception as e:
+            # if parsing of log file failes check failure handler
+            exitCodeLog = self.path / "solverExitCode.log"
+            if exitCodeLog.exists():
+                with open(exitCodeLog, "r") as exitCodeLogHandler:
+                    exitCode = exitCodeLogHandler.readlines()
+                    if not "0" == exitCode:
+                        self.job.doc["state"]["global"] = "failure"
             return False
 
     def detailed_update(self):
