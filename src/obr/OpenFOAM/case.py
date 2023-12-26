@@ -375,7 +375,7 @@ class OpenFOAMCase(BlockMesh):
                 self.job.doc["state"]["global"] = "completed"
             return True
         except Exception as e:
-            # if parsing of log file failes check failure handler
+            # if parsing of log file fails, check failure handler
             exitCodeLog = self.path / "solverExitCode.log"
             if exitCodeLog.exists():
                 with open(exitCodeLog, "r") as exitCodeLogHandler:
