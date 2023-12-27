@@ -126,7 +126,11 @@ def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
     filters: list[str] = kwargs.get("filter", [])
-    jobs = project.filter_jobs(filters=filters)
+    if (sel:= kwargs.get("job")):
+        jobs = [job for job in project if sel == job.id]
+    else:
+        jobs = project.filter_jobs(filters=filters)
+
     # check if given path points to valid project
     if not is_valid_workspace(filters):
         sys.exit(1)
@@ -233,11 +237,20 @@ def submit(ctx: click.Context, **kwargs):
             time.sleep(15)
     else:
         logging.info(f"submitting {len(jobs)} individual jobs")
-        ret_submit = project.submit(
-            names=operations,
-            **cluster_args,
-        )
-        logging.info(ret_submit)
+        import cProfile
+        import pstats
+
+        with cProfile.Profile() as pr:
+            ret_submit = project.submit(
+                names=operations,
+                **cluster_args,
+            )
+            logging.info(ret_submit)
+
+        stats = pstats.Stats(pr)
+        stats.sort_stats(pstats.SortKey.TIME)
+        # stats.print_stats()
+        stats.dump_stats(filename='needs_profiling.prof')
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
@@ -327,6 +340,7 @@ def reset(ctx: click.Context, **kwargs):
 @click.pass_context
 def run(ctx: click.Context, **kwargs):
     """Run specified operations"""
+    print("run", kwargs)
     project, jobs = cli_cmd_setup(kwargs)
 
     operations = kwargs.get("operations", "").split(",")
@@ -502,7 +516,7 @@ def status(ctx: click.Context, **kwargs):
 
     # project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
-    sort_by = kwargs.get("sort_by", "").split(",")
+    sort_by = kwargs.get("sort_by", False).split(",")
     extra = kwargs.get("extra", "").split(",")
     hide = kwargs.get("hide", "")
     hide = hide.split(",") if hide else []
@@ -522,11 +536,11 @@ def status(ctx: click.Context, **kwargs):
     df["view"] = df["jobid"].apply(lambda x: id_view_map.get(x, None))
     if hide:
         df.drop(columns=hide, inplace=True, axis=0)
-    if sort_by:
-        # df.dropna(inplace=True)
-        df = df.set_index(sort_by).sort_index().reset_index()
-        if not kwargs.get("detailed"):
-            df.dropna(inplace=True)
+    # if sort_by:
+    #     # df.dropna(inplace=True)
+    #     df = df.set_index(sort_by).sort_index().reset_index()
+    #     if not kwargs.get("detailed"):
+    #         df.dropna(inplace=True)
     # with open(export_to, "w") as outfile:
     if kwargs.get("export_to") == "markdown":
         print(df.to_markdown(tablefmt="github"))

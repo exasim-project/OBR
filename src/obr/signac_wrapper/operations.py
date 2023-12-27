@@ -85,9 +85,11 @@ def basic_eligible(job: Job, operation: str) -> bool:
       - operation has been requested for job
       - copy and link files and folder
     """
+    # TODO DONT MERGE add is_job check here
     # don't execute operation on cases that dont request them
     if (
         is_locked(job)
+        or not is_job(job)
         or not parent_job_is_ready(job) == "ready"
         or not operation == job.sp().get("operation")
         or not needs_initialization(job)
@@ -633,6 +635,11 @@ def validate_state(_: str, job: Job) -> str:
     case.detailed_update()
 
 
+def move_submission_log(_: str, job: Job) -> str:
+    """Move files like slurm.out to case folder"""
+    pass
+
+
 @simulate
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
@@ -640,6 +647,7 @@ def validate_state(_: str, job: Job) -> str:
     cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
 )
 @OpenFOAMProject.operation_hooks.on_exit(validate_state)
+@OpenFOAMProject.operation_hooks.on_exit(move_submission_log)
 def runParallelSolver(job: Job, args={}) -> str:
     env_run_template = os.environ.get("OBR_RUN_CMD")
     solver_cmd = (

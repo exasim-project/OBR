@@ -278,7 +278,6 @@ def find_solver_logs(job: Job, campaign_in: str = "") -> Generator[tuple, None, 
             root, _, files = next(os.walk(path))
             for file in files:
                 if "Foam" in file and file.endswith("log"):
-                    print("file:", file)
                     yield f"{root}/{file}", campaign, tags
 
 
@@ -392,17 +391,27 @@ def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
         A dictionary with jobid: view_folder
     """
 
+    def find_last_workspace(path):
+        """ like path.index('workspace') but if several folders named workspace are present take the last one
+        """
+        path_parts = path.resolve().parts
+        for i, part in reversed(list(enumerate(path_parts))):
+            if part == "workspace":
+                return i
+        raise FileNotFoundError("workspace")
+
+
     def get_job_id_from_path(path: Path):
         """finds the name after workspace"""
-        full_path = path.resolve().parts
-        return full_path[full_path.index("workspace") + 1]
+        full_path =  path.resolve()
+        return full_path.parts[find_last_workspace(full_path) + 1]
 
     ret = {}
     base = Path(view_folder)
     if not base.exists():
         return {}
-    for root, folder, file in os.walk(view_folder):
-        for i, fold in enumerate(folder):
+    for root, folder, _ in os.walk(view_folder):
+        for fold in folder:
             path = Path(root) / fold
             job_id = None
             if path.is_symlink():
