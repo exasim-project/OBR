@@ -536,14 +536,29 @@ def reset(job: Job, args={}):
 
 
 def get_number_of_procs(job: Job) -> int:
+    """Deduces the number of processor
+
+    For performance reasons the cache is used to store the number of subdomains
+    """
     np = int(job.sp().get("numberSubDomains", 0))
     if np:
         return np
-    return int(
+
+    np = int(job.doc["cache"].get("numberSubDomains", 0))
+    if np:
+        return np
+
+    np = int(
         OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get(
             "numberOfSubdomains"
         )
     )
+    if np:
+        job.doc["cache"]["numberSubDomains"]= np
+    return np
+
+
+
 
 
 def get_values(jobs: list, key: str) -> set:
