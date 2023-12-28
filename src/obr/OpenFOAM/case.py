@@ -199,7 +199,6 @@ class OpenFOAMCase(BlockMesh):
                         file_obj = File(folder=folder, file=f_path.name, job=self.job)
                         yield file_obj, rel_path
 
-
     @property
     def current_time(self) -> float:
         """Returns the current timestep of the simulation"""
