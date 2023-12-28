@@ -375,7 +375,7 @@ class OpenFOAMCase(BlockMesh):
             if self.latest_log.footer.completed:
                 self.job.doc["state"]["global"] = "completed"
             return True
-        except Exception as e:
+        except Exception:
             # if parsing of log file fails, check failure handler
             self.job.doc["state"]["global"] = "failure"
             return False
