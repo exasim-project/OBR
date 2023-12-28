@@ -7,8 +7,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: psf/black@stable
-        version: "23.12.1"
         with:
+          version: "23.12.1"
           options: ". --check"
       - name: Install dependencies for demo Python project
         run: |
