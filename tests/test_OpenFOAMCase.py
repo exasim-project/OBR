@@ -125,6 +125,8 @@ def test_detailed_update(set_up_of_case):
     )
     assert of_case.finished == False
     assert of_case.job.doc["state"]["global"] == "incomplete"
+    assert of_case.current_time == 0.49
+    assert of_case.progress > 0 and of_case.progress < 1.0
 
     # copy log file with failure
     log_folder = Path(__file__).parent
@@ -139,6 +141,8 @@ def test_detailed_update(set_up_of_case):
     assert of_case.process_latest_time_stats() == False
     assert of_case.finished == False
     assert of_case.job.doc["state"]["global"] == "failure"
+    assert of_case.current_time == 9
+    assert of_case.progress > 0 and of_case.progress < 1.0
 
     # copy log files
     log_folder = Path(__file__).parent
@@ -151,3 +155,6 @@ def test_detailed_update(set_up_of_case):
     assert of_case.process_latest_time_stats() == True
     assert of_case.finished == True
     assert of_case.job.doc["state"]["global"] == "completed"
+    assert of_case.current_time == 0.5
+    assert of_case.controlDict.get("endTime") == 0.5
+    assert of_case.progress > 0.99

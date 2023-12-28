@@ -199,17 +199,17 @@ class OpenFOAMCase(BlockMesh):
                         file_obj = File(folder=folder, file=f_path.name, job=self.job)
                         yield file_obj, rel_path
 
+
     @property
     def current_time(self) -> float:
         """Returns the current timestep of the simulation"""
-        # TODO DONT MERGE implement
-        return 0.0
+        self.fetch_latest_log()
+        return self.latest_log.latestTime.time
 
     @property
     def progress(self) -> float:
         """Returns the progress of the simulation in percent"""
-        # TODO DONT MERGE implement
-        return 0.0
+        return self.current_time / float(self.controlDict.get("endTime"))
 
     @property
     def latest_solver_log_path(self) -> Path:
