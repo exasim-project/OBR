@@ -327,21 +327,23 @@ class OpenFOAMCase(BlockMesh):
         solver = self.controlDict.get("application")
         return self._exec_operation([solver])
 
-    def is_file_modified(self, path: str) -> bool:
-        """
-        checks if a file has been modified by comparing the current md5sum with the previously saved one inside `self.job.dict`
+    def is_file_modified(self, file: str) -> bool:
+        """Checks if a file has been modified by comparing the current md5sum with
+        the previously saved one inside `self.job.dict`.
         """
         if "md5sum" not in self.job.doc["cache"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(path)
-        if os.path.getmtime(path) == last_modified:
+        current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(file)
+        if os.path.getmtime(self.path / file) == last_modified:
             # if modification dates dont differ, the md5sums wont, either
             return False
-        md5sum = check_output(["md5sum", path], text=True)
+        md5sum = check_output(["md5sum", file], text=True)
         return current_md5sum != md5sum
 
     def is_tree_modified(self) -> list[str]:
-        """Iterates all files inside the case tree and returns a list of files that were modified, based on their md5sum."""
+        """Iterates all files inside the case tree and returns a list of files that
+        were modified, based on their md5sum.
+        """
         m_files = []
         for file in self.config_file_tree:
             if self.is_file_modified(file):
@@ -349,7 +351,9 @@ class OpenFOAMCase(BlockMesh):
         return m_files
 
     def process_latest_time_stats(self) -> bool:
-        """This function parses the latest time step log and stores the results in the job document
+        """This function parses the latest time step log and stores the results in
+        the job document
+
         Return: A boolean indication whether processing was successful
         """
         if not self.latest_log:
