@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
-import re
 
 from pathlib import Path
 from flow import FlowProject
-from subprocess import check_output
-from Owls.parser.LogFile import LogFile
 
 from ..core.core import get_mesh_stats
 

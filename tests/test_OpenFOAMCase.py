@@ -125,6 +125,7 @@ def test_detailed_update(set_up_of_case):
     )
     assert of_case.finished == False
     assert of_case.job.doc["state"]["global"] == "incomplete"
+    assert of_case.current_time == 0.49
 
     # copy log file with failure
     log_folder = Path(__file__).parent
@@ -139,6 +140,7 @@ def test_detailed_update(set_up_of_case):
     assert of_case.process_latest_time_stats() == False
     assert of_case.finished == False
     assert of_case.job.doc["state"]["global"] == "failure"
+    assert of_case.current_time == 9
 
     # copy log files
     log_folder = Path(__file__).parent
@@ -151,3 +153,11 @@ def test_detailed_update(set_up_of_case):
     assert of_case.process_latest_time_stats() == True
     assert of_case.finished == True
     assert of_case.job.doc["state"]["global"] == "completed"
+    assert of_case.current_time == 0.5
+
+    shutil.copyfile(
+        log_folder / "logs/icoFoamStartupFailure.log",
+        of_case.path / "icoFoam_2023-12-30_22:13:31.log",
+    )
+    assert of_case.finished == False
+    assert of_case.job.doc["state"]["global"] == "failure"

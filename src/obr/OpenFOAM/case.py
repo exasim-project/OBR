@@ -206,14 +206,13 @@ class OpenFOAMCase(BlockMesh):
     @property
     def current_time(self) -> float:
         """Returns the current timestep of the simulation"""
-        # TODO DONT MERGE implement
-        return 0.0
+        self.fetch_latest_log()
+        return self.latest_log.latestTime.time
 
     @property
     def progress(self) -> float:
         """Returns the progress of the simulation in percent"""
-        # TODO DONT MERGE implement
-        return 0.0
+        return self.current_time / float(self.controlDict.get("endTime"))
 
     @property
     def latest_solver_log_path(self) -> Path:
@@ -334,25 +333,23 @@ class OpenFOAMCase(BlockMesh):
         solver = self.controlDict.get("application")
         return self._exec_operation([solver])
 
-    def is_file_modified(self, path: str) -> bool:
-        """
-        checks if a file has been modified by comparing the current md5sum with the previously saved one inside `self.job.dict`
+    def is_file_modified(self, file: str) -> bool:
+        """Checks if a file has been modified by comparing the current md5sum with
+        the previously saved one inside `self.job.dict`.
         """
         if "md5sum" not in self.job.doc["cache"]:
             return False  # no md5sum has been calculated for this file
         current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(path)
-        try:
-            if os.path.getmtime(self.path / path) == last_modified:
-                # if modification dates dont differ, the md5sums wont, either
-                return False
-        except:
-            print(f"failed to check {path} on {self.path}")
+        if os.path.getmtime(self.path / path) == last_modified:
+            # if modification dates dont differ, the md5sums wont, either
             return False
-        md5sum = check_output(["md5sum", path], text=True)
+        md5sum = check_output(["md5sum", file], text=True)
         return current_md5sum != md5sum
 
     def is_tree_modified(self) -> list[str]:
-        """Iterates all files inside the case tree and returns a list of files that were modified, based on their md5sum."""
+        """Iterates all files inside the case tree and returns a list of files that
+        were modified, based on their md5sum.
+        """
         m_files = []
         for file in self.config_file_tree:
             if self.is_file_modified(file):
@@ -360,43 +357,51 @@ class OpenFOAMCase(BlockMesh):
         return m_files
 
     def process_latest_time_stats(self) -> bool:
-        """This function parses the latest time step log and stores the results in the job document
+        """This function parses the latest time step log and stores the results in
+        the job document.
+
         Return: A boolean indication whether processing was successful
         """
         if not self.latest_log:
             return False
 
-        # Check for failure
-        if (
-            ("ERROR" in self.latest_log.footer.content)
-            or (
-                "There are not enough slots available" in self.latest_log.footer.content
-            )
-            or ("error" in self.latest_log.footer.content)
-        ):
+        # TODO eventually this should be part of OWLS
+        # Check for failure states
+        if "There are not enough slots available" in self.latest_log.footer.content:
             self.job.doc["state"]["global"] = "failure"
-        else:
-            try:
-                self.job.doc["state"]["global"] = "incomplete"
-                self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
-                self.job.doc["state"][
-                    "continuityErrors"
-                ] = self.latest_log.latestTime.continuity_errors
-                self.job.doc["state"][
-                    "CourantNumber"
-                ] = self.latest_log.latestTime.Courant_number
-                self.job.doc["state"]["ExecutionTime"] = (
-                    self.latest_log.latestTime.execution_time["ExecutionTime"]
-                )
-                self.job.doc["state"]["ClockTime"] = (
-                    self.latest_log.latestTime.execution_time["ClockTime"]
-                )
-                if self.latest_log.footer.completed:
-                    self.job.doc["state"]["global"] = "completed"
-                return True
-            except Exception as e:
-                # if parsing of log file fails, check failure handler
-                return False
+            self.job.doc["state"]["failureState"] = "MPI startup error"
+            # No reason for further parsing
+            return False
+
+        if "ERROR" in self.latest_log.footer.content:
+            self.job.doc["state"]["global"] = "failure"
+            self.job.doc["state"]["failureState"] = "FOAM ERROR"
+
+        if "error" in self.latest_log.footer.content:
+            self.job.doc["state"]["global"] = "failure"
+
+        try:
+            self.job.doc["state"]["global"] = "incomplete"
+            self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
+            self.job.doc["state"][
+                "continuityErrors"
+            ] = self.latest_log.latestTime.continuity_errors
+            self.job.doc["state"][
+                "CourantNumber"
+            ] = self.latest_log.latestTime.Courant_number
+            self.job.doc["state"]["ExecutionTime"] = (
+                self.latest_log.latestTime.execution_time["ExecutionTime"]
+            )
+            self.job.doc["state"]["ClockTime"] = (
+                self.latest_log.latestTime.execution_time["ClockTime"]
+            )
+            if self.latest_log.footer.completed:
+                self.job.doc["state"]["global"] = "completed"
+            return True
+        except Exception:
+            # if parsing of log file fails, check failure handler
+            self.job.doc["state"]["global"] = "failure"
+            return False
 
     def detailed_update(self):
         """Perform a detailed update on the job doc state"""

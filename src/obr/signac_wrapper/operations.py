@@ -13,8 +13,7 @@ from signac.contrib.job import Job
 from typing import Union, Literal
 from datetime import datetime
 import logging
-from typing import Optional
-from obr.core.queries import filter_jobs, query_impl, input_to_queries, Query
+from obr.core.queries import filter_jobs, query_impl, Query
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
