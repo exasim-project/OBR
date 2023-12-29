@@ -351,12 +351,29 @@ class OpenFOAMCase(BlockMesh):
 
     def process_latest_time_stats(self) -> bool:
         """This function parses the latest time step log and stores the results in
-        the job document
+        the job document.
 
         Return: A boolean indication whether processing was successful
         """
         if not self.latest_log:
             return False
+
+
+        # TODO eventually this should be part of OWLS
+        # Check for failure states
+        if ("There are not enough slots available" in self.latest_log.footer.content):
+            self.job.doc["state"]["global"] = "failure"
+            self.job.doc["state"]["failureState"] = "MPI startup error"
+            # No reason for further parsing
+            return False
+
+        if ("ERROR" in self.latest_log.footer.content):
+            self.job.doc["state"]["global"] = "failure"
+            self.job.doc["state"]["failureState"] = "FOAM ERROR"
+
+        if ("error" in self.latest_log.footer.content):
+            self.job.doc["state"]["global"] = "failure"
+
         try:
             self.job.doc["state"]["global"] = "incomplete"
             self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
