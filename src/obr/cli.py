@@ -242,6 +242,7 @@ def submit(ctx: click.Context, **kwargs):
 
         with cProfile.Profile() as pr:
             ret_submit = project.submit(
+                jobs=jobs,
                 names=operations,
                 **cluster_args,
             )
