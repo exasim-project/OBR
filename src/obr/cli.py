@@ -270,7 +270,7 @@ def submit(ctx: click.Context, **kwargs):
     ),
 )
 @click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
-@click.option("-c", "--case", default="remove all obr project files")
+@click.option("-c", "--case", is_flag=True, help="reset the state of a case by deleting solver logs")
 @click.option(
     "-v", "--view", default="remove case completely specified by a view folder"
 )
@@ -295,7 +295,8 @@ def reset(ctx: click.Context, **kwargs):
         return
     if kwargs.get("case"):
         project.run(
-            names=["reset"],
+            jobs = jobs,
+            names=["resetCase"],
             progress=True,
             np=-1,
         )
@@ -537,11 +538,11 @@ def status(ctx: click.Context, **kwargs):
     df["view"] = df["jobid"].apply(lambda x: id_view_map.get(x, None))
     if hide:
         df.drop(columns=hide, inplace=True, axis=0)
-    # if sort_by:
-    #     # df.dropna(inplace=True)
-    #     df = df.set_index(sort_by).sort_index().reset_index()
-    #     if not kwargs.get("detailed"):
-    #         df.dropna(inplace=True)
+    if sort_by:
+        # df.dropna(inplace=True)
+        df = df.set_index(sort_by).sort_index().reset_index()
+        if not kwargs.get("detailed"):
+            df.dropna(inplace=True)
     # with open(export_to, "w") as outfile:
     if kwargs.get("export_to") == "markdown":
         print(df.to_markdown(tablefmt="github"))
