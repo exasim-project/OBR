@@ -126,7 +126,7 @@ def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
     filters: list[str] = kwargs.get("filter", [])
-    if (sel:= kwargs.get("job")):
+    if sel := kwargs.get("job"):
         jobs = [job for job in project if sel == job.id]
     else:
         jobs = project.filter_jobs(filters=filters)
@@ -251,7 +251,7 @@ def submit(ctx: click.Context, **kwargs):
         stats = pstats.Stats(pr)
         stats.sort_stats(pstats.SortKey.TIME)
         # stats.print_stats()
-        stats.dump_stats(filename='needs_profiling.prof')
+        stats.dump_stats(filename="needs_profiling.prof")
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))

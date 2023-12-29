@@ -392,18 +392,16 @@ def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
     """
 
     def find_last_workspace(path):
-        """ like path.index('workspace') but if several folders named workspace are present take the last one
-        """
+        """like path.index('workspace') but if several folders named workspace are present take the last one"""
         path_parts = path.resolve().parts
         for i, part in reversed(list(enumerate(path_parts))):
             if part == "workspace":
                 return i
         raise FileNotFoundError("workspace")
 
-
     def get_job_id_from_path(path: Path):
         """finds the name after workspace"""
-        full_path =  path.resolve()
+        full_path = path.resolve()
         return full_path.parts[find_last_workspace(full_path) + 1]
 
     ret = {}

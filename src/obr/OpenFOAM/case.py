@@ -32,8 +32,11 @@ class File(FileParser):
         kwargs["path"] = Path(self._folder) / self._file
         if not kwargs["path"].exists():
             self.path = kwargs["path"]
+            self._dict = {}
             self.missing = True  # indicate that the file is currently missing
             return
+        else:
+            self.missing = False
         super().__init__(**kwargs, skip_update=True)
         self._md5sum = None
 
@@ -41,7 +44,8 @@ class File(FileParser):
         """Get a value from an OpenFOAM dictionary file"""
         # TODO replace with a safer option
         # also consider moving that to Owls
-        self.update()
+        if not self.missing:
+            self.update()
         try:
             return eval(super().get(name))
         except:
@@ -236,6 +240,9 @@ class OpenFOAMCase(BlockMesh):
 
     def fetch_latest_log(self) -> None:
         solver = self.controlDict.get("application")
+        # TODO DONT MERGE how can we end up here?
+        if not self.path.exists():
+            return
 
         root, _, files = next(os.walk(self.path))
         log_files = [f for f in files if f.endswith(".log") and f.startswith(solver)]
@@ -334,8 +341,12 @@ class OpenFOAMCase(BlockMesh):
         if "md5sum" not in self.job.doc["cache"]:
             return False  # no md5sum has been calculated for this file
         current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(path)
-        if os.path.getmtime(path) == last_modified:
-            # if modification dates dont differ, the md5sums wont, either
+        try:
+            if os.path.getmtime(self.path / path) == last_modified:
+                # if modification dates dont differ, the md5sums wont, either
+                return False
+        except:
+            print(f"failed to check {path} on {self.path}")
             return False
         md5sum = check_output(["md5sum", path], text=True)
         return current_md5sum != md5sum
@@ -354,33 +365,38 @@ class OpenFOAMCase(BlockMesh):
         """
         if not self.latest_log:
             return False
-        try:
-            self.job.doc["state"]["global"] = "incomplete"
-            self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
-            self.job.doc["state"][
-                "continuityErrors"
-            ] = self.latest_log.latestTime.continuity_errors
-            self.job.doc["state"][
-                "CourantNumber"
-            ] = self.latest_log.latestTime.Courant_number
-            self.job.doc["state"]["ExecutionTime"] = (
-                self.latest_log.latestTime.execution_time["ExecutionTime"]
+
+        # Check for failure
+        if (
+            ("ERROR" in self.latest_log.footer.content)
+            or (
+                "There are not enough slots available" in self.latest_log.footer.content
             )
-            self.job.doc["state"]["ClockTime"] = (
-                self.latest_log.latestTime.execution_time["ClockTime"]
-            )
-            if self.latest_log.footer.completed:
-                self.job.doc["state"]["global"] = "completed"
-            return True
-        except Exception as e:
-            # if parsing of log file fails, check failure handler
-            exitCodeLog = self.path / "solverExitCode.log"
-            if exitCodeLog.exists():
-                with open(exitCodeLog, "r") as exitCodeLogHandler:
-                    exitCode = exitCodeLogHandler.readlines()
-                    if not "0" == exitCode:
-                        self.job.doc["state"]["global"] = "failure"
-            return False
+            or ("error" in self.latest_log.footer.content)
+        ):
+            self.job.doc["state"]["global"] = "failure"
+        else:
+            try:
+                self.job.doc["state"]["global"] = "incomplete"
+                self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
+                self.job.doc["state"][
+                    "continuityErrors"
+                ] = self.latest_log.latestTime.continuity_errors
+                self.job.doc["state"][
+                    "CourantNumber"
+                ] = self.latest_log.latestTime.Courant_number
+                self.job.doc["state"]["ExecutionTime"] = (
+                    self.latest_log.latestTime.execution_time["ExecutionTime"]
+                )
+                self.job.doc["state"]["ClockTime"] = (
+                    self.latest_log.latestTime.execution_time["ClockTime"]
+                )
+                if self.latest_log.footer.completed:
+                    self.job.doc["state"]["global"] = "completed"
+                return True
+            except Exception as e:
+                # if parsing of log file fails, check failure handler
+                return False
 
     def detailed_update(self):
         """Perform a detailed update on the job doc state"""

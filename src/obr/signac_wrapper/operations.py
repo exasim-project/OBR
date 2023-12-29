@@ -531,11 +531,8 @@ def checkMesh(job: Job, args={}):
 
 @OpenFOAMProject.operation
 def reset(job: Job, args={}):
-    """Deletes all files that have been added since creation, thus performing a Allclean
-    """
+    """Deletes all files that have been added since creation, thus performing a Allclean"""
     pass
-
-
 
 
 def get_number_of_procs(job: Job) -> int:
@@ -557,11 +554,8 @@ def get_number_of_procs(job: Job) -> int:
         )
     )
     if np:
-        job.doc["cache"]["numberSubDomains"]= np
+        job.doc["cache"]["numberSubDomains"] = np
     return np
-
-
-
 
 
 def get_values(jobs: list, key: str) -> set:

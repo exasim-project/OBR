@@ -69,9 +69,9 @@ def test_OpenFOAMCaseProperties(set_up_of_case):
 
     times = ["1e-06", "2", "3.0"]
     for time_folder in times:
-        check_output(
-            ["cp", "-r", str(of_case.zero_folder), str(of_case.path / time_folder)]
-        )
+        check_output([
+            "cp", "-r", str(of_case.zero_folder), str(of_case.path / time_folder)
+        ])
     times = ["0"] + times
     times.sort()
 
