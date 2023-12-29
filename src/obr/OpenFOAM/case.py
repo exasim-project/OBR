@@ -358,20 +358,19 @@ class OpenFOAMCase(BlockMesh):
         if not self.latest_log:
             return False
 
-
         # TODO eventually this should be part of OWLS
         # Check for failure states
-        if ("There are not enough slots available" in self.latest_log.footer.content):
+        if "There are not enough slots available" in self.latest_log.footer.content:
             self.job.doc["state"]["global"] = "failure"
             self.job.doc["state"]["failureState"] = "MPI startup error"
             # No reason for further parsing
             return False
 
-        if ("ERROR" in self.latest_log.footer.content):
+        if "ERROR" in self.latest_log.footer.content:
             self.job.doc["state"]["global"] = "failure"
             self.job.doc["state"]["failureState"] = "FOAM ERROR"
 
-        if ("error" in self.latest_log.footer.content):
+        if "error" in self.latest_log.footer.content:
             self.job.doc["state"]["global"] = "failure"
 
         try:
