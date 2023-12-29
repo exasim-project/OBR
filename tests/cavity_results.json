@@ -1,1 +1,40 @@
-{"6ad5766e073428e92063b43d54693f7d": {"global": "completed"}, "9ad9e3f80ef74b328a721bfd492d4b4c": {"global": "ready"}, "d51f5e714b7a07d3f2fb9cd891f2229b": {"global": "completed"}, "e202a3a5452b74bbe182352054771052": {"global": "completed"}, "690fab03c5a665af7832816a2d800f3a": {"global": "ready"}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/product.schema.json",
+  "title": "Product",
+  "description": "",
+  "type": "object",
+  "patternProperties": {
+    "[a-z0-9]+": {
+      "type": "object",
+      "properties": {
+        "global": {
+          "type": "string",
+          "enum": [
+            "completed"
+          ]
+        },
+        "CourantNumber": {
+          "type": "object",
+          "properties": {
+            "CourantNumber_max": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "Maximum": 1
+            }
+          }
+        },
+        "continuityErrors": {
+          "type": "object",
+          "properties": {
+            "timeStepContErrors_sumLocal": {
+              "type": "number",
+              "exclusiveMaximum": 1e-07
+            }
+          }
+        }
+      }
+    }
+  },
+  "minProperties": 3
+}
