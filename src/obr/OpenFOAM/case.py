@@ -181,6 +181,11 @@ class OpenFOAMCase(BlockMesh):
         return ret
 
     @property
+    def solver(self) -> str:
+        return self.controlDict.get("application")
+
+
+    @property
     def processor_folder(self) -> list[Path]:
         if not self.is_decomposed:
             return []
@@ -224,8 +229,10 @@ class OpenFOAMCase(BlockMesh):
     def latest_log(self) -> LogFile:
         """Returns handle to the latest log"""
         log = self.latest_solver_log_path
+        if not log:
+            return None
         if not log.exists():
-            raise ValueError("No Logfile found")
+            return None
         self.latest_log_handle_ = LogFile(log, matcher=[])
         return self.latest_log_handle_
 
@@ -237,17 +244,20 @@ class OpenFOAMCase(BlockMesh):
             return self.latest_log.footer.completed
         return False
 
-    def fetch_latest_log(self) -> None:
-        solver = self.controlDict.get("application")
-        # TODO DONT MERGE how can we end up here?
-        if not self.path.exists():
-            return
-
+    def fetch_logs(self) -> list[Path]:
+        solver = self.solver
         root, _, files = next(os.walk(self.path))
-        log_files = [f for f in files if f.endswith(".log") and f.startswith(solver)]
+        log_files = [Path(root) / f for f in files if f.endswith(".log") and f.startswith(solver)]
         log_files.sort()
+        return log_files
+
+    def fetch_latest_log(self) -> None:
+        log_files = self.fetch_logs()
         if log_files:
-            self.latest_log_path_ = Path(root) / log_files[-1]
+            self.latest_log_path_ = log_files[-1]
+        else:
+            self.latest_log_path_ = None
+
 
     @property
     def config_file_tree(self) -> list[str]:
@@ -274,6 +284,13 @@ class OpenFOAMCase(BlockMesh):
                 return re.match(OF_HEADER_REGEX, header) is not None
             except UnicodeDecodeError:
                 return False
+
+
+    def remove_solver_logs(self):
+        """Search for solver logs and deletes them"""
+        for log in self.fetch_logs():
+            log = self._exec_operation(["rm", str(log)])
+
 
     def _exec_operation(self, operation) -> Path:
         return logged_execute(operation, self.path, self.job.doc)
@@ -339,8 +356,8 @@ class OpenFOAMCase(BlockMesh):
         """
         if "md5sum" not in self.job.doc["cache"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(path)
-        if os.path.getmtime(self.path / path) == last_modified:
+        current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(file)
+        if os.path.getmtime(self.path / file) == last_modified:
             # if modification dates dont differ, the md5sums wont, either
             return False
         md5sum = check_output(["md5sum", file], text=True)
@@ -363,6 +380,8 @@ class OpenFOAMCase(BlockMesh):
         Return: A boolean indication whether processing was successful
         """
         if not self.latest_log:
+            self.job.doc["state"]["global"] = "ready"
+            self.job.doc["state"]["failureState"] = None
             return False
 
         # TODO eventually this should be part of OWLS
