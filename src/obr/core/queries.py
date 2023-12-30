@@ -1,10 +1,11 @@
+import re
+import logging
+import pandas as pd
+
 from dataclasses import dataclass, field
 from typing import Any, Union, Callable, Iterable
 from copy import deepcopy
-import re
-import logging
-from signac.contrib.job import Job
-import pandas as pd
+from signac.job import Job
 from typing import TYPE_CHECKING, Union
 from enum import Enum
 

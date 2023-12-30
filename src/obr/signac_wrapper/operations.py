@@ -9,7 +9,7 @@ from subprocess import check_output
 from ..core.core import execute
 from .labels import owns_mesh, final, finished
 from obr.OpenFOAM.case import OpenFOAMCase
-from signac.contrib.job import Job
+from signac.job import Job
 from typing import Union, Literal
 from datetime import datetime
 import logging
@@ -111,7 +111,7 @@ def basic_eligible(job: Job, operation: str) -> bool:
 def parent_job_is_ready(job: Job) -> str:
     """Checks whether the parent of the given job is ready"""
     if job.sp().get("parent_id"):
-        project = OpenFOAMProject.get_project(root=job.path + "/../..")
+        project = OpenFOAMProject.get_project(path=job.path + "/../..")
         parent_job = project.open_job(id=job.sp().get("parent_id"))
         return parent_job.doc["state"].get("global", "")
     return ""

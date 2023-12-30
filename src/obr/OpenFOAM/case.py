@@ -6,7 +6,7 @@ import logging
 from typing import Union, Generator, Tuple, Any
 from pathlib import Path
 from subprocess import check_output
-from signac.contrib.job import Job
+from signac.job import Job
 from datetime import datetime
 from Owls.parser.FoamDict import FileParser
 from Owls.parser.LogFile import LogFile
