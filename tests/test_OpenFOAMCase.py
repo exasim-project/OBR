@@ -6,9 +6,9 @@ import pytest
 from pathlib import Path
 import shutil
 from git.repo import Repo
+from pathlib import Path
 
-
-def create_logs(path):
+def create_logs(path: Path):
     log_names = [
         "blockMesh_2023-11-30_22:13:31.log",
         "icoFoam_2023-11-30_22:14:31.log",
