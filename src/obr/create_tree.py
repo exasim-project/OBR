@@ -21,7 +21,7 @@ import logging
 from collections.abc import MutableMapping
 from pathlib import Path
 from subprocess import check_output
-from signac.contrib.job import Job
+from signac.job import Job
 from obr.signac_wrapper.operations import OpenFOAMProject
 from copy import deepcopy
 
