@@ -24,11 +24,6 @@ import json
 import logging
 
 from signac.job import Job
-from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
-from .create_tree import create_tree
-from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl, build_filter_query, Query
-from .core.core import map_view_folder_to_job_id
 from pathlib import Path
 from subprocess import check_output
 from git.repo import Repo
@@ -37,6 +32,13 @@ from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union, Optional, Any
 from copy import deepcopy
+
+from .signac_wrapper.operations import OpenFOAMProject, get_values
+from .create_tree import create_tree
+from .core.parse_yaml import read_yaml
+from .core.queries import input_to_queries, query_impl, build_filter_query, Query
+from .core.core import map_view_folder_to_job_id
+
 
 
 def check_cli_operations(

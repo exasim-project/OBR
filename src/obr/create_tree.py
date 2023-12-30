@@ -16,7 +16,6 @@
 
 import os
 import sys
-import hashlib
 import logging
 
 from collections.abc import MutableMapping
@@ -186,7 +185,7 @@ def add_variations(
 
             # derive path name from schema or key value
             parse_res = extract_from_operation(operation, value)
-            path = clean_path(parse_res["path"])
+            clean_path(parse_res["path"])
             base_dict = deepcopy(to_dict(parent_job.sp))
 
             statepoint = {
