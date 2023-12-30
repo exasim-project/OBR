@@ -605,7 +605,7 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
 
 def validate_state(_: str, job: Job) -> str:
     """Perform a detailed update of the job state"""
-    case = OpenFOAMCase(str(job.path) + "/case", job)
+    case = OpenFOAMCase(Path(job.path) / "case", job)
     case.detailed_update()
 
 

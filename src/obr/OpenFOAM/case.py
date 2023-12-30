@@ -228,7 +228,6 @@ class OpenFOAMCase(BlockMesh):
     @property
     def finished(self) -> bool:
         """check if the latest simulation run has finished gracefully"""
-        # TODO should also check if last time approx end time
         if self.process_latest_time_stats():
             return self.latest_log.footer.completed
         return False
