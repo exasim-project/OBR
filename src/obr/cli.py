@@ -40,7 +40,6 @@ from .core.queries import input_to_queries, query_impl, build_filter_query, Quer
 from .core.core import map_view_folder_to_job_id
 
 
-
 def check_cli_operations(
     project: OpenFOAMProject, operations: list[str], list_operations: Optional[Any]
 ) -> bool:
