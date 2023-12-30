@@ -24,7 +24,7 @@ import json
 import logging
 
 from signac.contrib.job import Job
-from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
+from .signac_wrapper.operations import OpenFOAMProject, get_values
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import input_to_queries, query_impl, build_filter_query, Query
