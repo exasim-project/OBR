@@ -35,7 +35,7 @@ def set_up_of_case(tmpdir):
         create_logs(dst)
         return dst
 
-    # OpenFOAM might exists but not being sourced
+    # OpenFOAM might exist but not being sourced
     of_dir = Path("~/OpenFOAM/OpenFOAM-10")
     if of_dir.exists():
         shutil.copytree(of_dir, tmpdir)
