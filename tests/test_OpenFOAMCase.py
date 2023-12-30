@@ -8,6 +8,7 @@ import shutil
 from git.repo import Repo
 from pathlib import Path
 
+
 def create_logs(path: Path):
     log_names = [
         "blockMesh_2023-11-30_22:13:31.log",
@@ -69,9 +70,9 @@ def test_OpenFOAMCaseProperties(set_up_of_case):
 
     times = ["1e-06", "2", "3.0"]
     for time_folder in times:
-        check_output(
-            ["cp", "-r", str(of_case.zero_folder), str(of_case.path / time_folder)]
-        )
+        check_output([
+            "cp", "-r", str(of_case.zero_folder), str(of_case.path / time_folder)
+        ])
     times = ["0"] + times
     times.sort()
 

@@ -77,11 +77,13 @@ def test_add_variations():
             return MockJob()
 
     operations = []
-    test_variation = [{
-        "operation": "n/a",
-        "schema": "n/a",
-        "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}],
-    }]
+    test_variation = [
+        {
+            "operation": "n/a",
+            "schema": "n/a",
+            "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}],
+        }
+    ]
     id_path_mapping = {}
     operations = add_variations(
         operations, MockProject(), test_variation, MockJob(), id_path_mapping

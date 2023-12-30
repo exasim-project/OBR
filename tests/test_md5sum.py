@@ -59,9 +59,9 @@ def test_md5sum_calculation(tmpdir, emit_test_config):
         job = json.load(job_file)
         case = OpenFOAMCase(case_path, job)
 
-        md5summed_files_target = set(
-            [f.rsplit("/", 1)[1] for f in case.config_file_tree]
-        )
+        md5summed_files_target = set([
+            f.rsplit("/", 1)[1] for f in case.config_file_tree
+        ])
         md5summed_files_actual = [
             key_to_path(file.rsplit("/", 1)[1])
             for file in job["cache"].get("md5sum", [])
