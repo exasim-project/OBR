@@ -180,8 +180,8 @@ def submit(ctx: click.Context, **kwargs):
         account=kwargs.get("account"),
         partition=kwargs.get("partition"),
         pretend=kwargs["pretend"],
-        bundling_key:=kwargs["bundling_key"],
-        scheduler_args=kwargs.get("scheduler_args")
+        bundling_key=kwargs["bundling_key"],
+        scheduler_args=kwargs.get("scheduler_args"),
     )
 
 
