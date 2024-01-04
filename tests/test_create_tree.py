@@ -1,11 +1,11 @@
-from obr.create_tree import create_tree, add_variations, extract_from_operation
-from obr.signac_wrapper.operations import OpenFOAMProject
-
 import pytest
 import os
-from pathlib import Path
 import shutil
+
 from pathlib import Path
+
+from obr.create_tree import create_tree, add_variations, extract_from_operation
+from obr.signac_wrapper.operations import OpenFOAMProject
 
 
 @pytest.fixture

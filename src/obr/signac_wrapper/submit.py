@@ -2,6 +2,7 @@ import shutil
 import os
 
 from signac.job import Job
+from typing import Union
 
 
 def submit_impl(

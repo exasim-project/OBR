@@ -33,6 +33,7 @@ from typing import Union, Optional, Any
 from copy import deepcopy
 
 from .signac_wrapper.operations import OpenFOAMProject
+from .signac_wrapper.submit import submit_impl
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .core.queries import build_filter_query, Query
@@ -174,7 +175,6 @@ def submit(ctx: click.Context, **kwargs):
         project,
         jobs,
         operations=operations,
-        folder=Path(kwargs.get("folder", ".")),
         template=Path(kwargs.get("template")),
         account=kwargs.get("account"),
         partition=kwargs.get("partition"),
