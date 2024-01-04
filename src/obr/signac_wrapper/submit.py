@@ -1,6 +1,8 @@
 import shutil
 import os
+import logging
 
+from pathlib import Path
 from signac.job import Job
 from typing import Union
 
@@ -16,18 +18,18 @@ def submit_impl(
     bundling_key: Union[str, None],
     scheduler_args: str,
 ):
-    template_target_path = Path("templates/script.sh")
+    template_target_path = Path( project.path) / "templates/script.sh"
     template_src_path = Path(template)
 
     if not template_src_path.exists():
         raise FileNotFoundError(template)
 
     if template and template_target_path.exists():
-        shutil.rmtree(str(template_target_path))
+        shutil.rmtree(template_target_path.parent)
 
     if template:
-        os.makedirs("templates", exist_ok=True)
-        shutil.copytree(str(template_target_path))
+        os.makedirs(template_target_path.parent, exist_ok=True)
+        shutil.copyfile(template_src_path, template_target_path)
 
     project._entrypoint = {"executable": "", "path": "obr"}
 
@@ -63,7 +65,7 @@ def submit_impl(
             logging.info("submission response" + str(ret_submit))
             time.sleep(15)
     else:
-        # logging.info(f"submitting {len(jobs)} individual jobs")
+        logging.info(f"submitting {len(jobs)} individual jobs")
         # import cProfile
         # import pstats
 
@@ -74,6 +76,7 @@ def submit_impl(
             **cluster_args,
         )
         logging.info(ret_submit)
+
 
     # stats = pstats.Stats(pr)
     # stats.sort_stats(pstats.SortKey.TIME)
