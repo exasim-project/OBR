@@ -79,6 +79,23 @@ def is_valid_workspace(filters: list = []) -> bool:
     return True
 
 
+def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
+    """This function performs the common pattern of checking project folders for existence and creating the project and extracting the jobs."""
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+    project = OpenFOAMProject.get_project()
+    filters: list[str] = kwargs.get("filter", [])
+    if sel := kwargs.get("job"):
+        jobs = [job for job in project if sel == job.id]
+    else:
+        jobs = project.filter_jobs(filters=filters)
+
+    # check if given path points to valid project
+    if not is_valid_workspace(filters):
+        sys.exit(1)
+    return project, jobs
+
+
 def copy_to_archive(
     repo: Union[Repo, None], use_git_repo: bool, src_file: Path, target_file: Path
 ) -> None:
@@ -148,77 +165,24 @@ def cli(ctx: click.Context, debug: bool):
 )
 @click.pass_context
 def submit(ctx: click.Context, **kwargs):
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-
-    project = OpenFOAMProject().init_project()
-
-    # check if given path points to valid project
-    if not is_valid_workspace():
-        return
-
-    project._entrypoint = {"executable": "", "path": "obr"}
-
+    project, jobs = cli_cmd_setup(kwargs)
     operations = kwargs.get("operations", "").split(",")
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
 
-    queries_str = kwargs.get("query")
-    bundling_key = kwargs.get("bundling_key")
-    partition = kwargs.get("partition")
-    account = kwargs.get("account")
-
-    if queries_str:
-        queries = input_to_queries(queries_str)
-        sel_jobs = query_impl(project, queries, output=False)
-        jobs = [j for j in project if j.id in sel_jobs]
-    else:
-        jobs = [j for j in project]
-
-    # TODO find a signac way to do that
-    cluster_args = {
-        "partition": partition,
-        "pretend": kwargs["pretend"],
-        "account": account,
-    }
-
-    # TODO improve this using regex
-    scheduler_args = kwargs.get("scheduler_args")
-    if scheduler_args:
-        split = scheduler_args.split(" ")
-        for i in range(0, len(split), 2):
-            cluster_args.update({split[i]: split[i + 1]})
-
-    if bundling_key:
-        bundling_values = get_values(jobs, bundling_key)
-        for bundle_value in bundling_values:
-            selected_jobs: list[Job] = [
-                j for j in project if bundle_value in list(j.sp().values())
-            ]
-            logging.info(f"submit bundle {bundle_value} of {len(selected_jobs)} jobs")
-            ret_submit = (
-                project.submit(
-                    jobs=selected_jobs,
-                    bundle_size=len(selected_jobs),
-                    names=[kwargs.get("operation")],
-                    **cluster_args,
-                )
-                or ""
-            )
-            logging.info("submission response" + str(ret_submit))
-            time.sleep(15)
-    else:
-        logging.info(f"submitting {len(jobs)} individual jobs")
-        ret_submit = project.submit(
-            names=operations,
-            **cluster_args,
-        )
-        logging.info(ret_submit)
-
-    # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
-    # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
-    #
+    submit_impl(
+        project,
+        jobs,
+        operations=operations,
+        folder=Path(kwargs.get("folder", ".")),
+        template=Path(kwargs.get("template")),
+        account=kwargs.get("account"),
+        partition=kwargs.get("partition"),
+        pretend=kwargs["pretend"],
+        bundling_key:=kwargs["bundling_key"],
+        scheduler_args=kwargs.get("scheduler_args")
+    )
 
 
 @cli.command()
@@ -258,21 +222,12 @@ def submit(ctx: click.Context, **kwargs):
 @click.pass_context
 def run(ctx: click.Context, **kwargs):
     """Run specified operations"""
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-
-    project = OpenFOAMProject().init_project()
+    project, jobs = cli_cmd_setup(kwargs)
 
     operations = kwargs.get("operations", "").split(",")
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
-
-    filters: list[str] = kwargs.get("filter", [])
-    # check if given path points to valid project
-    if not is_valid_workspace(filters):
-        return
-    jobs = project.filter_jobs(filters=filters)
 
     if kwargs.get("args"):
         os.environ["OBR_CALL_ARGS"] = kwargs.get("args", "")
@@ -364,15 +319,7 @@ def init(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def status(ctx: click.Context, **kwargs):
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-    project = OpenFOAMProject.get_project()
-    filters: list[str] = kwargs.get("filter", [])
-    jobs = project.filter_jobs(filters=filters)
-
-    # check if given path points to valid project
-    if not is_valid_workspace(filters):
-        return
+    project, jobs = cli_cmd_setup(kwargs)
 
     # project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
