@@ -66,21 +66,9 @@ def submit_impl(
             time.sleep(15)
     else:
         logging.info(f"submitting {len(jobs)} individual jobs")
-        # import cProfile
-        # import pstats
-
-        # with cProfile.Profile() as pr:
         ret_submit = project.submit(
             jobs=jobs,
             names=operations,
             **cluster_args,
         )
         logging.info(ret_submit)
-
-    # stats = pstats.Stats(pr)
-    # stats.sort_stats(pstats.SortKey.TIME)
-    # # stats.print_stats()
-    # stats.dump_stats(filename="needs_profiling.prof")
-
-    # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
-    # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
