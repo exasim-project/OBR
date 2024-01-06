@@ -45,7 +45,13 @@ test_token
 
 
 def test_create_tree(tmpdir):
-    from flow.environment import TestEnvironment, SlurmScheduler, SimpleSchedulerEnvironment, StandardEnvironment
+    from flow.environment import (
+        TestEnvironment,
+        SlurmScheduler,
+        SimpleSchedulerEnvironment,
+        StandardEnvironment,
+    )
+
     project = OpenFOAMProject.init_project(path=tmpdir)
     # project._environment = TestEnvironment()
     project._environment = TestEnvironment()
@@ -57,20 +63,19 @@ def test_create_tree(tmpdir):
     # remove blockMesh and decomposePar post builds from fetchCase step
     # otherwise the unit test would require functioning OpenFOAM environment
     cavity_config["case"] = {
-            "type": "GitRepo",
-            "solver": "pisoFoam",
-            "url": "https://develop.openfoam.com/committees/hpc.git",
-            "folder": "Lid_driven_cavity-3d/S",
-            "commit": "f9594d16aa6993bb3690ec47b2ca624b37ea40cd",
-            "cache_folder": "None/S",
-            "uses": [{"fvSolution": "fvSolution.fixedNORM"}],
-            }
+        "type": "GitRepo",
+        "solver": "pisoFoam",
+        "url": "https://develop.openfoam.com/committees/hpc.git",
+        "folder": "Lid_driven_cavity-3d/S",
+        "commit": "f9594d16aa6993bb3690ec47b2ca624b37ea40cd",
+        "cache_folder": "None/S",
+        "uses": [{"fvSolution": "fvSolution.fixedNORM"}],
+    }
 
     create_tree(project, cavity_config, {"folder": tmpdir}, skip_foam_src_check=True)
 
     workspace_dir = tmpdir / "workspace"
     assert workspace_dir.exists() == True
-
 
     project.run(names=["fetchCase"])
     create_submit_template(tmpdir)

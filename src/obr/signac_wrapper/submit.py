@@ -18,7 +18,7 @@ def submit_impl(
     bundling_key: Union[str, None],
     scheduler_args: str,
 ):
-    template_target_path = Path( project.path) / "templates/script.sh"
+    template_target_path = Path(project.path) / "templates/script.sh"
     template_src_path = Path(template)
 
     if not template_src_path.exists():
@@ -76,7 +76,6 @@ def submit_impl(
             **cluster_args,
         )
         logging.info(ret_submit)
-
 
     # stats = pstats.Stats(pr)
     # stats.sort_stats(pstats.SortKey.TIME)
