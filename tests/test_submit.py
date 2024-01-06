@@ -47,13 +47,9 @@ test_token
 def test_create_tree(tmpdir):
     from flow.environment import (
         TestEnvironment,
-        SlurmScheduler,
-        SimpleSchedulerEnvironment,
-        StandardEnvironment,
     )
 
     project = OpenFOAMProject.init_project(path=tmpdir)
-    # project._environment = TestEnvironment()
     project._environment = TestEnvironment()
 
     config_str = read_yaml({"config": str(Path(__file__).parent / "cavity.yaml")})
@@ -82,6 +78,20 @@ def test_create_tree(tmpdir):
 
     account = "account"
     partition = "partition"
+
+    # Check if wrong template location raises a FileNotFoundError
+    with pytest.raises(FileNotFoundError):
+        submit_impl(
+            project,
+            [j for j in project],
+            ["generate"],
+            template=tmpdir / "does_not_exists.sh",
+            account=account,
+            partition=partition,
+            pretend=True,
+            bundling_key=None,
+            scheduler_args="",
+        )
 
     with open("submit.log", "w") as f:
         with redirect_stdout(f):
