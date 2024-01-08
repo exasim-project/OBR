@@ -241,7 +241,7 @@ def query_impl(
     queries: list[Query],
     output=False,
     latest_only=True,
-) -> list[dict]:
+) -> dict[str, dict]:
     """Performs a query and returns a list of records ie for each job the query result"""
     res = query_to_dict(jobs, queries, output, latest_only)
     query_ids = {}
@@ -300,9 +300,6 @@ def build_filter_query(filters: Iterable[str]) -> list[Query]:
     """This function builds a list of filter queries, where filter queries are queries that request a specific value and has to conform a predicate"""
     q: list[Query] = []
 
-    # avoid iterating over characters of one filter/query
-    if not isinstance(filters, (list, tuple)):
-        filters = [filters]
     for filter in filters:
         for predicate in Predicates:
             # check if predicates like =, >, <=.. are in the filter

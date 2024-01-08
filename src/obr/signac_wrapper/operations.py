@@ -43,7 +43,7 @@ class OpenFOAMProject(flow.FlowProject):
         )
         return self.filtered_jobs
 
-    def query(self, jobs: list[Job], query: list[Query]) -> list[dict]:
+    def query(self, jobs: list[Job], query: list[Query]) -> dict[str, dict]:
         """return list of job ids as result of `Query`."""
         return query_impl(jobs, query, output=True)
 
