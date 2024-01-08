@@ -44,7 +44,7 @@ test_token
         f.write(submit_script_content)
 
 
-def test_create_tree(tmpdir):
+def test_submit(tmpdir):
     from flow.environment import (
         TestEnvironment,
     )
