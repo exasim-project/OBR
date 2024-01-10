@@ -6,7 +6,6 @@ from typing import Union
 from subprocess import check_output
 import logging
 from git.repo import Repo
-from git import InvalidGitRepositoryError
 
 
 class CaseOnDisk:
@@ -15,7 +14,6 @@ class CaseOnDisk:
     """
 
     def __init__(self, origin: Union[str, Path], **kwargs):
-        raw_path = origin
         if isinstance(origin, str):
             origin = expandvars(origin)
         self.path = Path(origin).expanduser()
@@ -97,9 +95,9 @@ class GitRepo:
                 # if no commit is specified, simply get latest
                 if not self.commit:
                     repo.git.pull(origin_branchname[0], origin_branchname[-1])
-                check_output(
-                    ["cp", "-r", f"{self.cache_folder}/{self.folder}", path + "/case"]
-                )
+                check_output([
+                    "cp", "-r", f"{self.cache_folder}/{self.folder}", path + "/case"
+                ])
                 return
             else:
                 logging.warning(

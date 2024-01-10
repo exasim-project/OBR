@@ -35,7 +35,7 @@ def emit_test_config():
 
 
 def test_md5sum_calculation(tmpdir, emit_test_config):
-    project = OpenFOAMProject.init_project(root=tmpdir)
+    project = OpenFOAMProject.init_project(path=tmpdir)
 
     create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
 
@@ -59,9 +59,9 @@ def test_md5sum_calculation(tmpdir, emit_test_config):
         job = json.load(job_file)
         case = OpenFOAMCase(case_path, job)
 
-        md5summed_files_target = set(
-            [f.rsplit("/", 1)[1] for f in case.config_file_tree]
-        )
+        md5summed_files_target = set([
+            f.rsplit("/", 1)[1] for f in case.config_file_tree
+        ])
         md5summed_files_actual = [
             key_to_path(file.rsplit("/", 1)[1])
             for file in job["cache"].get("md5sum", [])

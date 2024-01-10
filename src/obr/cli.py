@@ -25,12 +25,7 @@ import logging
 import pandas as pd
 import shutil
 
-from signac.contrib.job import Job
-from .signac_wrapper.operations import OpenFOAMProject, get_values, OpenFOAMCase
-from .create_tree import create_tree
-from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl, build_filter_query, Query
-from .core.core import map_view_folder_to_job_id, merge_job_documents
+from signac.job import Job
 from pathlib import Path
 from subprocess import check_output
 from git.repo import Repo
@@ -39,6 +34,12 @@ from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union, Optional, Any
 from copy import deepcopy
+
+from .signac_wrapper.operations import OpenFOAMProject, get_values
+from .create_tree import create_tree
+from .core.parse_yaml import read_yaml
+from .core.queries import input_to_queries, query_impl, build_filter_query, Query
+from .core.core import map_view_folder_to_job_id
 
 
 def check_cli_operations(
@@ -126,7 +127,11 @@ def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
     filters: list[str] = kwargs.get("filter", [])
-    jobs = project.filter_jobs(filters=filters)
+    if sel := kwargs.get("job"):
+        jobs = [job for job in project if sel == job.id]
+    else:
+        jobs = project.filter_jobs(filters=filters)
+
     # check if given path points to valid project
     if not is_valid_workspace(filters):
         sys.exit(1)
@@ -233,11 +238,21 @@ def submit(ctx: click.Context, **kwargs):
             time.sleep(15)
     else:
         logging.info(f"submitting {len(jobs)} individual jobs")
-        ret_submit = project.submit(
-            names=operations,
-            **cluster_args,
-        )
-        logging.info(ret_submit)
+        import cProfile
+        import pstats
+
+        with cProfile.Profile() as pr:
+            ret_submit = project.submit(
+                jobs=jobs,
+                names=operations,
+                **cluster_args,
+            )
+            logging.info(ret_submit)
+
+        stats = pstats.Stats(pr)
+        stats.sort_stats(pstats.SortKey.TIME)
+        # stats.print_stats()
+        stats.dump_stats(filename="needs_profiling.prof")
 
     # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
     # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
@@ -256,7 +271,7 @@ def submit(ctx: click.Context, **kwargs):
     ),
 )
 @click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
-@click.option("-c", "--case", default="remove all obr project files")
+@click.option("-c", "--case", is_flag=True, help="reset the state of a case by deleting solver logs")
 @click.option(
     "-v", "--view", default="remove case completely specified by a view folder"
 )
@@ -281,7 +296,8 @@ def reset(ctx: click.Context, **kwargs):
         return
     if kwargs.get("case"):
         project.run(
-            names=["reset"],
+            jobs = jobs,
+            names=["resetCase"],
             progress=True,
             np=-1,
         )
@@ -327,6 +343,7 @@ def reset(ctx: click.Context, **kwargs):
 @click.pass_context
 def run(ctx: click.Context, **kwargs):
     """Run specified operations"""
+    print("run", kwargs)
     project, jobs = cli_cmd_setup(kwargs)
 
     operations = kwargs.get("operations", "").split(",")
@@ -447,7 +464,7 @@ def init(ctx: click.Context, **kwargs):
     if kwargs.get("verbose", 0) >= 1:
         logging.info(config)
 
-    project = OpenFOAMProject.init_project(root=kwargs["folder"])
+    project = OpenFOAMProject.init_project(path=kwargs["folder"])
     create_tree(project, config, kwargs)
 
     logging.info("successfully initialised")
@@ -503,7 +520,7 @@ def status(ctx: click.Context, **kwargs):
 
     # project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
-    sort_by = kwargs.get("sort_by", "").split(",")
+    sort_by = kwargs.get("sort_by", False).split(",")
     extra = kwargs.get("extra", "").split(",")
     hide = kwargs.get("hide", "")
     hide = hide.split(",") if hide else []

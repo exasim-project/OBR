@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
+import os
+import re
+import logging
 
 from typing import Union, Generator, Tuple, Any
-import os
 from pathlib import Path
 from subprocess import check_output
-import re
-from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
-from signac.contrib.job import Job
-from .BlockMesh import BlockMesh, calculate_simple_partition
+from signac.job import Job
 from datetime import datetime
 from Owls.parser.FoamDict import FileParser
-import logging
+from Owls.parser.LogFile import LogFile
+
+from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
+from .BlockMesh import BlockMesh, calculate_simple_partition
 
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
 (\||)\s*=========                 \|(\s*\||)
@@ -30,15 +32,20 @@ class File(FileParser):
         kwargs["path"] = Path(self._folder) / self._file
         if not kwargs["path"].exists():
             self.path = kwargs["path"]
+            self._dict = {}
             self.missing = True  # indicate that the file is currently missing
             return
-        super().__init__(**kwargs)
+        else:
+            self.missing = False
+        super().__init__(**kwargs, skip_update=True)
         self._md5sum = None
 
     def get(self, name: str):
         """Get a value from an OpenFOAM dictionary file"""
         # TODO replace with a safer option
         # also consider moving that to Owls
+        if not self.missing:
+            self.update()
         try:
             return eval(super().get(name))
         except:
@@ -68,6 +75,7 @@ class File(FileParser):
         args_copy = {k: v for k, v in args.items()}
 
         modifies_file(self.path)
+        self.update()
         if self.job:
             logged_func(
                 self.set_key_value_pairs,
@@ -84,6 +92,8 @@ class File(FileParser):
 
 class OpenFOAMCase(BlockMesh):
     """A class for simple access to typical OpenFOAM files"""
+
+    latest_log_path_: Path = Path()
 
     def __init__(self, path, job):
         self.path_ = Path(path)
@@ -115,46 +125,40 @@ class OpenFOAMCase(BlockMesh):
         self.config_file_tree
 
     @property
-    def path(self):
+    def path(self) -> Path:
         return self.path_
 
     @property
-    def system_folder(self):
+    def system_folder(self) -> Path:
         return self.path / "system"
 
     @property
-    def constant_folder(self):
+    def constant_folder(self) -> Path:
         return self.path / "constant"
 
     @property
-    def const_polyMesh_folder(self):
-        cpf = self.constant_folder / "polyMesh"
-        if cpf.exists():
-            return cpf
-        return None
+    def const_polyMesh_folder(self) -> Path:
+        return self.constant_folder / "polyMesh"
 
     @property
-    def system_include_folder(self):
-        cpf = self.system_folder / "include"
-        if cpf.exists():
-            return cpf
-        return None
+    def system_include_folder(self) -> Path:
+        return self.system_folder / "include"
 
     @property
-    def zero_folder(self):
+    def zero_folder(self) -> Path:
         """TODO check for 0.orig folder"""
         return self.path / "0"
 
     @property
-    def init_p(self):
+    def init_p(self) -> Path:
         return self.zero_folder / "p"
 
     @property
-    def init_U(self):
+    def init_U(self) -> Path:
         return self.zero_folder / "U.orig"
 
     @property
-    def is_decomposed(self):
+    def is_decomposed(self) -> bool:
         proc_zero = self.path / "processor0"
         if not proc_zero.exists():
             return False
@@ -198,6 +202,51 @@ class OpenFOAMCase(BlockMesh):
                         rel_path = str(f_path.relative_to(self.path))
                         file_obj = File(folder=folder, file=f_path.name, job=self.job)
                         yield file_obj, rel_path
+
+    @property
+    def current_time(self) -> float:
+        """Returns the current timestep of the simulation"""
+        self.fetch_latest_log()
+        return self.latest_log.latestTime.time
+
+    @property
+    def progress(self) -> float:
+        """Returns the progress of the simulation in percent"""
+        return self.current_time / float(self.controlDict.get("endTime"))
+
+    @property
+    def latest_solver_log_path(self) -> Path:
+        """Returns the absolute path to the latest log"""
+        self.fetch_latest_log()
+        return self.latest_log_path_
+
+    @property
+    def latest_log(self) -> LogFile:
+        """Returns handle to the latest log"""
+        log = self.latest_solver_log_path
+        if not log.exists():
+            raise ValueError("No Logfile found")
+        self.latest_log_handle_ = LogFile(log, matcher=[])
+        return self.latest_log_handle_
+
+    @property
+    def finished(self) -> bool:
+        """check if the latest simulation run has finished gracefully"""
+        if self.process_latest_time_stats():
+            return self.latest_log.footer.completed
+        return False
+
+    def fetch_latest_log(self) -> None:
+        solver = self.controlDict.get("application")
+        # TODO DONT MERGE how can we end up here?
+        if not self.path.exists():
+            return
+
+        root, _, files = next(os.walk(self.path))
+        log_files = [f for f in files if f.endswith(".log") and f.startswith(solver)]
+        log_files.sort()
+        if log_files:
+            self.latest_log_path_ = Path(root) / log_files[-1]
 
     @property
     def config_file_tree(self) -> list[str]:
@@ -283,28 +332,79 @@ class OpenFOAMCase(BlockMesh):
         solver = self.controlDict.get("application")
         return self._exec_operation([solver])
 
-    def is_file_modified(self, path: str) -> bool:
+    def is_file_modified(self, file: str) -> bool:
+        """Checks if a file has been modified by comparing the current md5sum with
+        the previously saved one inside `self.job.dict`.
         """
-        checks if a file has been modified by comparing the current md5sum with the previously saved one inside `self.job.dict`
-        """
-        if "md5sum" not in self.job.doc["obr"]:
+        if "md5sum" not in self.job.doc["cache"]:
             return False  # no md5sum has been calculated for this file
-        current_md5sum, last_modified = self.job.doc["obr"]["md5sum"].get(path)
-        if os.path.getmtime(path) == last_modified:
+        current_md5sum, last_modified = self.job.doc["cache"]["md5sum"].get(path)
+        if os.path.getmtime(self.path / path) == last_modified:
             # if modification dates dont differ, the md5sums wont, either
             return False
-        md5sum = check_output(["md5sum", path], text=True)
+        md5sum = check_output(["md5sum", file], text=True)
         return current_md5sum != md5sum
 
     def is_tree_modified(self) -> list[str]:
-        """
-        iterates all files inside the case tree and returns a list of files that were modified, based on their md5sum.
+        """Iterates all files inside the case tree and returns a list of files that
+        were modified, based on their md5sum.
         """
         m_files = []
         for file in self.config_file_tree:
             if self.is_file_modified(file):
                 m_files.append(file)
         return m_files
+
+    def process_latest_time_stats(self) -> bool:
+        """This function parses the latest time step log and stores the results in
+        the job document.
+
+        Return: A boolean indication whether processing was successful
+        """
+        if not self.latest_log:
+            return False
+
+        # TODO eventually this should be part of OWLS
+        # Check for failure states
+        if "There are not enough slots available" in self.latest_log.footer.content:
+            self.job.doc["state"]["global"] = "failure"
+            self.job.doc["state"]["failureState"] = "MPI startup error"
+            # No reason for further parsing
+            return False
+
+        if "ERROR" in self.latest_log.footer.content:
+            self.job.doc["state"]["global"] = "failure"
+            self.job.doc["state"]["failureState"] = "FOAM ERROR"
+
+        if "error" in self.latest_log.footer.content:
+            self.job.doc["state"]["global"] = "failure"
+
+        try:
+            self.job.doc["state"]["global"] = "incomplete"
+            self.job.doc["state"]["latestTime"] = self.latest_log.latestTime.time
+            self.job.doc["state"][
+                "continuityErrors"
+            ] = self.latest_log.latestTime.continuity_errors
+            self.job.doc["state"][
+                "CourantNumber"
+            ] = self.latest_log.latestTime.Courant_number
+            self.job.doc["state"]["ExecutionTime"] = (
+                self.latest_log.latestTime.execution_time["ExecutionTime"]
+            )
+            self.job.doc["state"]["ClockTime"] = (
+                self.latest_log.latestTime.execution_time["ClockTime"]
+            )
+            if self.latest_log.footer.completed:
+                self.job.doc["state"]["global"] = "completed"
+            return True
+        except Exception:
+            # if parsing of log file fails, check failure handler
+            self.job.doc["state"]["global"] = "failure"
+            return False
+
+    def detailed_update(self):
+        """Perform a detailed update on the job doc state"""
+        self.process_latest_time_stats()
 
     def perform_post_md5sum_calculations(self):
         """
@@ -328,14 +428,14 @@ class OpenFOAMCase(BlockMesh):
         """Returns True, if both its label and the last OBR operation returned successful, False otherwise."""
         # check state of last obr operation
         last_op_state = "Failure"
-        if "obr" not in self.job.doc:
-            logging.info(f"Job with {self.job.id} has no OBR key.")
+        if "cache" not in self.job.doc:
+            logging.info(f"Job with {self.job.id} has no cache key.")
             # TODO possibly debatable if this should return false
             return False
         else:
             # find last obr operation
             last_time = datetime(1, 1, 1, 1, 1, 1)
-            for k, v in self.job.doc["obr"].items():
+            for k, v in self.job.doc["cache"].items():
                 # skip md5sums
                 if k == "md5sum":
                     continue

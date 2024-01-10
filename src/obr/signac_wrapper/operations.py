@@ -9,12 +9,11 @@ from subprocess import check_output
 from ..core.core import execute
 from .labels import owns_mesh, final, finished
 from obr.OpenFOAM.case import OpenFOAMCase
-from signac.contrib.job import Job
+from signac.job import Job
 from typing import Union, Literal
 from datetime import datetime
 import logging
-from typing import Optional
-from obr.core.queries import filter_jobs, query_impl, input_to_queries, Query
+from obr.core.queries import filter_jobs, query_impl, Query
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -85,9 +84,11 @@ def basic_eligible(job: Job, operation: str) -> bool:
       - operation has been requested for job
       - copy and link files and folder
     """
+    # TODO DONT MERGE add is_job check here
     # don't execute operation on cases that dont request them
     if (
         is_locked(job)
+        or not is_job(job)
         or not parent_job_is_ready(job) == "ready"
         or not operation == job.sp().get("operation")
         or not needs_initialization(job)
@@ -112,7 +113,7 @@ def basic_eligible(job: Job, operation: str) -> bool:
 def parent_job_is_ready(job: Job) -> str:
     """Checks whether the parent of the given job is ready"""
     if job.sp().get("parent_id"):
-        project = OpenFOAMProject.get_project(root=job.path + "/../..")
+        project = OpenFOAMProject.get_project(path=job.path + "/../..")
         parent_job = project.open_job(id=job.sp().get("parent_id"))
         return parent_job.doc["state"].get("global", "")
     return ""
@@ -526,24 +527,34 @@ def checkMesh(job: Job, args={}):
     )
     job.doc["cache"]["nCells"] = int(cells)
 
+
 @OpenFOAMProject.operation
 def reset(job: Job, args={}):
-    """Deletes all files that have been added since creation, thus performing a Allclean
-    """
+    """Deletes all files that have been added since creation, thus performing a Allclean"""
     pass
 
 
-
-
 def get_number_of_procs(job: Job) -> int:
+    """Deduces the number of processor
+
+    For performance reasons the cache is used to store the number of subdomains
+    """
     np = int(job.sp().get("numberSubDomains", 0))
     if np:
         return np
-    return int(
+
+    np = int(job.doc["cache"].get("numberSubDomains", 0))
+    if np:
+        return np
+
+    np = int(
         OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get(
             "numberOfSubdomains"
         )
     )
+    if np:
+        job.doc["cache"]["numberSubDomains"] = np
+    return np
 
 
 def get_values(jobs: list, key: str) -> set:
@@ -557,9 +568,17 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
 
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
+        logging.info(f"Skipping Job {job.id} since it is completed.")
         return "true"
 
     case = OpenFOAMCase(str(job.path) + "/case", job)
+
+    # if the case folder contains any modified files skip execution
+    if case.is_tree_modified():
+        logging.info(f"Skipping Job {job.id} since it is has modified files.")
+        job.doc["state"]["global"] = "dirty"
+        return "true"
+
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
@@ -594,14 +613,32 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
         preflight_cmd = f"{preflight} > {job.path}/case/preflight_{timestamp}.log && "
         cmd_format = preflight_cmd + cmd_format
 
-    postflight_cmd = f" && echo $? > {job.path}/case/solverExitCode.log "
-
     job.doc["state"]["global"] = "started"
 
     # NOTE we add || true such that the command never fails
     # otherwise if one execution would fail OBR exits and
     # the following solver runs would be discarded
-    return cmd_format.format(**cli_args) + "|| true" + postflight_cmd
+    return cmd_format.format(**cli_args) + "|| true"
+
+
+def validate_state_impl(_: str, job: Job) -> str:
+    """Perform a detailed update of the job state"""
+    case = OpenFOAMCase(Path(job.path) / "case", job)
+    case.detailed_update()
+
+
+def move_submission_log(_: str, job: Job) -> str:
+    """Move files like slurm.out to case folder"""
+    pass
+
+
+@OpenFOAMProject.pre(parent_job_is_ready)
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.pre(is_job)
+@OpenFOAMProject.operation
+def validateState(job: Job, args={}):
+    """Forward to validate_state_impl"""
+    validate_state_impl("", job)
 
 
 @simulate
@@ -610,6 +647,8 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
 @OpenFOAMProject.operation(
     cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
 )
+@OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
+@OpenFOAMProject.operation_hooks.on_exit(move_submission_log)
 def runParallelSolver(job: Job, args={}) -> str:
     env_run_template = os.environ.get("OBR_RUN_CMD")
     solver_cmd = (
@@ -627,6 +666,7 @@ def runParallelSolver(job: Job, args={}) -> str:
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.operation(cmd=True)
+@OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runSerialSolver(job: Job, args={}):
     env_run_template = os.environ.get("OBR_SERIAL_RUN_CMD")
     solver_cmd = (

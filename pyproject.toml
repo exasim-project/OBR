@@ -1,6 +1,6 @@
 [project]
 name = "obr"
-version = "0.3.3"
+version = "0.3.4"
 description = "A tool to create and run OpenFOAM parameter studies"
 authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"},
@@ -17,8 +17,8 @@ requires-python = ">=3.6"
 dependencies = [
     "click",
     "PyYAML",
-    "signac==1.8.0",
-    "signac-flow==0.23.0",
+    "signac==2.1.0",
+    "signac-flow==0.26.1",
     "GitPython==3.1.31",
     "pandas",
     "DeepDiff",

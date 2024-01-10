@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-import re
 
 from pathlib import Path
 from flow import FlowProject
-from subprocess import check_output
-from Owls.parser.LogFile import LogFile
 
-from ..core.core import get_latest_log, get_mesh_stats
+from ..core.core import get_mesh_stats
 
 
 @FlowProject.label
@@ -38,22 +35,12 @@ def processing(job):
 
 @FlowProject.label
 def finished(job):
-    if job.doc["state"]["global"] == "completed":
-        return True
-    log = get_latest_log(job)
-    if not log:
-        return False
-    lp = LogFile(job.path + "/case/" + log, matcher=[])
-    if lp.footer.completed:
-        job.doc["state"]["global"] = "completed"
-    job.doc["state"]["latestTime"] = lp.latestTime.time
-    job.doc["state"]["continuityErrors"] = lp.latestTime.continuity_errors
-    job.doc["state"]["CourantNumber"] = lp.latestTime.Courant_number
-    job.doc["state"]["ExecutionTime"] = lp.latestTime.execution_time["ExecutionTime"]
-    job.doc["state"]["ClockTime"] = lp.latestTime.execution_time["ClockTime"]
-    if lp.footer.completed:
-        return True
-    return False
+    return job.doc["state"]["global"] == "completed"
+
+
+@FlowProject.label
+def dirty(job):
+    return job.doc["state"]["global"] == "dirty"
 
 
 @FlowProject.label

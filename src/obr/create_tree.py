@@ -16,13 +16,12 @@
 
 import os
 import sys
-import hashlib
 import logging
 
 from collections.abc import MutableMapping
 from pathlib import Path
 from subprocess import check_output
-from signac.contrib.job import Job
+from signac.job import Job
 from obr.signac_wrapper.operations import OpenFOAMProject
 from copy import deepcopy
 
@@ -186,7 +185,7 @@ def add_variations(
 
             # derive path name from schema or key value
             parse_res = extract_from_operation(operation, value)
-            path = clean_path(parse_res["path"])
+            clean_path(parse_res["path"])
             base_dict = deepcopy(to_dict(parent_job.sp))
 
             statepoint = {
