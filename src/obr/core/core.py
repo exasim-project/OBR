@@ -10,7 +10,7 @@ from pathlib import Path
 from subprocess import check_output
 from typing import Union, Generator
 from datetime import datetime
-from signac.contrib.job import Job
+from signac.job import Job
 from copy import deepcopy
 
 # these are to be replaced with each other

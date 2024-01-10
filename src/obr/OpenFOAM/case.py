@@ -6,7 +6,7 @@ import logging
 from typing import Union, Generator, Tuple, Any
 from pathlib import Path
 from subprocess import check_output
-from signac.contrib.job import Job
+from signac.job import Job
 from datetime import datetime
 from Owls.parser.FoamDict import FileParser
 from Owls.parser.LogFile import LogFile
@@ -239,7 +239,6 @@ class OpenFOAMCase(BlockMesh):
     @property
     def finished(self) -> bool:
         """check if the latest simulation run has finished gracefully"""
-        # TODO should also check if last time approx end time
         if self.process_latest_time_stats():
             return self.latest_log.footer.completed
         return False

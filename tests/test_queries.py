@@ -134,7 +134,7 @@ def get_project(tmpdir):
     }
     os.chdir(tmpdir)
 
-    project = OpenFOAMProject.init_project(root=tmpdir)
+    project = OpenFOAMProject.init_project(path=tmpdir)
     create_tree(project, config, {"folder": tmpdir}, skip_foam_src_check=True)
     project.run(names=["fetchCase"])
     return project
