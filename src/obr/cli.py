@@ -63,12 +63,12 @@ def check_cli_operations(
     return True
 
 
-def is_valid_workspace(filters: list[str] = []) -> bool:
+def is_valid_workspace(filters: list[str] = [], path: str = None) -> bool:
     """This function checks if:
     - the `workspace` folder is not empty, and
     - applying filters would return an empty list
     """
-    project: OpenFOAMProject = OpenFOAMProject.get_project()
+    project: OpenFOAMProject = OpenFOAMProject.get_project(path=path)
     jobs: list[Job] = project.filter_jobs(filters=filters)
     if len(jobs) == 0:
         if filters == []:
@@ -407,6 +407,13 @@ def run(ctx: click.Context, **kwargs):
     help="",
 )
 @click.option(
+    "-f",
+    "--folder",
+    default=".",
+    type=str,
+    help="Path to OpenFOAMProject.",
+)
+@click.option(
     "--filter",
     type=str,
     multiple=True,
@@ -418,11 +425,11 @@ def run(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def apply(ctx: click.Context, **kwargs):
-    project = OpenFOAMProject().init_project()
+    project = OpenFOAMProject.init_project(path=kwargs.get("folder"))
 
     filters: list[str] = kwargs.get("filter", [])
     # check if given path points to valid project
-    if not is_valid_workspace(filters):
+    if not is_valid_workspace(filters, path=kwargs.get("folder", None)):
         return
     jobs = project.filter_jobs(filters=filters)
     os.environ["OBR_APPLY_FILE"] = kwargs.get("file", "")
