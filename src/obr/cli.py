@@ -758,6 +758,12 @@ def archive(ctx: click.Context, **kwargs):
                 logging.error(e)
 
 
+@cli.command()
+def version():
+    import importlib.metadata
+    logging.info(f"Current OBR version: {importlib.metadata.version('obr')}")
+
+
 def main():
     logging.basicConfig(
         format="[%(filename)s:%(lineno)d]\t%(levelname)7s: %(message)s",
