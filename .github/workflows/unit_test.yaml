@@ -36,6 +36,7 @@ jobs:
         echo "COVERAGE=$TOTAL" >> $GITHUB_ENV
 
     - name: "Make coverage badge"
+      continue-on-error: true
       uses: schneegans/dynamic-badges-action@v1.4.0
       with:
         # GIST_TOKEN is a GitHub personal access token with scope "gist".
