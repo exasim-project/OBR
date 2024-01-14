@@ -1,0 +1,16 @@
+name: Dispatch tests
+run-name: Dispatch tests for ${{github.ref_name}}
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    types: synchronize
+
+jobs:
+  unit_tests:
+    uses: ./.github/workflows/unit-test.yml
+  integration_tests:
+    uses: ./.github/workflows/integration-test.yml
