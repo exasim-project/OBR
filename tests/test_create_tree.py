@@ -77,11 +77,13 @@ def test_add_variations():
             return MockJob()
 
     operations = []
-    test_variation = [{
-        "operation": "n/a",
-        "schema": "n/a",
-        "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}],
-    }]
+    test_variation = [
+        {
+            "operation": "n/a",
+            "schema": "n/a",
+            "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}],
+        }
+    ]
     id_path_mapping = {}
     operations = add_variations(
         operations, MockProject(), test_variation, MockJob(), id_path_mapping
@@ -166,7 +168,7 @@ def test_cache_folder(tmpdir, emit_test_config):
     # after purgin and recreating the workspace, the cache folder should be used
     Path(f"{tmpdir}/tmp/test").touch()
     shutil.rmtree(workspace_dir)
-    shutil.rmtree(tmpdir /".signac")
+    shutil.rmtree(tmpdir / ".signac")
     project = OpenFOAMProject.init_project(path=tmpdir)
     create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
     project.run(names=["fetchCase"])
