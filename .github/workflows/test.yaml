@@ -9,8 +9,12 @@ on:
   pull_request:
     types: synchronize
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   unit_tests:
-    uses: ./.github/workflows/unit_test.yml
+    uses: ./.github/workflows/unit_test.yaml
   integration_tests:
-    uses: ./.github/workflows/integration_test.yml
+    uses: ./.github/workflows/integration_test.yaml
