@@ -189,6 +189,8 @@ def merge_job_documents(job: Job, campaign: str = ""):
         with open(Path(root) / f) as fh:
             job_doc = json.load(fh)
             state = job_doc["state"]
+            if state == []:
+                state = dict()
             state["campaign"] = campaign
             state["uid"] = uid
             merged_state.append(state)
@@ -248,6 +250,7 @@ def find_solver_logs(job: Job, campaign_in: str = "") -> Generator[tuple, None, 
     """Find and return all solver log files, campaign info and tags from job instances"""
     case_path = Path(job.path)
     if not case_path.exists():
+        logging.info(f"{case_path=} does not exist!")
         return
     root, campaigns, _ = next(os.walk(case_path))
 
@@ -363,6 +366,7 @@ def find_logs(job: Job) -> Generator[tuple[str, str, str, str], None, None]:
                 is_case = True
                 break
 
+        #!FIXME if campaign root has log files, this wont work, see #176
         if is_case:
             tag_mapping[str(path)] = tags
         else:
@@ -377,9 +381,11 @@ def find_logs(job: Job) -> Generator[tuple[str, str, str, str], None, None]:
         tag_mapping = find_tags(case_path / campaign, [], {})
 
         for path, tags in tag_mapping.items():
+            if tags == []:
+                continue
             root, _, files = next(os.walk(path))
             for file in files:
-                if "Foam" in file and file.endswith("log"):
+                if file.endswith("log"):
                     yield root, f"{root}/{file}", campaign, tags
 
 

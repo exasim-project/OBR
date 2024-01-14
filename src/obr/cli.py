@@ -546,7 +546,7 @@ def status(ctx: click.Context, **kwargs):
     df["view"] = df["jobid"].apply(lambda x: id_view_map.get(x, None))
     if hide:
         df.drop(columns=hide, inplace=True, axis=0)
-    if sort_by:
+    if sort_by != ['']:
         # df.dropna(inplace=True)
         df = df.set_index(sort_by).sort_index().reset_index()
         if not kwargs.get("detailed"):
@@ -739,6 +739,7 @@ def query(ctx: click.Context, **kwargs):
 @click.option(
     "--tag",
     required=False,
+    default="",
     type=str,
     help=(
         "Specify prefix of branch name. Will checkout new branch with timestamp"
@@ -769,6 +770,12 @@ def query(ctx: click.Context, **kwargs):
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     target_folder: Path = Path(kwargs.get("repo", "")).absolute()
+    if not target_folder.exists():
+        create_folder = input(f"Repo with path {target_folder} does not exist. Create one? [Y/n]")
+        if create_folder in ["","y", "Y"]:
+            os.mkdir(target_folder)
+        else:
+            logging.info("Aborting.")
     if current_path := kwargs.get("folder", "."):
         os.chdir(current_path)
         current_path = Path(current_path).absolute()
@@ -797,6 +804,7 @@ def archive(ctx: click.Context, **kwargs):
             f"Given directory {target_folder=} is not a github repository. Will only"
             " copy files."
         )
+        repo = None
     if use_git_repo:
         if kwargs.get("amend"):
             branches = [
