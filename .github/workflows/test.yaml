@@ -1,4 +1,4 @@
-name: Dispatch tests
+name: Tests
 run-name: Dispatch tests for ${{github.ref_name}}
 
 on:
