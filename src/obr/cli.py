@@ -85,6 +85,9 @@ def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
         os.chdir(kwargs["folder"])
     project = OpenFOAMProject.get_project()
     filters: list[str] = kwargs.get("filter", [])
+    if len(filters) > 0 and kwargs.get("job"):
+        raise Error("Filters and job flags are mutually exclusive")
+
     if sel := kwargs.get("job"):
         jobs = [job for job in project if sel == job.id]
     else:
