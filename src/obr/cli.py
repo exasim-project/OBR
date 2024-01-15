@@ -143,6 +143,13 @@ def cli(ctx: click.Context, debug: bool):
     ),
 )
 @click.option(
+    "--template",
+    default="",
+    help=(
+        "Path to sumbission script template."
+    ),
+)
+@click.option(
     "-l",
     "--list_operations",
     is_flag=True,
