@@ -49,6 +49,13 @@ class OpenFOAMProject(flow.FlowProject):
         """return list of job ids as result of `Query`."""
         return query_impl(jobs, query, output=True)
 
+    def set_entrypoint(entrypoint: dict):
+        """Sets the entrypoint for a project, this is usefull for submit so that
+        submit writes scripts that call obr run -o <args> instead of the default signac run -o <args>
+        call
+        """
+        project._entrypoint = entrypoint
+
 
 generate = OpenFOAMProject.make_group(name="generate")
 simulate = OpenFOAMProject.make_group("execute")

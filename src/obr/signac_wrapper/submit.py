@@ -8,6 +8,7 @@ from typing import Union
 
 from .operations import OpenFOAMProject
 
+
 def submit_impl(
     project: OpenFOAMProject,
     jobs: list[Job],
@@ -32,7 +33,8 @@ def submit_impl(
         os.makedirs(template_target_path.parent, exist_ok=True)
         shutil.copyfile(template_src_path, template_target_path)
 
-    project._entrypoint = {"executable": "", "path": "obr"}
+    # let submit cal obr run -o instead of signac run -o
+    project.set_entrypoint({"executable": "", "path": "obr"})
 
     # TODO find a signac way to do that
     cluster_args = {
