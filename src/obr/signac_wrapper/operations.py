@@ -54,7 +54,7 @@ class OpenFOAMProject(flow.FlowProject):
         submit writes scripts that call obr run -o <args> instead of the default signac run -o <args>
         call
         """
-        project._entrypoint = entrypoint
+        self._entrypoint = entrypoint
 
 
 generate = OpenFOAMProject.make_group(name="generate")
