@@ -92,6 +92,7 @@ def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
 
     # check if given path points to valid project
     if not is_valid_workspace(filters):
+        logging.warning("Workspace is not valid! Exiting.")
         sys.exit(1)
     return project, jobs
 
