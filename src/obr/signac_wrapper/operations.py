@@ -8,12 +8,13 @@ import logging
 
 from pathlib import Path
 from subprocess import check_output
-from ..core.core import execute
-from .labels import owns_mesh, final, finished
-from obr.OpenFOAM.case import OpenFOAMCase
 from signac.job import Job
 from typing import Union, Literal
 from datetime import datetime
+
+from .labels import owns_mesh, final, finished
+from ..core.core import execute
+from obr.OpenFOAM.case import OpenFOAMCase
 from obr.core.queries import filter_jobs, query_impl, Query
 
 # TODO operations should get an id/hash so that we can log success
