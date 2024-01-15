@@ -1,16 +1,19 @@
-**[Documentation](https://obr.readthedocs.io/)**
+**[Installation](#Installation)** |
+**[Usage](#Usage)** |
+**[Workspace](#Workspace)** |
+**[Environmental variables](#Environmental_variables)** |
 ---
 # OBR - OpenFOAM Benchmark Runner
 ![Tests](https://github.com/hpsim/obr/actions/workflows/test.yaml/badge.svg)
 ![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/greole/70b77e941a906fc3863661697ea8e864/raw/covbadge.json)
-[![Documentation Status](https://readthedocs.org/projects/obr/badge/?version=latest)](https://obr.readthedocs.io/en/latest/?badge=latest)
+[![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://obr.readthedocs.io/)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 <!-- Overview -->
 The OpenFOAM Benchmark Runner (OBR) is an experimental workflow manager for
 simple provisioning of complex parameter studies and reproducible simulations.
-A typical OpenFOAM workflow of setting up a case and various parameter
-manipulations can be defined using the yaml markup language. OBR is build on
-top of signac.
+A typical OpenFOAM workflow of setting up a case, performing various parameter
+manipulations, and serial or parallel execution, can be defined using the yaml markup language. OBR is build on
+top of [signac](https://github.com/glotzerlab/signac).
 
 <!-- Installation -->
 ## Installation
@@ -22,15 +25,41 @@ pip install -e .
 
 ## Usage
 
-
 The benchmark runner is split into several layers:
-1. case generation
-2. case run/submit
-3. case postprocessing
+1. case definition
+2. case generation
+3. case run/submit
+4. case postprocessing
 
-The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks/tree/case_windsor_body) provides a good point to start learning from. After cloning the repository, `cd` into the `LidDrivenCavity3D` directory, where a example yaml file can be found in the assets folder.
+### 1. Defining a tree
+The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks.git) provides a good point to start learning from. After cloning the repository, `cd` into the `LidDrivenCavity3D` directory, where an [example yaml](https://github.com/exasim-project/micro_benchmarks/blob/main/LidDrivenCavity3D/assets/scaling.yaml) file can be found in the case assets folders. Another example of a workflow is shown next
 
-### 1. Creating a tree
+```
+case:
+    type: CaseOnDisk
+    solver: pimpleFoam
+    origin: ${{yaml.location}}/../basicSetup
+variation:
+    - operation: fvSolution
+      schema: "linear_solver/{solver}{preconditioner}{executor}"
+      values:
+        - set: solvers/p
+          preconditioner: none
+          solver: GKOCG
+          forceHostBuffer: 1
+          verbose: 1
+          executor: ${{env.GINKGO_EXECUTOR}}
+        - set: solvers/p
+          preconditioner: IC
+          solver: GKOCG
+          forceHostBuffer: 1
+          verbose: 1
+          executor: ${{env.GINKGO_EXECUTOR}}
+```
+
+The workflow copies an execisting case on disk and creates a [Workspace](#Workspace)
+
+### 2. Creating a tree
 
 In general, to create a tree of case variations run
 
@@ -42,7 +71,7 @@ Within the context of the `micro_benchmarks` example, simply run
 
 OBR should now print some output, followed by `INFO: successfully initialized`.
 
-### 2. Running a tree
+### 3. Running a tree
 
 Finally,  operations on a tree can be run with the `obr run` command-line option, for example `fetchCase`, which is responsible for copying the base case into the workspace:
 
@@ -58,7 +87,7 @@ Within `LidDrivenCavity3D/workspace` should now have appeared a multitude of dir
 
 also runs all defined operations in the appropriate order.
 
-### 3. Job submission on HPC cluster
+### 4. Job submission on HPC cluster
 
 On HPC cluster OBR can submit operations via the job queue. For example
 
@@ -66,6 +95,7 @@ On HPC cluster OBR can submit operations via the job queue. For example
 
 will submit the `blockMesh` operation to the cluster manager for every job that is eligible. OBR detects the installed job queuing system, eg. slurm, pbs, etc. A jobs ubmission script will be generated automatically. For fine grained control over the submission script the `--template` argument allows to specify the location of a submission script template. Since OBR uses signac for job submission more details on how to write job submission templates can be found [here](https://docs.signac.io/en/latest/templates.html). To avoid submitting numereous jobs individually, the `--bundling-key` argument can be used to bundle all jobs for which the bundling key has the same value into the same job.
 
+## Workspace
 
 ## Environmental variables
 
@@ -76,6 +106,7 @@ OBR workflows often rely on environmental variables to adapt a workflow to speci
     export OBR_PREFLIGHT="python3 $HOME/data/code/exasim_project/micro_benchmarks/common/preflight.py"
 
 Additionally, `OBR_SKIP_COMPLETE` defines if a already complete run should be repeated.
+
 
 ## Contributing
 
