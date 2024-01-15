@@ -6,8 +6,7 @@ from pathlib import Path
 from signac.job import Job
 from typing import Union
 
-from obr.OpenFOAM.case import OpenFOAMCase
-
+from .operations import OpenFOAMProject
 
 def submit_impl(
     project: OpenFOAMProject,
