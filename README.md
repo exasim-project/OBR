@@ -58,13 +58,13 @@ Within `LidDrivenCavity3D/workspace` should now have appeared a multitude of dir
 
 also runs all defined operations in the appropriate order.
 
-### 3. Running a tree
+### 3. Job submission on HPC cluster
 
 On HPC cluster OBR can submit operations via the job queue. For example
 
     obr submit -o blockMesh
 
-will submit the `blockMesh` operation to the cluster manager for every job that is eligible. OBR detects the installed job queuing system, eg. slurm, pbs, etc. A jobs ubmission script will be generated automatically. For fine grained control over the submission script the `--template` argument allows to specify the location of a submission script template. Since OBR uses signac for job submission more details on how to write job submission templates can be found [here](https://docs.signac.io/en/latest/templates.html).
+will submit the `blockMesh` operation to the cluster manager for every job that is eligible. OBR detects the installed job queuing system, eg. slurm, pbs, etc. A jobs ubmission script will be generated automatically. For fine grained control over the submission script the `--template` argument allows to specify the location of a submission script template. Since OBR uses signac for job submission more details on how to write job submission templates can be found [here](https://docs.signac.io/en/latest/templates.html). To avoid submitting numereous jobs individually, the `--bundling-key` argument can be used to bundle all jobs for which the bundling key has the same value into the same job.
 
 
 ## Environmental variables
