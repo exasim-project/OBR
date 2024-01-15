@@ -1,7 +1,7 @@
 **[Documentation](https://obr.readthedocs.io/)**
 ---
 # OBR - OpenFOAM Benchmark Runner
-![Tests](https://github.com/hpsim/obr/actions/workflows/tests.yml/badge.svg)
+![Tests](https://github.com/hpsim/obr/actions/workflows/test.yaml/badge.svg)
 ![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/greole/70b77e941a906fc3863661697ea8e864/raw/covbadge.json)
 [![Documentation Status](https://readthedocs.org/projects/obr/badge/?version=latest)](https://obr.readthedocs.io/en/latest/?badge=latest)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)

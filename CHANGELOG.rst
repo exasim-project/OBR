@@ -12,6 +12,7 @@ Changelog
 - Bump signac version, see https://github.com/hpsim/OBR/pull/169
 - Validate simulation state after runSerial|ParallelSolver, see https://github.com/hpsim/OBR/pull/168
 - Improve obr submit, see https://github.com/hpsim/OBR/pull/170
+- Fix broken test badge, see https://github.com/hpsim/OBR/pull/178
 
 
 0.2.0 (2023-09-14)
