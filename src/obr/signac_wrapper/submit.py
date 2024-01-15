@@ -8,8 +8,8 @@ from typing import Union
 
 
 def submit_impl(
-    project,
-    jobs,
+    project: OpenFOAMProject,
+    jobs: list[Job],
     operations: list[str],
     template: Union[str, None],
     account: Union[str, None],
