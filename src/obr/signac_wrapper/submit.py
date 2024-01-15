@@ -52,7 +52,7 @@ def submit_impl(
             selected_jobs: list[Job] = [
                 j for j in project if bundle_value in list(j.sp().values())
             ]
-            logging.info(f"submit bundle {bundle_value} of {len(selected_jobs)} jobs")
+            logging.info(f"Submit bundle {bundle_value} of {len(selected_jobs)} jobs")
             ret_submit = (
                 project.submit(
                     jobs=selected_jobs,
@@ -62,10 +62,10 @@ def submit_impl(
                 )
                 or ""
             )
-            logging.info("submission response" + str(ret_submit))
+            logging.info("Submission response" + str(ret_submit))
             time.sleep(15)
     else:
-        logging.info(f"submitting {len(jobs)} individual jobs")
+        logging.info(f"Submitting {len(jobs)} individual jobs")
         ret_submit = project.submit(
             jobs=jobs,
             names=operations,
