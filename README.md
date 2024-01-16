@@ -57,7 +57,7 @@ variation:
           executor: ${{env.GINKGO_EXECUTOR}}
 ```
 
-The workflow copies an execisting case on disk and creates a [Workspace](#Workspace)
+The workflow copies an existing case on disk and creates a [Workspace](#Workspace).
 
 ### 2. Case generation
 
