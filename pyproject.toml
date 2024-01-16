@@ -36,8 +36,8 @@ obr = "obr.cli:main"
 
 [project.optional-dependencies]
 doc = [
-    "sphinx==5.0.2",
-    "sphinx-autoapi",
+    "sphinx==6.2.1",
+    "sphinx-autoapi==3.0.0",
     "sphinxcontrib.applehelp==1.0.7",
     "furo",
     "myst_parser"
