@@ -101,7 +101,19 @@ Since OBR aims at performing parameter studies containing a larger number of ind
 
 The passed `script.py` file must implement a `call(jobs: list[Job], kwargs={})` function. On execution this gets a list of jobs which allow access to the case paths.
 
+The mandatory `--campaign` argument is used to separate (families of) experiments. The optional argument `--tag <str>` can be used to further differentiate between experiments within a campaign. Internally, this will create subfolders as such:
 
+    fd52708db5c296d1fa52b056701be4ee
+        ├── campaign1
+        │   ├── tag1
+        │   │   ├── decomposePar_2024-01-05_17:38:44.log
+        │   │   ├── instrumentedPimpleFoam_2024-01-05_17:44:32.log
+        │   │   └── solverExitCode.log
+        │   └── tag2
+        │       ├── decomposePar_2024-01-05_17:38:44.log
+        │       ├── instrumentedPimpleFoam_2024-01-05_17:44:32.log
+        │       └── solverExitCode.log
+        └── campaign2    
 
 ## Workspace
 
