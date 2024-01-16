@@ -32,7 +32,7 @@ The benchmark runner is split into several layers:
 4. [postprocessing cases](https://obr.readthedocs.io/en/latest/overview/postProcessing.html) **Experimental** via, `obr apply` and `obr archive`
 
 ### 1. Case definition
-The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks.git) provides a good point to start learning from. After cloning the repository, `cd` into the `LidDrivenCavity3D` directory, where an [example yaml](https://github.com/exasim-project/micro_benchmarks/blob/main/LidDrivenCavity3D/assets/scaling.yaml) file can be found in the case assets folders. Another example of a workflow is shown next
+The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks.git) provides a good point to start learning from. After cloning the repository, `cd` into the `LidDrivenCavity3D` directory, where an [example yaml](https://github.com/exasim-project/micro_benchmarks/blob/main/LidDrivenCavity3D/assets/scaling.yaml) file can be found in the case assets folder. Another example of a workflow is shown next
 
 ```
 case:
