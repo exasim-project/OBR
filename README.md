@@ -26,12 +26,12 @@ pip install -e .
 ## Usage
 
 The benchmark runner is split into several layers:
-1. case definition
-2. case generation
-3. case run/submit
-4. case postprocessing
+1. [case definition](https://obr.readthedocs.io/en/latest/overview/case.html) via yaml files
+2. [case generation](https://obr.readthedocs.io/en/latest/overview/generate.html) via `obr init` and `obr run -o generate`
+3. [run or submit solver execution](https://obr.readthedocs.io/en/latest/overview/submit.html) via `obr run -o runParallelSolver` or `obr submit -o runParallelSolver`
+4. [postprocessing cases](https://obr.readthedocs.io/en/latest/overview/postProcessing.html) **Experimental** via, `obr apply` and `obr archive`
 
-### 1. Defining a tree
+### 1. Case definition
 The [micro_benchmarks repository](https://github.com/exasim-project/micro_benchmarks.git) provides a good point to start learning from. After cloning the repository, `cd` into the `LidDrivenCavity3D` directory, where an [example yaml](https://github.com/exasim-project/micro_benchmarks/blob/main/LidDrivenCavity3D/assets/scaling.yaml) file can be found in the case assets folders. Another example of a workflow is shown next
 
 ```
@@ -59,7 +59,7 @@ variation:
 
 The workflow copies an execisting case on disk and creates a [Workspace](#Workspace)
 
-### 2. Creating a tree
+### 2. Case generation
 
 In general, to create a tree of case variations run
 
@@ -70,8 +70,6 @@ Within the context of the `micro_benchmarks` example, simply run
     obr init --folder . --config assets/scaling.yaml
 
 OBR should now print some output, followed by `INFO: successfully initialized`.
-
-### 3. Running a tree
 
 Finally,  operations on a tree can be run with the `obr run` command-line option, for example `fetchCase`, which is responsible for copying the base case into the workspace:
 
@@ -87,13 +85,23 @@ Within `LidDrivenCavity3D/workspace` should now have appeared a multitude of dir
 
 also runs all defined operations in the appropriate order.
 
-### 4. Job submission on HPC cluster
+### 3. Job submission on HPC cluster
 
 On HPC cluster OBR can submit operations via the job queue. For example
 
     obr submit -o blockMesh
 
 will submit the `blockMesh` operation to the cluster manager for every job that is eligible. OBR detects the installed job queuing system, eg. slurm, pbs, etc. A jobs ubmission script will be generated automatically. For fine grained control over the submission script the `--template` argument allows to specify the location of a submission script template. Since OBR uses signac for job submission more details on how to write job submission templates can be found [here](https://docs.signac.io/en/latest/templates.html). To avoid submitting numereous jobs individually, the `--bundling-key` argument can be used to bundle all jobs for which the bundling key has the same value into the same job.
+
+### 4. Postprocessing cases
+
+Since OBR aims at performing parameter studies containing a larger number of individual casses, postprocessing cases manually should be avoided. Its is recommended to use `obr apply` instead.
+
+    obr apply --file script.py --campaign ogl_170
+
+The passed `script.py` file must implement a `call(jobs: list[Job], kwargs={})` function. On execution this gets a list of jobs which allow access to the case paths.
+
+
 
 ## Workspace
 
