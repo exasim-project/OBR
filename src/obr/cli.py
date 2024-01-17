@@ -967,6 +967,40 @@ def archive(ctx: click.Context, **kwargs):
                 logging.error(e)
 
 
+@cli.command()
+@click.option(
+    "-f",
+    "--folder",
+    default=".",
+    type=str,
+    help="Path to OpenFOAMProject.",
+)
+@click.option("--reset", 
+              "-R", 
+              is_flag=True,
+              default=False,
+              help="Remove workspace and view folders.")
+@click.pass_context
+def clean(ctx: click.Context, **kwargs) -> None:
+    path = Path(kwargs.get("folder", ".")).absolute()
+    os.chdir(path)
+
+    if not is_valid_workspace([]):
+        return
+
+    if kwargs.get("reset", False):
+        u_sure = input(f"Reset option set, will remove {path/'view'} and {path/'workspace'}. Continue? [y, N]")
+        if u_sure in ["y", "Y"]:
+            if Path(path  / "view").exists():
+                shutil.rmtree(path / "view")
+            else:
+                logging.warning(f"No view folder in directory {path}.")
+            if Path(path  / "workspace").exists():
+                shutil.rmtree(path / "workspace")    
+            else:
+                logging.warning(f"No workspace folder in directory {path}.")
+
+
 def main():
     logging.basicConfig(
         format="[%(filename)s:%(lineno)d]\t%(levelname)7s: %(message)s",
