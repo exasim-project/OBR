@@ -171,6 +171,9 @@ def merge_job_documents(job: Job, campaign: str = ""):
     """Merge multiple job_document_hash_campaign.json files into job_document.json"""
     root, _, files = next(os.walk(job.path))
 
+    if any([file for file in files if file.endswith(".log")]):
+        raise(AssertionError(f"Found log files in job with {job.id=}. Storing log files in the job base path is not supported. Please perform a clean up."))
+
     def is_job_sub_document(fn):
         if fn == "signac_job_document.json":
             return False
@@ -189,6 +192,8 @@ def merge_job_documents(job: Job, campaign: str = ""):
         with open(Path(root) / f) as fh:
             job_doc = json.load(fh)
             state = job_doc["state"]
+            if state == []:
+                state = dict()
             state["campaign"] = campaign
             state["uid"] = uid
             merged_state.append(state)
@@ -244,29 +249,29 @@ def get_timestamp_from_log(log: Path) -> str:
     return log_name.replace(before + "_", "")
 
 
+def find_tags(path: Path, tags: list, tag_mapping):
+    """Recurses into subfolders of path until a system folder is found
+    Returns:
+      Dictionary mapping paths to tags -> tag
+    """
+    _, folder, _ = next(os.walk(path))
+    is_case = len(folder) == 0
+    if is_case:
+        tag_mapping[str(path)] = tags
+    else:
+        for f in folder:
+            tags_copy = deepcopy(tags)
+            tags_copy.append(f)
+            find_tags(path / f, tags_copy, tag_mapping)
+    return tag_mapping
+
+
 def find_solver_logs(job: Job, campaign_in: str = "") -> Generator[tuple, None, None]:
     """Find and return all solver log files, campaign info and tags from job instances"""
     case_path = Path(job.path)
     if not case_path.exists():
         return
     root, campaigns, _ = next(os.walk(case_path))
-
-    def find_tags(path: Path, tags: list, tag_mapping):
-        """Recurses into subfolders of path until a system folder is found
-
-        Returns:
-          Dictionary mapping paths to tags -> tag
-        """
-        _, folder, _ = next(os.walk(path))
-        is_case = "system" in folder
-        if is_case:
-            tag_mapping[str(path)] = tags
-        else:
-            for f in folder:
-                tags_copy = deepcopy(tags)
-                tags_copy.append(f)
-                find_tags(path / f, tags_copy, tag_mapping)
-        return tag_mapping
 
     for campaign in campaigns:
         if campaign_in and str(campaign_in) != str(campaign):
