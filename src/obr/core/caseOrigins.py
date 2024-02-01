@@ -7,6 +7,22 @@ from subprocess import check_output
 import logging
 from git.repo import Repo
 
+class MultiCase:
+    """For now does only create a dummy directory
+    """
+
+    def __init__(self, origin: Union[str, Path], **kwargs):
+        if isinstance(origin, str):
+            origin = expandvars(origin)
+        self.path = Path(origin).expanduser()
+
+    def init(self, path):
+        if not isdir(self.path):
+            logging.warning(
+                f"{self.path.absolute} or some parent directory does not exist!"
+            )
+            return
+        (Path(path) / "case").mkdir(parents=True)
 
 class CaseOnDisk:
     """Copies an OpenFOAM case from disk and copies it into the workspace
@@ -144,6 +160,8 @@ def instantiate_origin_class(
         return OpenFOAMTutorialCase(**args)
     elif class_name == "CaseOnDisk":
         return CaseOnDisk(**args)
+    elif class_name == "MultiCase":
+        return MultiCase(**args)
     else:
         logging.error(
             "'type' must be 'GitRepo', 'OpenFOAMTutorialCase', or 'CaseOnDisk'!"
