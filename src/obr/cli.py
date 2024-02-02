@@ -63,12 +63,12 @@ def check_cli_operations(
     return True
 
 
-def is_valid_workspace(filters: list[str] = []) -> bool:
+def is_valid_workspace(filters: list[str] = [], path: str = None) -> bool:
     """This function checks if:
     - the `workspace` folder is not empty, and
     - applying filters would return an empty list
     """
-    project: OpenFOAMProject = OpenFOAMProject.get_project()
+    project: OpenFOAMProject = OpenFOAMProject.get_project(path=path)
     jobs: list[Job] = project.filter_jobs(filters=filters)
     if len(jobs) == 0:
         if filters == []:
@@ -408,6 +408,13 @@ def run(ctx: click.Context, **kwargs):
     help="",
 )
 @click.option(
+    "-f",
+    "--folder",
+    default=".",
+    type=str,
+    help="Path to OpenFOAMProject.",
+)
+@click.option(
     "--filter",
     type=str,
     multiple=True,
@@ -419,11 +426,11 @@ def run(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def apply(ctx: click.Context, **kwargs):
-    project = OpenFOAMProject().init_project()
+    project = OpenFOAMProject.init_project(path=kwargs.get("folder"))
 
     filters: list[str] = kwargs.get("filter", [])
     # check if given path points to valid project
-    if not is_valid_workspace(filters):
+    if not is_valid_workspace(filters, path=kwargs.get("folder", None)):
         return
     jobs = project.filter_jobs(filters=filters)
     os.environ["OBR_APPLY_FILE"] = kwargs.get("file", "")
@@ -443,7 +450,7 @@ def apply(ctx: click.Context, **kwargs):
     "-f",
     "--folder",
     default=".",
-    help="Where to create the worspace and view. Default: '.' ",
+    help="Where to create the workspace and view. Default: '.' ",
 )
 @click.option(
     "-g", "--generate", is_flag=True, help="Call generate directly after init."
@@ -733,6 +740,7 @@ def query(ctx: click.Context, **kwargs):
 @click.option(
     "--tag",
     required=False,
+    default="",
     type=str,
     help=(
         "Specify prefix of branch name. Will checkout new branch with timestamp"
@@ -763,6 +771,12 @@ def query(ctx: click.Context, **kwargs):
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     target_folder: Path = Path(kwargs.get("repo", "")).absolute()
+    create_target_folder = False
+    if not target_folder.exists():
+        resp = input(f"No folder at path {target_folder} found. Create one instead? [Y/n]")
+        if create_target_folder := (resp in ["Y", "y", ""]):
+            os.mkdir(target_folder)
+
     if current_path := kwargs.get("folder", "."):
         os.chdir(current_path)
         current_path = Path(current_path).absolute()
@@ -783,9 +797,12 @@ def archive(ctx: click.Context, **kwargs):
     # check if given path is actually a github repository
     use_git_repo = False
     try:
-        repo = Repo(path=str(target_folder), search_parent_directories=True)
-        previous_branch = repo.active_branch.name
-        use_git_repo = True
+        if create_target_folder:
+            repo = Repo(path=str(target_folder), search_parent_directories=True)
+            previous_branch = repo.active_branch.name
+            use_git_repo = True
+        else:
+            repo = None
     except InvalidGitRepositoryError:
         logging.warn(
             f"Given directory {target_folder=} is not a github repository. Will only"

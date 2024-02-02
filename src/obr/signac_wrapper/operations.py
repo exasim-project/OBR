@@ -621,7 +621,7 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     return cmd_format.format(**cli_args) + "|| true"
 
 
-def validate_state_impl(_: str, job: Job) -> str:
+def validate_state_impl(_: str, job: Job, case: OpenFOAMCase = None) -> str:
     """Perform a detailed update of the job state"""
     case = OpenFOAMCase(Path(job.path) / "case", job)
     case.detailed_update()
@@ -630,6 +630,17 @@ def validate_state_impl(_: str, job: Job) -> str:
 def move_submission_log(_: str, job: Job) -> str:
     """Move files like slurm.out to case folder"""
     pass
+
+@OpenFOAMProject.pre(parent_job_is_ready)
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.pre(is_job)
+@OpenFOAMProject.operation
+def resetCase(job: Job, args={}):
+    """Forward to validate_state_impl"""
+    case = OpenFOAMCase(str(job.path) + "/case", job)
+    case.remove_solver_logs()
+
+    validate_state_impl("", job)
 
 
 @OpenFOAMProject.pre(parent_job_is_ready)
