@@ -548,7 +548,7 @@ def status(ctx: click.Context, **kwargs):
     if hide:
         df.drop(columns=hide, inplace=True, axis=0)
     if not sort_by == [""]:
-        # df.dropna(inplace=True)
+        df = df.drop(labels="view",axis=1)
         df = df.set_index(sort_by).sort_index().reset_index()
         if not kwargs.get("detailed"):
             df.dropna(inplace=True)
