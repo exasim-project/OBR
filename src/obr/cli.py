@@ -547,7 +547,7 @@ def status(ctx: click.Context, **kwargs):
     df["view"] = df["jobid"].apply(lambda x: id_view_map.get(x, None))
     if hide:
         df.drop(columns=hide, inplace=True, axis=0)
-    if sort_by:
+    if not sort_by == [""]:
         # df.dropna(inplace=True)
         df = df.set_index(sort_by).sort_index().reset_index()
         if not kwargs.get("detailed"):
