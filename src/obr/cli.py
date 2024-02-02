@@ -544,9 +544,9 @@ def status(ctx: click.Context, **kwargs):
 
     query_results = project.query(jobs=jobs, query=queries)
     df = pd.DataFrame.from_records(records)
-    # df["view"] = df["jobid"].apply(lambda x: id_view_map.get(x, None))
+    df["view"] = df["jobid"].apply(lambda x: id_view_map.get(x, None))
     if hide:
-        df.drop(columns=hide, inplace=True, axis=0)
+        df.drop(columns=hide, inplace=True, axis=1)
     if not sort_by == [""]:
         df = df.set_index(sort_by).sort_index().reset_index()
         if not kwargs.get("detailed"):
