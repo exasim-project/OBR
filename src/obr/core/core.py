@@ -251,11 +251,14 @@ def get_timestamp_from_log(log: Path) -> str:
 
 def find_tags(path: Path, tags: list, tag_mapping):
     """Recurses into subfolders of path until a system folder is found
+
     Returns:
       Dictionary mapping paths to tags -> tag
     """
     _, folder, _ = next(os.walk(path))
-    is_case = len(folder) == 0
+    # a case folder either has a system folder or no folders
+    # at all
+    is_case = (len(folder) == 0) or ("system" in folder)
     if is_case:
         tag_mapping[str(path)] = tags
     else:
