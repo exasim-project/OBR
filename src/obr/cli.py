@@ -901,9 +901,9 @@ def archive(ctx: click.Context, **kwargs):
             #     continue
 
             root, _, files = next(os.walk(case_folder))
-            tags = "/".join(tag.split(","))
+            tags = "_".join(tag.split(","))
             campaign_target_path = (
-                target_folder / f"workspace/{job.id}/{campaign}/{tags}"
+                target_folder / f"workspace/{job.id}/{campaign}/[{tags}]"
             )
             for file in files:
                 src_file = Path(root) / file
