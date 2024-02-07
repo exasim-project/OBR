@@ -338,8 +338,9 @@ def controlDict(job: Job, args={}):
 @OpenFOAMProject.post(lambda job: operation_complete(job, "MultiCase"))
 @OpenFOAMProject.operation
 def MultiCase(job: Job, args={}):
+    """Dummy operation to generate multiple cases"""
     args = get_args(job, args)
-    print("args", args)
+    copy_on_uses(args, job, "system", "controlDict")
     instantiate_origin_class(args["type"], args).init(job.path)
 
 
