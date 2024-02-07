@@ -273,6 +273,15 @@ class OpenFOAMCase(BlockMesh):
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one
         gets created"""
+        if not self.time_folder:
+            logging.warning(
+                f"No time folder found! Decomposition might lead to an unusable case."
+            )
+            zero_orig_path = Path(self.path / "0.orig")
+            if zero_orig_path.exists():
+                logging.warning(f"Using existing 0.orig folder")
+                zero_target_path = Path(self.path / "0")
+                check_output(["cp", "-r", zero_orig_path, zero_target_path])
 
         if not self.decomposeParDict:
             decomposeParDictFile = Path(self.system_folder / "decomposeParDict")
