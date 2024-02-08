@@ -285,7 +285,7 @@ def execute_shell(steps: list[str], job) -> bool:
         if not step:
             continue
         step = parse_variables(step)
-        log_file = logged_execute(step.split(), path, job.doc)
+        logged_execute(step.split(), path, job.doc)
     return True
 
 
