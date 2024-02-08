@@ -13,6 +13,7 @@ Changelog
 - Validate simulation state after runSerial|ParallelSolver, see https://github.com/hpsim/OBR/pull/168
 - Improve obr submit, see https://github.com/hpsim/OBR/pull/170
 - Fix broken test badge, see https://github.com/hpsim/OBR/pull/178
+- Fix logfile location for shell commands, see https://github.com/hpsim/OBR/pull/184
 
 
 0.2.0 (2023-09-14)
