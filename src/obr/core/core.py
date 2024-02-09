@@ -91,7 +91,7 @@ def logged_execute(cmd, path, doc) -> Path:
         # the cmd_str might contain / for example if
         # shell scripts are called. Hence we sanitize
         # the script name
-        cmd_str_san = cmd_str.split("/")[-1]
+        cmd_str_san = key_to_path(cmd_str.split("/")[-1])
         fn = f"{cmd_str_san}_{timestamp}.log"
         with open(path / fn, "w") as fh:
             fh.write(log)
