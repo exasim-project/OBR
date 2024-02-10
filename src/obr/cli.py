@@ -18,7 +18,6 @@ Why does this file exist, and why not put this in __main__?
 import click
 import yaml  # type: ignore[import]
 import os
-import time
 import sys
 import json
 import logging
@@ -35,10 +34,11 @@ from datetime import datetime
 from typing import Union, Optional, Any
 from copy import deepcopy
 
-from .signac_wrapper.operations import OpenFOAMProject, get_values
+from .signac_wrapper.operations import OpenFOAMProject
+from .signac_wrapper.submit import submit_impl
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .core.queries import input_to_queries, query_impl, build_filter_query, Query
+from .core.queries import build_filter_query, Query
 from .core.core import map_view_folder_to_job_id
 
 
@@ -79,6 +79,27 @@ def is_valid_workspace(filters: list[str] = [], path: str = None) -> bool:
         )
         return False
     return True
+
+
+def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
+    """This function performs the common pattern of checking project folders for existence and creating the project and extracting the jobs."""
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+    project = OpenFOAMProject.get_project()
+    filters: list[str] = kwargs.get("filter", [])
+    if len(filters) > 0 and kwargs.get("job"):
+        raise AssertionError("Filters and job flags are mutually exclusive")
+
+    if sel := kwargs.get("job"):
+        jobs = [job for job in project if sel == job.id]
+    else:
+        jobs = project.filter_jobs(filters=filters)
+
+    # check if given path points to valid project
+    if not is_valid_workspace(filters):
+        logging.warning("Workspace is not valid! Exiting.")
+        sys.exit(1)
+    return project, jobs
 
 
 def copy_to_archive(
@@ -165,6 +186,11 @@ def cli(ctx: click.Context, debug: bool):
     ),
 )
 @click.option(
+    "--template",
+    default="",
+    help="Path to sumbission script template.",
+)
+@click.option(
     "-l",
     "--list_operations",
     is_flag=True,
@@ -192,71 +218,22 @@ def cli(ctx: click.Context, debug: bool):
 @click.pass_context
 def submit(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
-
-    project._entrypoint = {"executable": "", "path": "obr"}
-
     operations = kwargs.get("operations", "").split(",")
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
 
-    partition = kwargs.get("partition")
-    account = kwargs.get("account")
-
-    # TODO find a signac way to do that
-    cluster_args = {
-        "partition": partition,
-        "pretend": kwargs["pretend"],
-        "account": account,
-    }
-
-    # TODO improve this using regex
-    scheduler_args = kwargs.get("scheduler_args")
-    if scheduler_args:
-        split = scheduler_args.split(" ")
-        for i in range(0, len(split), 2):
-            cluster_args.update({split[i]: split[i + 1]})
-
-    bundling_key = kwargs.get("bundling_key")
-    if bundling_key:
-        bundling_values = get_values(jobs, bundling_key)
-        for bundle_value in bundling_values:
-            selected_jobs: list[Job] = [
-                j for j in project if bundle_value in list(j.sp().values())
-            ]
-            logging.info(f"submit bundle {bundle_value} of {len(selected_jobs)} jobs")
-            ret_submit = (
-                project.submit(
-                    jobs=selected_jobs,
-                    bundle_size=len(selected_jobs),
-                    names=[kwargs.get("operation")],
-                    **cluster_args,
-                )
-                or ""
-            )
-            logging.info("submission response" + str(ret_submit))
-            time.sleep(15)
-    else:
-        logging.info(f"submitting {len(jobs)} individual jobs")
-        import cProfile
-        import pstats
-
-        with cProfile.Profile() as pr:
-            ret_submit = project.submit(
-                jobs=jobs,
-                names=operations,
-                **cluster_args,
-            )
-            logging.info(ret_submit)
-
-        stats = pstats.Stats(pr)
-        stats.sort_stats(pstats.SortKey.TIME)
-        # stats.print_stats()
-        stats.dump_stats(filename="needs_profiling.prof")
-
-    # print(project.scheduler_jobs(TestEnvironment.get_prefix(runSolver)))
-    # print(list(project.scheduler_jobs(TestEnvironment.get_scheduler())))
-    #
+    submit_impl(
+        project,
+        jobs,
+        operations=operations,
+        template=Path(kwargs.get("template")),
+        account=kwargs.get("account"),
+        partition=kwargs.get("partition"),
+        pretend=kwargs["pretend"],
+        bundling_key=kwargs["bundling_key"],
+        scheduler_args=kwargs.get("scheduler_args"),
+    )
 
 
 @cli.command()
@@ -343,7 +320,10 @@ def reset(ctx: click.Context, **kwargs):
 @click.pass_context
 def run(ctx: click.Context, **kwargs):
     """Run specified operations"""
+<<<<<<< HEAD
     print("run", kwargs)
+=======
+>>>>>>> dev
     project, jobs = cli_cmd_setup(kwargs)
 
     operations = kwargs.get("operations", "").split(",")

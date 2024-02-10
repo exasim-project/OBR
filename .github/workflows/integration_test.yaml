@@ -1,13 +1,9 @@
 name: Integration tests
 run-name: Integration test on ${{github.ref_name}}
 
+
 on:
-  push:
-    branches:
-      - dev
-      - main
-  pull_request:
-    types: synchronize
+  workflow_call
 
 env:
   BUILD_TYPE: Release

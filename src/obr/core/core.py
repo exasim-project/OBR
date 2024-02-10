@@ -2,7 +2,6 @@
 import os
 import subprocess
 import re
-import hashlib
 import logging
 import json
 
@@ -41,7 +40,7 @@ def key_to_path(sign_path: Union[str, Path]) -> str:
     return str(sign_path).replace(SIGNAC_PATH_TOKEN, PATH_TOKEN)
 
 
-def logged_execute(cmd, path, doc):
+def logged_execute(cmd, path, doc) -> Path:
     """execute cmd and logs success
 
     If cmd is a string, it will be interpreted as shell cmd
@@ -51,7 +50,6 @@ def logged_execute(cmd, path, doc):
         path to log file
     """
 
-    check_output(["mkdir", "-p", ".obr_store"], cwd=path)
     d = doc["history"]
     cmd_str = " ".join(cmd)
     cmd_str = path_to_key(cmd_str).split()  # replace dots in cmd_str with _dot_'s
@@ -60,7 +58,6 @@ def logged_execute(cmd, path, doc):
     else:
         flags = []
     cmd_str = cmd_str[0]
-    log_path = None
     try:
         ret = check_output(cmd, cwd=path, stderr=subprocess.STDOUT).decode("utf-8")
         log = ret
@@ -86,11 +83,16 @@ def logged_execute(cmd, path, doc):
         state = "failure"
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    log_path = None
+
+    # Only write log files above a certain size
+    # otherwise the log is stored directly in the job doc
     if log and len(log) > 1000:
-        h = hashlib.new("md5")
-        h.update(log.encode())
-        h.hexdigest()
-        fn = f"{cmd_str}_{timestamp}.log"
+        # the cmd_str might contain / for example if
+        # shell scripts are called. Hence we sanitize
+        # the script name
+        cmd_str_san = key_to_path(cmd_str.split("/")[-1])
+        fn = f"{cmd_str_san}_{timestamp}.log"
         with open(path / fn, "w") as fh:
             fh.write(log)
         log = fn
@@ -289,7 +291,8 @@ def find_solver_logs(job: Job, campaign_in: str = "") -> Generator[tuple, None, 
                     yield f"{root}/{file}", campaign, tags
 
 
-def execute(steps: list[str], job) -> bool:
+def execute_shell(steps: list[str], job) -> bool:
+    """execute a list of shell commands on a job"""
     path = Path(job.path) / "case"
     if not steps:
         return False
@@ -304,8 +307,6 @@ def execute(steps: list[str], job) -> bool:
             steps[i + 1] = cleaned + steps[i + 1]
             continue
         steps_filt.append(step)
-
-    # steps_filt = map(lambda x: " ".join(x.split()), steps_filt)
 
     for step in steps_filt:
         if not step:

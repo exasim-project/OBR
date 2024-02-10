@@ -6,11 +6,14 @@ Changelog
 ------------------
 - Add common notation see https://github.com/hpsim/OBR/pull/146
 - Make numberOfSubdomains argument in yaml consistent see https://github.com/hpsim/OBR/pull/148
-- Fix missing of groups in `obr run --list-operations` view, see https://github.com/hpsim/OBR/pull/159. 
+- Fix missing of groups in `obr run --list-operations` view, see https://github.com/hpsim/OBR/pull/159.
 - Make view folders relative see https://github.com/hpsim/OBR/pull/164
 - Use cached version of git repo instead of cloning, see https://github.com/hpsim/OBR/pull/166
 - Bump signac version, see https://github.com/hpsim/OBR/pull/169
 - Validate simulation state after runSerial|ParallelSolver, see https://github.com/hpsim/OBR/pull/168
+- Improve obr submit, see https://github.com/hpsim/OBR/pull/170
+- Fix broken test badge, see https://github.com/hpsim/OBR/pull/178
+- Fix logfile location for shell commands, see https://github.com/hpsim/OBR/pull/184
 
 
 0.2.0 (2023-09-14)

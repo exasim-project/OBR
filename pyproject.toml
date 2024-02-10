@@ -1,6 +1,6 @@
 [project]
 name = "obr"
-version = "0.3.4"
+version = "0.3.7"
 description = "A tool to create and run OpenFOAM parameter studies"
 authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"},
@@ -36,8 +36,10 @@ obr = "obr.cli:main"
 
 [project.optional-dependencies]
 doc = [
-    "sphinx~=4.2.0",
-    "sphinx-autoapi",
+    "sphinx==6.2.1",
+    "sphinx-autoapi==3.0.0",
+    "sphinxcontrib.applehelp==1.0.7",
+    "furo",
     "myst_parser"
 ]
 test = [

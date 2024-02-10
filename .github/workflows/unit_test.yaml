@@ -1,8 +1,7 @@
-name: Tests
+name: Unit tests
 
 on:
-  - push
-  - pull_request
+  workflow_call
 
 jobs:
   unit-test:
@@ -12,7 +11,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ['3.9']
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -37,6 +36,7 @@ jobs:
         echo "COVERAGE=$TOTAL" >> $GITHUB_ENV
 
     - name: "Make coverage badge"
+      continue-on-error: true
       uses: schneegans/dynamic-badges-action@v1.4.0
       with:
         # GIST_TOKEN is a GitHub personal access token with scope "gist".
