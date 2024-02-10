@@ -273,7 +273,9 @@ class OpenFOAMCase(BlockMesh):
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one
         gets created"""
+        creates_zero_folder = False
         if not self.time_folder:
+            creates_zero_folder = True
             logging.warning(
                 f"No time folder found! Decomposition might lead to an unusable case."
             )
@@ -281,7 +283,19 @@ class OpenFOAMCase(BlockMesh):
             if zero_orig_path.exists():
                 logging.warning(f"Using existing 0.orig folder")
                 zero_target_path = Path(self.path / "0")
-                check_output(["cp", "-r", zero_orig_path, zero_target_path])
+                zero_target_path.mkdir()
+                root, _, files = next(os.walk(zero_orig_path))
+                for file in files:
+                    src_path = Path(root) / file
+                    if src_path.is_symlink():
+                        logging.warning(
+                            f"{src_path} is a symlink"
+                            f"Some openfoam versions refuse to decompose files if content of"
+                            f" zero folder are symlinks. Thus we temporarily copy this folder."
+                        )
+                        src_path = src_path.resolve()
+                    target_path = zero_target_path / file
+                    check_output(["cp", src_path, target_path], cwd=self.path)
 
         if not self.decomposeParDict:
             decomposeParDictFile = Path(self.system_folder / "decomposeParDict")
@@ -321,6 +335,12 @@ class OpenFOAMCase(BlockMesh):
         fvSolutionArgs = args.get("fvSolution", {})
         if fvSolutionArgs:
             self.fvSolution.set(fvSolutionArgs)
+        # TODO remove temporary 0 path if created
+        if creates_zero_folder:
+            import shutil
+            shutil.rmtree(str(zero_target_path))
+
+        # TODO check if processor folder contains time folder
         return log
 
     def setKeyValuePair(self, args: dict):
