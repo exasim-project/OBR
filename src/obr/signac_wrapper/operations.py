@@ -13,7 +13,7 @@ from typing import Union, Literal
 from datetime import datetime
 
 from .labels import owns_mesh, final, finished
-from ..core.core import execute
+from ..core.core import execute_shell
 from obr.OpenFOAM.case import OpenFOAMCase
 from obr.core.queries import filter_jobs, query_impl, Query
 
@@ -355,7 +355,7 @@ def shell(job: Job, args={}):
         steps = [f"{k} {v}".replace("_dot_", ".") for k, v in args.items()]
     else:
         steps = [args]
-    execute(steps, job)
+    execute_shell(steps, job)
 
 
 @generate
