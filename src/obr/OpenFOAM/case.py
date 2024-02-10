@@ -270,9 +270,17 @@ class OpenFOAMCase(BlockMesh):
     def _exec_operation(self, operation) -> Path:
         return logged_execute(operation, self.path, self.job.doc)
 
+    @property
+    def esi_version(self) -> bool:
+        """ Check if esi version of OpenFOAM is sourced """
+        wm_project_dir = os.environ["WM_PROJECT_DIR"]
+        return (Path(wm_project_dir)/"CONTRIBUTORS.md").exists()
+
+
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one
         gets created"""
+        # TODO create a separate function for desymlinking
         creates_zero_folder = False
         if not self.time_folder:
             creates_zero_folder = True
@@ -287,15 +295,37 @@ class OpenFOAMCase(BlockMesh):
                 root, _, files = next(os.walk(zero_orig_path))
                 for file in files:
                     src_path = Path(root) / file
-                    if src_path.is_symlink():
+                    if src_path.is_symlink() and not self.esi_version:
                         logging.warning(
-                            f"{src_path} is a symlink"
+                            f"{src_path} is a symlink\n"
                             f"Some openfoam versions refuse to decompose files if content of"
-                            f" zero folder are symlinks. Thus we temporarily copy this folder."
+                            f" zero folder are symlinks. Thus we temporarily copy this file."
                         )
                         src_path = src_path.resolve()
                     target_path = zero_target_path / file
                     check_output(["cp", src_path, target_path], cwd=self.path)
+
+        if not self.esi_version:
+            # NOTE we need to make sure that in the constant folder files are not symlinks
+            constant_move = self.path / "constant.bck"
+            check_output(["mv", self.constant_folder, constant_move])
+            check_output(["mkdir", self.constant_folder])
+            root, folder, files = next(os.walk(constant_move))
+            for file in files:
+                src_path = Path(root) / file
+                if src_path.is_symlink() and not self.esi_version:
+                    logging.warning(
+                        f"{src_path} is a symlink\n"
+                        f"Some openfoam versions refuse to decompose files if content of"
+                        f" zero folder are symlinks. Thus we temporarily copy this file."
+                    )
+                    src_path = src_path.resolve()
+                target_path = self.constant_folder / file
+                check_output(["cp", src_path, target_path], cwd=self.path)
+            for fold in folder:
+                src_path = Path(root) / fold
+                target_path = self.constant_folder / fold
+                check_output(["cp", "-r", src_path, target_path], cwd=self.path)
 
         if not self.decomposeParDict:
             decomposeParDictFile = Path(self.system_folder / "decomposeParDict")
