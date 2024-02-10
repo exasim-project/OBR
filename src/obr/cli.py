@@ -21,6 +21,8 @@ import os
 import sys
 import json
 import logging
+import pandas as pd
+import shutil
 
 from signac.job import Job
 from pathlib import Path
@@ -61,12 +63,12 @@ def check_cli_operations(
     return True
 
 
-def is_valid_workspace(filters: list = []) -> bool:
+def is_valid_workspace(filters: list[str] = [], path: str = None) -> bool:
     """This function checks if:
     - the `workspace` folder is not empty, and
     - applying filters would return an empty list
     """
-    project: OpenFOAMProject = OpenFOAMProject.get_project()
+    project: OpenFOAMProject = OpenFOAMProject.get_project(path=path)
     jobs: list[Job] = project.filter_jobs(filters=filters)
     if len(jobs) == 0:
         if filters == []:
@@ -114,6 +116,47 @@ def copy_to_archive(
     check_output(["cp", src_file, target_file])
     if use_git_repo and repo:
         repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
+
+
+def archive_view(
+    repo: Union[Repo, None],
+    use_git_repo: bool,
+    campaign_target_path: Path,
+    view_name: Path,
+    target_folder: Path,
+):
+    """Creates a new view folder in the archival folder"""
+    dst = campaign_target_path.absolute()
+    print("create view folder", view_name.parent)
+    view_name.parent.mkdir(parents=True, exist_ok=True)
+
+    relpath = os.path.relpath(dst, view_name)
+    # for some reason the relpath has one ../ too much
+    relpath = relpath[3:]
+    print("create_view_link", dst, view_name, relpath)
+
+    if not Path(view_name).exists():
+        view_name.symlink_to(relpath)
+
+    if use_git_repo and repo:
+        repo.git.add(view_name)  # NOTE do _not_ do repo.git.add(all=True)
+
+
+def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
+    """This function performs the common pattern of checking project folders for existence and creating the project and extracting the jobs."""
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+    project = OpenFOAMProject.get_project()
+    filters: list[str] = kwargs.get("filter", [])
+    if sel := kwargs.get("job"):
+        jobs = [job for job in project if sel == job.id]
+    else:
+        jobs = project.filter_jobs(filters=filters)
+
+    # check if given path points to valid project
+    if not is_valid_workspace(filters):
+        sys.exit(1)
+    return project, jobs
 
 
 @click.group()
@@ -194,6 +237,53 @@ def submit(ctx: click.Context, **kwargs):
 
 
 @cli.command()
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
+        ' runParallelSolver --filter "solver==pisoFoam"'
+    ),
+)
+@click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
+@click.option("-c", "--case", is_flag=True, help="reset the state of a case by deleting solver logs")
+@click.option(
+    "-v", "--view", default="remove case completely specified by a view folder"
+)
+@click.pass_context
+def reset(ctx: click.Context, **kwargs):
+    """deletes workspace or cases"""
+
+    def safe_delete(fn):
+        path = Path(fn)
+        if path.exists():
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+
+    project, jobs = cli_cmd_setup(kwargs)
+
+    if kwargs.get("workspace"):
+        safe_delete("workspace")
+        safe_delete("view")
+        safe_delete("signac.rc")
+        return
+    if kwargs.get("case"):
+        project.run(
+            jobs = jobs,
+            names=["resetCase"],
+            progress=True,
+            np=-1,
+        )
+
+    # TODO implement a procedure  that checks if it is inside
+    # a obr project. To allow 'obr purge .' within a view
+
+
+@cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option(
     "-o",
@@ -230,6 +320,10 @@ def submit(ctx: click.Context, **kwargs):
 @click.pass_context
 def run(ctx: click.Context, **kwargs):
     """Run specified operations"""
+<<<<<<< HEAD
+    print("run", kwargs)
+=======
+>>>>>>> dev
     project, jobs = cli_cmd_setup(kwargs)
 
     operations = kwargs.get("operations", "").split(",")
@@ -244,14 +338,7 @@ def run(ctx: click.Context, **kwargs):
         os.environ["OBR_JOB"] = kwargs.get("job", "")
 
     if kwargs.get("operations") == "apply":
-        sys.argv.append("--aggregate")
-        sys.argv.append("-t")
-        sys.argv.append("1")
-        project.run(
-            names=operations,
-            progress=True,
-            np=1,
-        )
+        logging.warning("Run 'obr apply' directly")
         return
 
     if kwargs.get("operations") == "runParallelSolver":
@@ -262,6 +349,7 @@ def run(ctx: click.Context, **kwargs):
             sys.argv.append("-t")
             sys.argv.append(str(ntasks))
         project.run(
+            jobs=jobs,
             names=operations,
             progress=True,
             np=ntasks,
@@ -286,12 +374,70 @@ def run(ctx: click.Context, **kwargs):
 
 @cli.command()
 @click.option(
+    "-c",
+    "--campaign",
+    type=str,
+    multiple=False,
+    help="",
+)
+@click.option(
+    "-f",
+    "--file",
+    type=str,
+    multiple=False,
+    help="",
+)
+@click.option(
     "-f",
     "--folder",
     default=".",
-    help="Where to create the worspace and view. Default: '.' ",
+    type=str,
+    help="Path to OpenFOAMProject.",
 )
-@click.option("-e", "--execute", default=False)
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
+        ' runParallelSolver --filter "solver==pisoFoam"'
+    ),
+)
+@click.pass_context
+def apply(ctx: click.Context, **kwargs):
+    project = OpenFOAMProject.init_project(path=kwargs.get("folder"))
+
+    filters: list[str] = kwargs.get("filter", [])
+    # check if given path points to valid project
+    if not is_valid_workspace(filters, path=kwargs.get("folder", None)):
+        return
+    jobs = project.filter_jobs(filters=filters)
+    os.environ["OBR_APPLY_FILE"] = kwargs.get("file", "")
+    os.environ["OBR_APPLY_CAMPAIGN"] = kwargs.get("campaign", "")
+    sys.argv.append("--aggregate")
+    sys.argv.append("-t")
+    sys.argv.append("1")
+    project.run(
+        names=["apply"],
+        progress=True,
+        np=1,
+    )
+
+
+@cli.command()
+@click.option(
+    "-f",
+    "--folder",
+    default=".",
+    help="Where to create the workspace and view. Default: '.' ",
+)
+@click.option(
+    "-g", "--generate", is_flag=True, help="Call generate directly after init."
+)
+@click.option(
+    "-w", "--workflow", default="", help="Call a given workflow command after generate."
+)
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
 @click.option("-t", "--tasks", default=-1, help="Number of tasks to run concurrently.")
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
@@ -310,10 +456,33 @@ def init(ctx: click.Context, **kwargs):
 
     logging.info("successfully initialised")
 
+    if kwargs.get("generate"):
+        project.run(
+            names=["generate"],
+            progress=True,
+            np=kwargs.get("tasks", -1),
+        )
+
 
 @cli.command()
 @click.option("-f", "--folder", default=".")
 @click.option("-d", "--detailed", is_flag=True)
+@click.option("--detailed", is_flag=True)
+@click.option(
+    "--hide",
+    default="",
+    help="Hide default values like jobid from output.",
+)
+@click.option(
+    "--extra",
+    default="",
+    help="Pass a comma separated list to set extra values",
+)
+@click.option(
+    "--sort_by",
+    default="",
+    help="Pass a comma separated list to set the ordering of the output",
+)
 @click.option(
     "--filter",
     type=str,
@@ -325,35 +494,48 @@ def init(ctx: click.Context, **kwargs):
         ' "solver==pisoFoam"'
     ),
 )
+@click.option(
+    "--export_to",
+    required=False,
+    multiple=False,
+    default="markdown",
+    help="Output format. Valid choices: markdown, json",
+)
 @click.pass_context
 def status(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
 
     # project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
+    sort_by = kwargs.get("sort_by", False).split(",")
+    extra = kwargs.get("extra", "").split(",")
+    hide = kwargs.get("hide", "")
+    hide = hide.split(",") if hide else []
 
-    finished, unfinished = [], []
-    max_view_len = 0
-    logging.info("Detailed overview:\n" + "=" * 90)
-    for job in jobs:
-        jobid = job.id
-        job.doc["state"]["view"] = id_view_map.get(jobid)
-        if view := id_view_map.get(jobid):
-            labels = project.labels(job)
-            max_view_len = max(len(view), max_view_len)
-            if "finished" in labels:
-                finished.append((view, jobid, labels))
-            else:
-                unfinished.append((view, jobid, labels))
-    finished.sort()
-    for view, jobid, labels in finished:
-        pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| C | {jobid}")
-    unfinished.sort()
-    for view, jobid, labels in unfinished:
-        pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| I | {jobid}")
-    logging.info("Flags: C - Completed, I - Incomplete")
+    input_queries = sort_by + extra
+    queries: list[Query] = build_filter_query(input_queries)
+    # convert query results to records
+    records = []
+    query_results = project.query(jobs=jobs, query=queries)
+    for jobid, entries in query_results.items():
+        record = {"jobid": jobid}
+        record.update(entries)
+        records.append(record)
+
+    query_results = project.query(jobs=jobs, query=queries)
+    df = pd.DataFrame.from_records(records)
+    df["view"] = df["jobid"].apply(lambda x: id_view_map.get(x, None))
+    if hide:
+        df.drop(columns=hide, inplace=True, axis=1)
+    if not sort_by == [""]:
+        df = df.set_index(sort_by).sort_index().reset_index()
+        if not kwargs.get("detailed"):
+            df.dropna(inplace=True)
+    # with open(export_to, "w") as outfile:
+    if kwargs.get("export_to") == "markdown":
+        print(df.to_markdown(tablefmt="github"))
+    if kwargs.get("export_to") == "json":
+        print(df.to_json())
 
 
 @cli.command()
@@ -382,10 +564,22 @@ def status(ctx: click.Context, **kwargs):
     ),
 )
 @click.option(
+    "--campaign",
+    required=False,
+    multiple=False,
+    help="Run query only on job document of a specific campaign.",
+)
+@click.option(
     "--export_to",
     required=False,
     multiple=False,
-    help="Write results to a json file.",
+    help="Write results to a file. Valid choices json, markdown",
+)
+@click.option(
+    "--markdown_formater",
+    required=False,
+    multiple=False,
+    help="Format ",
 )
 @click.option(
     "--validate_against",
@@ -415,6 +609,11 @@ def query(ctx: click.Context, **kwargs):
         return
     queries: list[Query] = build_filter_query(input_queries)
     jobs = project.filter_jobs(filters=list(filters))
+
+    if kwargs.get("campaign"):
+        for job in jobs:
+            merge_job_documents(job, kwargs.get("campaign"))
+
     query_results = project.query(jobs=jobs, query=queries)
     if not quiet:
         for job_id, query_res in deepcopy(query_results).items():
@@ -423,11 +622,27 @@ def query(ctx: click.Context, **kwargs):
                 out_str += f" {k}: {v}"
             logging.info(out_str)
 
-    json_file: str = kwargs.get("export_to", "")
-    if json_file:
-        with open(json_file, "w") as outfile:
-            # json_data refers to the above JSON
-            json.dump(query_results, outfile)
+    export_to: str = kwargs.get("export_to", "")
+    if export_to:
+        if export_to.endswith(".json"):
+            with open(export_to, "w") as outfile:
+                # json_data refers to the above JSON
+                json.dump(query_results, outfile)
+        if export_to.endswith(".md"):
+            # convert query results to records
+            records = []
+            for jobid, entries in query_results.items():
+                record = {"jobid": jobid}
+                record.update(entries)
+                records.append(record)
+
+            df = pd.DataFrame.from_records(records)
+            df.dropna(inplace=True)
+            df.set_index(["nCells"], inplace=True)
+            df.sort_index(inplace=True)
+            with open(export_to, "w") as outfile:
+                df.to_markdown(outfile)
+
     validation_file: str = kwargs.get("validate_against", "")
     if validation_file:
         with open(validation_file, "r") as infile:
@@ -504,6 +719,7 @@ def query(ctx: click.Context, **kwargs):
 @click.option(
     "--tag",
     required=False,
+    default="",
     type=str,
     help=(
         "Specify prefix of branch name. Will checkout new branch with timestamp"
@@ -534,17 +750,23 @@ def query(ctx: click.Context, **kwargs):
 @click.pass_context
 def archive(ctx: click.Context, **kwargs):
     target_folder: Path = Path(kwargs.get("repo", "")).absolute()
+    create_target_folder = False
+    if not target_folder.exists():
+        resp = input(f"No folder at path {target_folder} found. Create one instead? [Y/n]")
+        if create_target_folder := (resp in ["Y", "y", ""]):
+            os.mkdir(target_folder)
+
     if current_path := kwargs.get("folder", "."):
         os.chdir(current_path)
         current_path = Path(current_path).absolute()
 
     # setup project and jobs
     project = OpenFOAMProject().init_project()
-    filters: list[str] = list(kwargs.get("filter", ()))
+    filters: list[str] = kwargs.get("filter", [])
     # check if given path points to valid project
     if not is_valid_workspace(filters):
         return
-    jobs = project.filter_jobs(filters, False)
+    jobs = project.filter_jobs(filters)
 
     dry_run = kwargs.get("dry_run", False)
     branch_name = None
@@ -554,9 +776,12 @@ def archive(ctx: click.Context, **kwargs):
     # check if given path is actually a github repository
     use_git_repo = False
     try:
-        repo = Repo(path=str(target_folder), search_parent_directories=True)
-        previous_branch = repo.active_branch.name
-        use_git_repo = True
+        if create_target_folder:
+            repo = Repo(path=str(target_folder), search_parent_directories=True)
+            previous_branch = repo.active_branch.name
+            use_git_repo = True
+        else:
+            repo = None
     except InvalidGitRepositoryError:
         logging.warn(
             f"Given directory {target_folder=} is not a github repository. Will only"
@@ -598,6 +823,8 @@ def archive(ctx: click.Context, **kwargs):
                 logging.info(f"checkout {branch_name}")
                 repo.git.checkout("HEAD", b=branch_name)
 
+    id_view_map = map_view_folder_to_job_id("view")
+
     # setup target folder
     if not target_folder.exists():
         if dry_run:
@@ -630,7 +857,8 @@ def archive(ctx: click.Context, **kwargs):
                 ["md5sum", str(signac_job_document)], text=True
             ).split()[0]
             target_file = (
-                target_folder / f"workspace/{job.id}/signac_job_document_{md5sum}.json"
+                target_folder
+                / f"workspace/{job.id}/signac_job_document_{md5sum}_{campaign}.json"
             )
             if dry_run:
                 logging.info(f"Would copy {signac_job_document} to {target_file}.")
@@ -653,15 +881,16 @@ def archive(ctx: click.Context, **kwargs):
             #     continue
 
             root, _, files = next(os.walk(case_folder))
-            tags = "/".join(tag.split(","))
+            tags = "_".join(tag.split(","))
+            campaign_target_path = (
+                target_folder / f"workspace/{job.id}/{campaign}/[{tags}]"
+            )
             for file in files:
                 src_file = Path(root) / file
                 if src_file.is_relative_to(current_path):
                     src_file = src_file.relative_to(current_path)
                 if file.endswith("log"):
-                    target_file = (
-                        target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
-                    )
+                    target_file = campaign_target_path / file
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
                     if dry_run:
@@ -669,13 +898,18 @@ def archive(ctx: click.Context, **kwargs):
                     else:
                         copy_to_archive(repo, use_git_repo, src_file, target_file)
 
+            view_path = id_view_map.get(job.id)
+            if view_path:
+                view_path = target_folder / "view" / view_path / f"{campaign}/{tags}"
+                archive_view(
+                    repo, use_git_repo, campaign_target_path, view_path, target_folder
+                )
+
             # copy CLI-passed files into data repo and add if possible
             extra_files: tuple[str] = kwargs.get("file", ())
             for file in extra_files:
                 f = case_folder / file
-                target_file = (
-                    target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
-                )
+                target_file = campaign_target_path / file
                 if not f.exists():
                     logging.info(f"invalid path {f}. Skipping.")
                     continue

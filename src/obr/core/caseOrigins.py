@@ -95,9 +95,9 @@ class GitRepo:
                 # if no commit is specified, simply get latest
                 if not self.commit:
                     repo.git.pull(origin_branchname[0], origin_branchname[-1])
-                check_output(
-                    ["cp", "-r", f"{self.cache_folder}/{self.folder}", path + "/case"]
-                )
+                check_output([
+                    "cp", "-r", f"{self.cache_folder}/{self.folder}", path + "/case"
+                ])
                 return
             else:
                 logging.warning(

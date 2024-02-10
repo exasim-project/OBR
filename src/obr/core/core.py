@@ -169,9 +169,12 @@ def get_mesh_stats(owner_path: str) -> dict:
     return {"nCells": nCells, "nFaces": nFaces}
 
 
-def merge_job_documents(job: Job):
-    """Merge multiple job_document_hash.json files into job_document.json"""
+def merge_job_documents(job: Job, campaign: str = ""):
+    """Merge multiple job_document_hash_campaign.json files into job_document.json"""
     root, _, files = next(os.walk(job.path))
+
+    if any([file for file in files if file.endswith(".log")]):
+        raise(AssertionError(f"Found log files in job with {job.id=}. Storing log files in the job base path is not supported. Please perform a clean up."))
 
     def is_job_sub_document(fn):
         if fn == "signac_job_document.json":
@@ -181,18 +184,38 @@ def merge_job_documents(job: Job):
     files = [f for f in files if is_job_sub_document(f)]
     merged_data = []
     merged_history = []
+    merged_state = []
     cache = None
+    # TODO add campaign kvp
     for f in files:
+        uid = f.split("_")[3]
+        if campaign and not f.endswith(f"{campaign}.json"):
+            continue
         with open(Path(root) / f) as fh:
             job_doc = json.load(fh)
+            state = job_doc["state"]
+            if state == []:
+                state = dict()
+            state["campaign"] = campaign
+            state["uid"] = uid
+            merged_state.append(state)
             for record in job_doc["data"]:
+                record["campaign"] = campaign
+                record["uid"] = uid
                 merged_data.append(record)
             for record in job_doc["history"]:
+                record["campaign"] = campaign
+                record["uid"] = uid
                 merged_history.append(record)
             # TODO handle inconsistent cache
             if not cache:
                 cache = job_doc["cache"]
-    job.doc = {"data": merged_data, "history": merged_history, "cache": cache}
+    job.doc = {
+        "state": merged_state,
+        "data": merged_data,
+        "history": merged_history,
+        "cache": cache,
+    }
 
 
 def get_latest_log(job: Job) -> str:
@@ -221,39 +244,43 @@ def get_latest_log(job: Job) -> str:
     return ""
 
 
-def get_timestamp_from_log(log) -> str:
+def get_timestamp_from_log(log: Path) -> str:
     """gets the timestamp part from an log file"""
-    log_name = Path(log).stem
+    log_name = log.stem
     before = log_name.split("_")[0]
     return log_name.replace(before + "_", "")
 
 
-def find_solver_logs(job: Job) -> Generator[tuple, None, None]:
+def find_tags(path: Path, tags: list, tag_mapping):
+    """Recurses into subfolders of path until a system folder is found
+
+    Returns:
+      Dictionary mapping paths to tags -> tag
+    """
+    _, folder, _ = next(os.walk(path))
+    # a case folder either has a system folder or no folders
+    # at all
+    is_case = (len(folder) == 0) or ("system" in folder)
+    if is_case:
+        tag_mapping[str(path)] = tags
+    else:
+        for f in folder:
+            tags_copy = deepcopy(tags)
+            tags_copy.append(f)
+            find_tags(path / f, tags_copy, tag_mapping)
+    return tag_mapping
+
+
+def find_solver_logs(job: Job, campaign_in: str = "") -> Generator[tuple, None, None]:
     """Find and return all solver log files, campaign info and tags from job instances"""
     case_path = Path(job.path)
     if not case_path.exists():
         return
-
     root, campaigns, _ = next(os.walk(case_path))
 
-    def find_tags(path: Path, tags: list, tag_mapping):
-        """Recurses into subfolders of path until a system folder is found
-
-        Returns:
-          Dictionary mapping paths to tags -> tag
-        """
-        _, folder, _ = next(os.walk(path))
-        is_case = len(folder) == 0
-        if is_case:
-            tag_mapping[str(path)] = tags
-        else:
-            for f in folder:
-                tags_copy = deepcopy(tags)
-                tags_copy.append(f)
-                find_tags(path / f, tags_copy, tag_mapping)
-        return tag_mapping
-
     for campaign in campaigns:
+        if campaign_in and str(campaign_in) != str(campaign):
+            continue
         # check if case folder
         tag_mapping = find_tags(case_path / campaign, [], {})
 
@@ -324,6 +351,47 @@ def writes_files(fns):
         unlink(fns)
 
 
+def find_logs(job: Job) -> Generator[tuple[str, str, str, str], None, None]:
+    """Find and return all solver log files, campaign info and tags from  job instances"""
+    case_path = Path(job.path)
+    if not case_path.exists():
+        return
+
+    root, campaigns, _ = next(os.walk(case_path))
+
+    def find_tags(path: Path, tags: list, tag_mapping):
+        """Recurses into subfolders of path until log files are found
+
+        Returns:
+          Dictionary mapping paths to tags -> tag
+        """
+        _, folder, files = next(os.walk(path))
+        is_case = False
+        for file in files:
+            if ".log" in file:
+                is_case = True
+                break
+
+        if is_case:
+            tag_mapping[str(path)] = tags
+        else:
+            for f in folder:
+                tags_copy = deepcopy(tags)
+                tags_copy.append(f)
+                find_tags(path / f, tags_copy, tag_mapping)
+        return tag_mapping
+
+    for campaign in campaigns:
+        # check if case folder
+        tag_mapping = find_tags(case_path / campaign, [], {})
+
+        for path, tags in tag_mapping.items():
+            root, _, files = next(os.walk(path))
+            for file in files:
+                if "Foam" in file and file.endswith("log"):
+                    yield root, f"{root}/{file}", campaign, tags
+
+
 def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
     """Creates a mapping from the view schema to the original jobid
 
@@ -331,16 +399,30 @@ def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
     ========
         A dictionary with jobid: view_folder
     """
+
+    def find_last_workspace(path):
+        """like path.index('workspace') but if several folders named workspace are present take the last one"""
+        path_parts = path.resolve().parts
+        for i, part in reversed(list(enumerate(path_parts))):
+            if part == "workspace":
+                return i
+        raise FileNotFoundError("workspace")
+
+    def get_job_id_from_path(path: Path):
+        """finds the name after workspace"""
+        full_path = path.resolve()
+        return full_path.parts[find_last_workspace(full_path) + 1]
+
     ret = {}
     base = Path(view_folder)
     if not base.exists():
         return {}
-    for root, folder, file in os.walk(view_folder):
-        for i, fold in enumerate(folder):
+    for root, folder, _ in os.walk(view_folder):
+        for fold in folder:
             path = Path(root) / fold
             job_id = None
             if path.is_symlink():
-                job_id = path.resolve().name
+                job_id = get_job_id_from_path(path)
                 # only keep path parts relative to the start of of the view
                 # folder
                 if path.absolute().is_relative_to(base.absolute()):

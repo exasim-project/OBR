@@ -57,13 +57,13 @@ def calculate_simple_partition(nSubDomains, decomp):
 def sed(fn, in_reg_exp, out_reg_exp, inline=True):
     """wrapper around sed"""
     if sys.platform == "darwin":
-        ret = check_output(
-            ["sed", "-i", "", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn]
-        )
+        ret = check_output([
+            "sed", "-i", "", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn
+        ])
     else:
-        ret = check_output(
-            ["sed", "-i", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn]
-        )
+        ret = check_output([
+            "sed", "-i", "s/" + in_reg_exp + "/" + out_reg_exp + "/g", fn
+        ])
 
 
 def set_cells(blockMeshDict, old_cells, new_cells):
