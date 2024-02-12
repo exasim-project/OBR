@@ -542,7 +542,7 @@ def refineMesh(job: Job, args={}):
 @OpenFOAMProject.operation
 def allClean(job: Job, args={}):
     args = get_args(job, args)
-    allCleanPath = Path(job.path) /"case/Allclean"
+    allCleanPath = Path(job.path) / "case/Allclean"
     if allCleanPath.exists():
         check_output(["./Allclean"], cwd=str(job.path) + "/case")
 

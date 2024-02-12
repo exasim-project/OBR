@@ -5,6 +5,7 @@ import re
 import hashlib
 import logging
 import json
+import shutil
 
 from pathlib import Path
 from subprocess import check_output
@@ -67,13 +68,7 @@ def logged_execute(cmd, path, doc):
         state = "success"
     except subprocess.SubprocessError as e:
         log = e.output.decode("utf-8")
-        logging.error(
-            "SubprocessError:"
-            + __file__
-            + __name__
-            + str(e)
-            + log
-        )
+        logging.error("SubprocessError:" + __file__ + __name__ + str(e) + log)
         state = "failure"
     except FileNotFoundError as e:
         logging.error(__file__ + __name__ + str(e))
@@ -345,3 +340,68 @@ def map_view_folder_to_job_id(view_folder: str) -> dict[str, str]:
                 if path.absolute().is_relative_to(base.absolute()):
                     ret[job_id] = str(path.absolute().relative_to(base.absolute()))
     return ret
+
+
+def link_folder_to_copy(source: Path) -> Path:
+    """Given a path this functions converts all symlinked files into copies
+    This file does not delete the created .bck folder, neither does it recurse
+    into subfolders.
+
+    Returns: path of the backup folder
+    -------
+    """
+    import os
+
+    source_bck = Path(str(source) + ".bck")
+    check_output(["mv", source, source_bck])
+    check_output(["mkdir", source])
+    src_root, folder, files = next(os.walk(source_bck))
+    targ_root, _, _ = next(os.walk(source))
+    src_root = Path(src_root)
+    targ_root = Path(targ_root)
+    for fn in files:
+        src_file_path = src_root / fn
+        if src_file_path.is_symlink():
+            logging.warning(
+                f"{os.readlink(src_file_path)} is a symlink\n"
+                "Some openfoam versions refuse to decompose files if content of"
+                " zero folder are symlinks. Thus we temporarily copy this file."
+            )
+            src_file_path = src_file_path.resolve()
+            target_file_path = targ_root / fn
+            check_output(["cp", src_file_path, target_file_path])
+    for fold in folder:
+        src_fold_path = src_root / fold
+        target_path = targ_root / fn
+        check_output(["cp", "-r", src_path, target_path])
+    return source_bck
+
+
+class TemporaryFolder:
+    """A class to handle temporary folder, taking care of copying and
+    deleting the resulting folder"""
+
+    def __init__(self, source: Path, target: Path, delink=False):
+        self.source = source
+        self.target = target
+        self.delink = delink
+        check_output(["cp", "-r", source, target])
+
+        if self.delink:
+            self.delink_folder = DelinkFolder(self.target)
+
+    def __del__(self):
+        shutil.rmtree(str(self.target))
+
+
+class DelinkFolder:
+    """A class to handle delinking and copying the contents of a folder. Taking care of copying and
+    deleting the resulting folder"""
+
+    def __init__(self, source: Path):
+        self.source = source
+        self.source_bck = link_folder_to_copy(source)
+
+    def __del__(self):
+        shutil.rmtree(str(self.source))
+        check_output(["mv", self.source_bck, self.source])

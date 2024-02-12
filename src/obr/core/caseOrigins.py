@@ -7,9 +7,9 @@ from subprocess import check_output
 import logging
 from git.repo import Repo
 
+
 class MultiCase:
-    """For now does only create a dummy directory
-    """
+    """For now does only create a dummy directory"""
 
     def __init__(self, origin: Union[str, Path], **kwargs):
         if isinstance(origin, str):
@@ -23,6 +23,7 @@ class MultiCase:
             )
             return
         (Path(path) / "case").mkdir(parents=True)
+
 
 class CaseOnDisk:
     """Copies an OpenFOAM case from disk and copies it into the workspace

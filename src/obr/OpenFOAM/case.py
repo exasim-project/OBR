@@ -11,7 +11,7 @@ from datetime import datetime
 from Owls.parser.FoamDict import FileParser
 from Owls.parser.LogFile import LogFile
 
-from ..core.core import logged_execute, logged_func, modifies_file, path_to_key
+from ..core.core import logged_execute, logged_func, modifies_file, path_to_key, link_folder_to_copy
 from .BlockMesh import BlockMesh, calculate_simple_partition
 
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
@@ -276,14 +276,11 @@ class OpenFOAMCase(BlockMesh):
         wm_project_dir = os.environ["WM_PROJECT_DIR"]
         return (Path(wm_project_dir)/"CONTRIBUTORS.md").exists()
 
-
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one
         gets created"""
-        # TODO create a separate function for desymlinking
-        creates_zero_folder = False
+        tmp_zero = None
         if not self.time_folder:
-            creates_zero_folder = True
             logging.warning(
                 f"No time folder found! Decomposition might lead to an unusable case."
             )
@@ -291,41 +288,12 @@ class OpenFOAMCase(BlockMesh):
             if zero_orig_path.exists():
                 logging.warning(f"Using existing 0.orig folder")
                 zero_target_path = Path(self.path / "0")
-                zero_target_path.mkdir()
-                root, _, files = next(os.walk(zero_orig_path))
-                for file in files:
-                    src_path = Path(root) / file
-                    if src_path.is_symlink() and not self.esi_version:
-                        logging.warning(
-                            f"{src_path} is a symlink\n"
-                            f"Some openfoam versions refuse to decompose files if content of"
-                            f" zero folder are symlinks. Thus we temporarily copy this file."
-                        )
-                        src_path = src_path.resolve()
-                    target_path = zero_target_path / file
-                    check_output(["cp", src_path, target_path], cwd=self.path)
+                tmp_zero = TemporaryFolder(zero_orig_path, zero_target_path,
+                    self.esi_version):
 
+        constant_folder = None
         if not self.esi_version:
-            # NOTE we need to make sure that in the constant folder files are not symlinks
-            constant_move = self.path / "constant.bck"
-            check_output(["mv", self.constant_folder, constant_move])
-            check_output(["mkdir", self.constant_folder])
-            root, folder, files = next(os.walk(constant_move))
-            for file in files:
-                src_path = Path(root) / file
-                if src_path.is_symlink() and not self.esi_version:
-                    logging.warning(
-                        f"{src_path} is a symlink\n"
-                        f"Some openfoam versions refuse to decompose files if content of"
-                        f" zero folder are symlinks. Thus we temporarily copy this file."
-                    )
-                    src_path = src_path.resolve()
-                target_path = self.constant_folder / file
-                check_output(["cp", src_path, target_path], cwd=self.path)
-            for fold in folder:
-                src_path = Path(root) / fold
-                target_path = self.constant_folder / fold
-                check_output(["cp", "-r", src_path, target_path], cwd=self.path)
+            constant_folder = DelinkFolder(self.constant_folder)
 
         if not self.decomposeParDict:
             decomposeParDictFile = Path(self.system_folder / "decomposeParDict")
@@ -365,10 +333,6 @@ class OpenFOAMCase(BlockMesh):
         fvSolutionArgs = args.get("fvSolution", {})
         if fvSolutionArgs:
             self.fvSolution.set(fvSolutionArgs)
-        # TODO remove temporary 0 path if created
-        if creates_zero_folder:
-            import shutil
-            shutil.rmtree(str(zero_target_path))
 
         # TODO check if processor folder contains time folder
         return log
