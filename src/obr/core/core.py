@@ -418,7 +418,7 @@ def find_time_folder(path: Path) -> list[Path]:
         except:
             return False
 
-    _, fs, _ = next(os.walk(self.path))
+    _, fs, _ = next(os.walk(path))
     ret = [path / f for f in fs if is_time(f)]
     ret.sort()
     return ret
