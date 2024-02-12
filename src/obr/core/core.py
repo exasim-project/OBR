@@ -373,7 +373,7 @@ def link_folder_to_copy(source: Path) -> Path:
     for fold in folder:
         src_fold_path = src_root / fold
         target_path = targ_root / fn
-        check_output(["cp", "-r", src_path, target_path])
+        check_output(["cp", "-r", src_fold_path, target_path])
     return source_bck
 
 
