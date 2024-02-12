@@ -16,7 +16,8 @@ from ..core.core import (
     logged_func,
     modifies_file,
     path_to_key,
-    link_folder_to_copy,
+    TemporaryFolder,
+    DelinkFolder,
 )
 from .BlockMesh import BlockMesh, calculate_simple_partition
 
