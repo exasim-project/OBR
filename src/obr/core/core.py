@@ -406,3 +406,19 @@ class DelinkFolder:
     def __del__(self):
         shutil.rmtree(str(self.source))
         check_output(["mv", self.source_bck, self.source])
+
+
+def find_time_folder(path: Path) -> list[Path]:
+    """Given a path this function returns all time folder"""
+
+    def is_time(s: str) -> bool:
+        try:
+            float(s)
+            return True
+        except:
+            return False
+
+    _, fs, _ = next(os.walk(self.path))
+    ret = [self.path / f for f in fs if is_time(f)]
+    ret.sort()
+    return ret

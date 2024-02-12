@@ -18,6 +18,7 @@ from ..core.core import (
     path_to_key,
     TemporaryFolder,
     DelinkFolder,
+    find_time_folder,
 )
 from .BlockMesh import BlockMesh, calculate_simple_partition
 
@@ -170,18 +171,7 @@ class OpenFOAMCase(BlockMesh):
     @property
     def time_folder(self) -> list[Path]:
         """Returns all timestep folder"""
-
-        def is_time(s: str) -> bool:
-            try:
-                float(s)
-                return True
-            except:
-                return False
-
-        _, fs, _ = next(os.walk(self.path))
-        ret = [self.path / f for f in fs if is_time(f)]
-        ret.sort()
-        return ret
+        return find_time_folder(self.path)
 
     @property
     def processor_folder(self) -> list[Path]:
@@ -344,7 +334,11 @@ class OpenFOAMCase(BlockMesh):
         if fvSolutionArgs:
             self.fvSolution.set(fvSolutionArgs)
 
-        # TODO check if processor folder contains time folder
+        if not find_time_folder(self.path / "processor0"):
+            logging.warning(
+                f"No time in processor folder found. This indicates an unusable"
+                f" decomposition."
+            )
         return log
 
     def setKeyValuePair(self, args: dict):
