@@ -11,7 +11,13 @@ from datetime import datetime
 from Owls.parser.FoamDict import FileParser
 from Owls.parser.LogFile import LogFile
 
-from ..core.core import logged_execute, logged_func, modifies_file, path_to_key, link_folder_to_copy
+from ..core.core import (
+    logged_execute,
+    logged_func,
+    modifies_file,
+    path_to_key,
+    link_folder_to_copy,
+)
 from .BlockMesh import BlockMesh, calculate_simple_partition
 
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
@@ -272,9 +278,9 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def esi_version(self) -> bool:
-        """ Check if esi version of OpenFOAM is sourced """
+        """Check if esi version of OpenFOAM is sourced"""
         wm_project_dir = os.environ["WM_PROJECT_DIR"]
-        return (Path(wm_project_dir)/"CONTRIBUTORS.md").exists()
+        return (Path(wm_project_dir) / "CONTRIBUTORS.md").exists()
 
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one
@@ -288,8 +294,9 @@ class OpenFOAMCase(BlockMesh):
             if zero_orig_path.exists():
                 logging.warning(f"Using existing 0.orig folder")
                 zero_target_path = Path(self.path / "0")
-                tmp_zero = TemporaryFolder(zero_orig_path, zero_target_path,
-                    self.esi_version):
+                tmp_zero = TemporaryFolder(
+                    zero_orig_path, zero_target_path, self.esi_version
+                )
 
         constant_folder = None
         if not self.esi_version:
