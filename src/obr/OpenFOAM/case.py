@@ -302,6 +302,8 @@ class OpenFOAMCase(BlockMesh):
         constant_folder = None
         if not self.esi_version:
             constant_folder = DelinkFolder(self.constant_folder)
+            # set a dummy member to avoid issues with autoflake
+            constant_folder.dummy = None
 
         if not self.decomposeParDict:
             decomposeParDictFile = Path(self.system_folder / "decomposeParDict")
