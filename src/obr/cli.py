@@ -117,6 +117,7 @@ def copy_to_archive(
 
 
 @click.group()
+@click.version_option()
 @click.option("--debug/--no-debug", default=False)
 @click.pass_context
 def cli(ctx: click.Context, debug: bool):
