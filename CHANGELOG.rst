@@ -14,6 +14,8 @@ Changelog
 - Improve obr submit, see https://github.com/hpsim/OBR/pull/170
 - Fix broken test badge, see https://github.com/hpsim/OBR/pull/178
 - Fix logfile location for shell commands, see https://github.com/hpsim/OBR/pull/184
+- Add 'obr apply' mode, see https://github.com/hpsim/OBR/pull/188
+- Add 'obr --version', see https://github.com/hpsim/OBR/pull/188
 
 
 0.2.0 (2023-09-14)
