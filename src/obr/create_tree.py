@@ -201,21 +201,26 @@ def add_variations(
             statepoint["parent"] = base_dict
 
             # check for statepoint filters
+            skip = False
             if (
                 isinstance(value, dict)
                 and value.get("if", False)
-                and isinstance(value["if"], dict)
+                and isinstance(value["if"], list)
             ):
-                statepoint_filter = value["if"].get("statepoint", {})
-                key = statepoint_filter["key"]
-                value = statepoint_filter["value"]
-                if not statepoint_query(
-                    statepoint, key, value, statepoint_filter.get("predicate", "==")
-                ):
-                    logging.debug(
-                        f"skipping generating statepoint {statepoint} because of"
-                        f" {key}=={value} filter"
+                for filter_record in value["if"]:
+                    predicate = filter_record.pop("predicate", "==")
+                    if len(filter_record) != 1:
+                        raise AssertionError("Exact one key-value pair is required for an if record")
+                    skip = statepoint_query(
+                        statepoint, key, value, predicate
                     )
+                    if skip:
+                        logging.debug(
+                            f"skipping generating statepoint {statepoint} because of"
+                            f" {key}=={value} filter"
+                        )
+                        break
+                if skip:
                     continue
 
             job = project.open_job(statepoint)
