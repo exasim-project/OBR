@@ -16,6 +16,8 @@ Changelog
 - Fix decomposePar issues with non ESI versions of OF, see https://github.com/hpsim/OBR/issues/185
 - Automatically create temporary 0 folder before decomposePar, see https://github.com/hpsim/OBR/pull/186
 - Fix logfile location for shell commands, see https://github.com/hpsim/OBR/pull/184
+- Add 'obr apply' mode, see https://github.com/hpsim/OBR/pull/188
+- Add 'obr --version', see https://github.com/hpsim/OBR/pull/188
 
 
 0.2.0 (2023-09-14)
