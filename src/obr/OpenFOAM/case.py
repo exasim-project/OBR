@@ -281,7 +281,7 @@ class OpenFOAMCase(BlockMesh):
             logging.warning(
                 f"No time folder found! Decomposition might lead to an unusable case."
             )
-            zero_orig_path = Path(self.path / "0.orig")
+            zero_orig_path = self.path / "0.orig"
             if zero_orig_path.exists():
                 logging.warning(f"Using existing 0.orig folder")
                 zero_target_path = Path(self.path / "0")
