@@ -210,10 +210,11 @@ def add_variations(
                 for filter_record in value["if"]:
                     predicate = filter_record.pop("predicate", "==")
                     if len(filter_record) != 1:
-                        raise AssertionError("Exact one key-value pair is required for an if record")
-                    skip = statepoint_query(
-                        statepoint, key, value, predicate
-                    )
+                        raise AssertionError(
+                            "Exact one key-value pair is required for an if record"
+                        )
+                    key, value = list(filter_record.items())[0] 
+                    skip = statepoint_query(statepoint, key, value, predicate)
                     if skip:
                         logging.debug(
                             f"skipping generating statepoint {statepoint} because of"
