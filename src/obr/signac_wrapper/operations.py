@@ -341,6 +341,8 @@ def MultiCase(job: Job, args={}):
     """Dummy operation to generate multiple cases"""
     args = get_args(job, args)
     copy_on_uses(args, job, "system", "controlDict")
+    if not args.get("type"):
+        raise AssertionError("Please specify a type for the MultiCase. Valid types: GitRepo, CaseOnDisk, OpenFOAMTutorialCase")
     instantiate_origin_class(args["type"], args).init(job.path)
 
 
