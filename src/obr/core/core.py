@@ -223,6 +223,24 @@ def get_timestamp_from_log(log) -> str:
     return log_name.replace(before + "_", "")
 
 
+def find_tags(path: Path, tags: list, tag_mapping):
+    """Recurses into subfolders of path until a system folder is found
+
+    Returns:
+      Dictionary mapping paths to tags -> tag
+    """
+    _, folder, _ = next(os.walk(path))
+    is_case = len(folder) == 0
+    if is_case:
+        tag_mapping[str(path)] = tags
+    else:
+        for f in folder:
+            tags_copy = deepcopy(tags)
+            tags_copy.append(f)
+            find_tags(path / f, tags_copy, tag_mapping)
+    return tag_mapping
+
+
 def find_solver_logs(job: Job) -> Generator[tuple, None, None]:
     """Find and return all solver log files, campaign info and tags from job instances"""
     case_path = Path(job.path)
@@ -230,24 +248,6 @@ def find_solver_logs(job: Job) -> Generator[tuple, None, None]:
         return
 
     root, campaigns, _ = next(os.walk(case_path))
-
-    def find_tags(path: Path, tags: list, tag_mapping):
-        """Recurses into subfolders of path until a system folder is found
-
-        Returns:
-          Dictionary mapping paths to tags -> tag
-        """
-        _, folder, _ = next(os.walk(path))
-        is_case = len(folder) == 0
-        if is_case:
-            tag_mapping[str(path)] = tags
-        else:
-            for f in folder:
-                tags_copy = deepcopy(tags)
-                tags_copy.append(f)
-                find_tags(path / f, tags_copy, tag_mapping)
-        return tag_mapping
-
     for campaign in campaigns:
         # check if case folder
         tag_mapping = find_tags(case_path / campaign, [], {})
