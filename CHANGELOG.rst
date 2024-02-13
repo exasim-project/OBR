@@ -13,6 +13,8 @@ Changelog
 - Validate simulation state after runSerial|ParallelSolver, see https://github.com/hpsim/OBR/pull/168
 - Improve obr submit, see https://github.com/hpsim/OBR/pull/170
 - Fix broken test badge, see https://github.com/hpsim/OBR/pull/178
+- Fix decomposePar issues with non ESI versions of OF, see https://github.com/hpsim/OBR/issues/185
+- Automatically create temporary 0 folder before decomposePar, see https://github.com/hpsim/OBR/pull/186
 - Fix logfile location for shell commands, see https://github.com/hpsim/OBR/pull/184
 
 
