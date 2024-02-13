@@ -117,6 +117,7 @@ def copy_to_archive(
 
 
 @click.group()
+@click.version_option()
 @click.option("--debug/--no-debug", default=False)
 @click.option("-v", "--version", is_flag=True)
 @click.pass_context
@@ -247,13 +248,9 @@ def run(ctx: click.Context, **kwargs):
         os.environ["OBR_JOB"] = kwargs.get("job", "")
 
     if kwargs.get("operations") == "apply":
-        sys.argv.append("--aggregate")
-        sys.argv.append("-t")
-        sys.argv.append("1")
-        project.run(
-            names=operations,
-            progress=True,
-            np=1,
+        logging.warning(
+            "Calling the apply operation via run has been discontinued. Call 'obr"
+            " apply' directly"
         )
         return
 
@@ -451,6 +448,59 @@ def query(ctx: click.Context, **kwargs):
                     print(difference_dict)
                     logging.warn("validation failed")
                     sys.exit(1)
+
+
+@cli.command()
+@click.option(
+    "-c",
+    "--campaign",
+    type=str,
+    multiple=False,
+    help="",
+)
+@click.option(
+    "--file",
+    type=str,
+    multiple=False,
+    help="",
+)
+@click.option(
+    "--folder",
+    default=".",
+    help="Path to the workspace folder. Default: '.' ",
+    type=str,
+)
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
+        ' runParallelSolver --filter "solver==pisoFoam"'
+    ),
+)
+@click.pass_context
+def apply(ctx: click.Context, **kwargs):
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+    project = OpenFOAMProject.get_project()
+
+    filters: list[str] = kwargs.get("filter", [])
+    # check if given path points to valid project
+    if not is_valid_workspace(filters, path=kwargs.get("folder", None)):
+        return
+    jobs = project.filter_jobs(filters=filters)
+    os.environ["OBR_APPLY_FILE"] = kwargs.get("file", "")
+    os.environ["OBR_APPLY_CAMPAIGN"] = kwargs.get("campaign", "")
+    sys.argv.append("--aggregate")
+    sys.argv.append("-t")
+    sys.argv.append("1")
+    project.run(
+        names=["apply"],
+        progress=True,
+        np=1,
+    )
 
 
 @cli.command()

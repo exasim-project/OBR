@@ -16,6 +16,7 @@ from .labels import owns_mesh, final, finished
 from ..core.core import execute_shell
 from obr.OpenFOAM.case import OpenFOAMCase
 from obr.core.queries import filter_jobs, query_impl, Query
+from obr.core.caseOrigins import instantiate_origin_class
 
 # TODO operations should get an id/hash so that we can log success
 # TODO add:
@@ -333,6 +334,25 @@ def controlDict(job: Job, args={}):
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
 @OpenFOAMProject.operation_hooks.on_exception(set_failure)
+@OpenFOAMProject.pre(lambda job: job.sp().get("operation") == "MultiCase")
+@OpenFOAMProject.post(lambda job: operation_complete(job, "MultiCase"))
+@OpenFOAMProject.operation
+def MultiCase(job: Job, args={}):
+    """Dummy operation to generate multiple cases"""
+    args = get_args(job, args)
+    copy_on_uses(args, job, "system", "controlDict")
+    if not args.get("type"):
+        raise AssertionError(
+            "Please specify a type for the MultiCase. Valid types: GitRepo, CaseOnDisk,"
+            " OpenFOAMTutorialCase"
+        )
+    instantiate_origin_class(args["type"], args).init(job.path)
+
+
+@generate
+@OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
+@OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
+@OpenFOAMProject.operation_hooks.on_exception(set_failure)
 @OpenFOAMProject.pre(lambda job: basic_eligible(job, "blockMesh"))
 @OpenFOAMProject.post(lambda job: operation_complete(job, "blockMesh"))
 @OpenFOAMProject.operation
@@ -482,6 +502,8 @@ def decomposePar(job: Job, args={}):
 @OpenFOAMProject.operation
 def fetchCase(job: Job, args={}):
     args = get_args(job, args)
+    if args["type"] == "MultiCase":
+        return
 
     uses = args.pop("uses", [])
     case_type = job.sp["type"]
@@ -518,6 +540,16 @@ def refineMesh(job: Job, args={}):
     args = get_args(job, args)
     for _ in range(args.get("value")):
         OpenFOAMCase(str(job.path) + "/case", job).refineMesh(args)
+
+
+@OpenFOAMProject.pre(parent_job_is_ready)
+@OpenFOAMProject.pre(owns_mesh)
+@OpenFOAMProject.operation
+def allClean(job: Job, args={}):
+    args = get_args(job, args)
+    allCleanPath = Path(job.path) / "case/Allclean"
+    if allCleanPath.exists():
+        check_output(["./Allclean"], cwd=str(job.path) + "/case")
 
 
 @OpenFOAMProject.pre(parent_job_is_ready)
