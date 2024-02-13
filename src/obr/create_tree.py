@@ -201,14 +201,21 @@ def add_variations(
             statepoint["parent"] = base_dict
 
             # check for statepoint filters
-            if isinstance(value, dict) and value.get("if", False) and isinstance(value["if"], dict):
-                statepoint_filter  = value["if"].get("statepoint", {})
+            if (
+                isinstance(value, dict)
+                and value.get("if", False)
+                and isinstance(value["if"], dict)
+            ):
+                statepoint_filter = value["if"].get("statepoint", {})
                 key = statepoint_filter["key"]
                 value = statepoint_filter["value"]
                 if not statepoint_query(
-                        statepoint, key, value,
-                        statepoint_filter.get("predicate", "==")):
-                    logging.debug(f"skipping generating statepoint {statepoint} because of {key}=={value} filter")
+                    statepoint, key, value, statepoint_filter.get("predicate", "==")
+                ):
+                    logging.debug(
+                        f"skipping generating statepoint {statepoint} because of"
+                        f" {key}=={value} filter"
+                    )
                     continue
 
             job = project.open_job(statepoint)
