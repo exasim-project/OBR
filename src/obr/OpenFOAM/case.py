@@ -284,7 +284,7 @@ class OpenFOAMCase(BlockMesh):
             zero_orig_path = self.path / "0.orig"
             if zero_orig_path.exists():
                 logging.warning(f"Using existing 0.orig folder")
-                zero_target_path = Path(self.path / "0")
+                zero_target_path = self.path / "0"
                 tmp_zero = TemporaryFolder(
                     zero_orig_path, zero_target_path, self.esi_version
                 )
