@@ -118,12 +118,15 @@ def copy_to_archive(
 
 @click.group()
 @click.option("--debug/--no-debug", default=False)
+@click.option("-v", "--version", is_flag=True)
 @click.pass_context
-def cli(ctx: click.Context, debug: bool):
+def cli(ctx: click.Context, **kwargs):
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
+    if kwargs.get("version"):
+        print("obr version")
     ctx.ensure_object(dict)
-    ctx.obj["DEBUG"] = debug
+    ctx.obj["DEBUG"] = kwargs.get("debug")
 
 
 @cli.command()
