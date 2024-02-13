@@ -244,7 +244,10 @@ def run(ctx: click.Context, **kwargs):
         os.environ["OBR_JOB"] = kwargs.get("job", "")
 
     if kwargs.get("operations") == "apply":
-        logging.warning("Calling the apply operation via run has been discontinued. Call 'obr apply' directly")
+        logging.warning(
+            "Calling the apply operation via run has been discontinued. Call 'obr"
+            " apply' directly"
+        )
         return
 
     if kwargs.get("operations") == "runParallelSolver":
@@ -441,6 +444,7 @@ def query(ctx: click.Context, **kwargs):
                     print(difference_dict)
                     logging.warn("validation failed")
                     sys.exit(1)
+
 
 @cli.command()
 @click.option(
