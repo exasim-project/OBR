@@ -320,6 +320,19 @@ def build_filter_query(filters: Iterable[str]) -> list[Query]:
     return q
 
 
+def statepoint_query(statepoint: dict, key: str, value, predicate="=="):
+    """This function performs a basic recursive query of the statepoint dictionary
+    if the key: value pair is not found in statepoint it recurses into statepoint["parent"] if present
+
+    """
+    if statepoint.get(key):
+        return statepoint[key] == value
+    else:
+        if statepoint.get("parent"):
+            return statepoint_query(statepoint["parent"], key, value, predicate)
+    return False
+
+
 def filter_jobs(project, filter: Iterable[str], output: bool = False) -> list[Job]:
     """`filter` is expected to be a list, string or other iterable of strings in the form of <key><predicate><value>"""
     jobs: list[Job]

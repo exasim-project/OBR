@@ -23,6 +23,7 @@ from pathlib import Path
 from subprocess import check_output
 from signac.job import Job
 from obr.signac_wrapper.operations import OpenFOAMProject
+from obr.core.queries import statepoint_query
 from copy import deepcopy
 
 
@@ -198,6 +199,30 @@ def add_variations(
                 **parse_res["args"],
             }
             statepoint["parent"] = base_dict
+
+            # check for statepoint filters
+            skip = False
+            if (
+                isinstance(value, dict)
+                and value.get("if", False)
+                and isinstance(value["if"], list)
+            ):
+                for filter_record in value["if"]:
+                    predicate = filter_record.pop("predicate", "==")
+                    if len(filter_record) != 1:
+                        raise AssertionError(
+                            "Exact one key-value pair is required for an if record"
+                        )
+                    key, value = list(filter_record.items())[0]
+                    skip = not statepoint_query(statepoint, key, value, predicate)
+                    if skip:
+                        logging.debug(
+                            f"skipping generating statepoint {statepoint} because of"
+                            f" {key}=={value} filter"
+                        )
+                        break
+                if skip:
+                    continue
 
             job = project.open_job(statepoint)
             setup_job_doc(job)
