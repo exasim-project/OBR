@@ -165,6 +165,7 @@ def instantiate_origin_class(
         return MultiCase(**args)
     else:
         logging.error(
-            f"Unknown type {class_name}. 'type' must be 'GitRepo', 'OpenFOAMTutorialCase', or 'CaseOnDisk'!"
+            f"Unknown type {class_name}. 'type' must be 'GitRepo',"
+            " 'OpenFOAMTutorialCase', or 'CaseOnDisk'!"
         )
         return None
