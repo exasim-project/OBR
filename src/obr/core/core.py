@@ -353,7 +353,7 @@ def link_folder_to_copy(source: Path) -> Path:
     """
     import os
 
-    source_bck = source.absolute() + ".bck"
+    source_bck = str(source.absolute()) + ".bck"
     check_output(["mv", source, source_bck])
     check_output(["mkdir", source])
     src_root, folder, files = next(os.walk(source_bck))
