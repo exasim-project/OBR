@@ -22,7 +22,7 @@ class MultiCase:
                 f"{self.path.absolute} or some parent directory does not exist!"
             )
             return
-        (Path(path) / "case").mkdir(parents=True)
+        os.makedirs(os.path.join(path, "case"))
 
 
 class CaseOnDisk:
