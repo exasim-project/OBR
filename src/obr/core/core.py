@@ -353,7 +353,7 @@ def link_folder_to_copy(source: Path) -> Path:
     """
     import os
 
-    source_bck = Path(str(source) + ".bck")
+    source_bck = source.absolute() + ".bck"
     check_output(["mv", source, source_bck])
     check_output(["mkdir", source])
     src_root, folder, files = next(os.walk(source_bck))
@@ -375,7 +375,7 @@ def link_folder_to_copy(source: Path) -> Path:
         src_fold_path = src_root / fold
         target_path = targ_root / fn
         check_output(["cp", "-r", src_fold_path, target_path])
-    return source_bck
+    return Path(source_bck)
 
 
 class TemporaryFolder:
