@@ -270,7 +270,9 @@ class OpenFOAMCase(BlockMesh):
     @property
     def esi_version(self) -> bool:
         """Check if esi version of OpenFOAM is sourced"""
-        wm_project_dir = os.environ["WM_PROJECT_DIR"]
+        wm_project_dir = os.environ.get("WM_PROJECT_DIR")
+        if not wm_project_dir:
+            raise AssertionError("OpenFOAM not sourced. Cannot check OpenFOAM version")
         return (Path(wm_project_dir) / "CONTRIBUTORS.md").exists()
 
     def decomposePar(self, args={}):
