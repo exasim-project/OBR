@@ -15,7 +15,7 @@ from datetime import datetime
 from .labels import owns_mesh, final, finished
 from ..core.core import execute_shell
 from obr.OpenFOAM.case import OpenFOAMCase
-from obr.core.queries import filter_jobs, query_impl, Query
+from obr.core.queries import filter_jobs, query_impl, Query, statepoint_get
 from obr.core.caseOrigins import instantiate_origin_class
 
 # TODO operations should get an id/hash so that we can log success
@@ -568,14 +568,25 @@ def checkMesh(job: Job, args={}):
 
 
 def get_number_of_procs(job: Job) -> int:
-    np = int(job.sp().get("numberSubDomains", 0))
+    """Deduces the number of processors
+    For performance reasons the cache is used to store the number of subdomains
+    """
+    np = statepoint_get(job.sp(), "numberOfSubdomains")
     if np:
-        return np
-    return int(
+        return int(np)
+    np = job.doc["cache"].get("numberOfSubdomains", False)
+    if np:
+        return int(np)
+    # Reading from numberOfSubdomains from the decomposeParDict should
+    # be the last resort since it is very expensive
+    np = int(
         OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get(
             "numberOfSubdomains"
         )
     )
+    if np:
+        job.doc["cache"]["numberOfSubdomains"] = np
+    return np
 
 
 def get_values(jobs: list, key: str) -> set:
@@ -644,10 +655,20 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     return cmd_format.format(**cli_args) + "|| true" + postflight_cmd
 
 
-def validate_state(_: str, job: Job) -> str:
+def validate_state_impl(_: str, job: Job) -> None:
     """Perform a detailed update of the job state"""
     case = OpenFOAMCase(Path(job.path) / "case", job)
     case.detailed_update()
+
+
+@OpenFOAMProject.pre(parent_job_is_ready)
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.pre(is_job)
+@OpenFOAMProject.operation
+def validateState(job: Job, args={}) -> None:
+    """Dummy operation which forwards to validate_state_impl. The reason for keeping this function
+    is that it can be called from the cli to force a detailed update"""
+    validate_state_impl(job)
 
 
 @simulate
@@ -656,7 +677,7 @@ def validate_state(_: str, job: Job) -> str:
 @OpenFOAMProject.operation(
     cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
 )
-@OpenFOAMProject.operation_hooks.on_exit(validate_state)
+@OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelSolver(job: Job, args={}) -> str:
     env_run_template = os.environ.get("OBR_RUN_CMD")
     solver_cmd = (
@@ -674,7 +695,7 @@ def runParallelSolver(job: Job, args={}) -> str:
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.operation(cmd=True)
-@OpenFOAMProject.operation_hooks.on_exit(validate_state)
+@OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runSerialSolver(job: Job, args={}):
     env_run_template = os.environ.get("OBR_SERIAL_RUN_CMD")
     solver_cmd = (
