@@ -262,6 +262,7 @@ def run(ctx: click.Context, **kwargs):
             sys.argv.append("-t")
             sys.argv.append(str(ntasks))
         project.run(
+            jobs=jobs,
             names=operations,
             progress=True,
             np=ntasks,
