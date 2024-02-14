@@ -88,7 +88,7 @@ def test_submit(tmpdir):
             template=tmpdir / "does_not_exists.sh",
             account=account,
             partition=partition,
-            time="60"
+            time="60",
             pretend=True,
             bundling_key=None,
             scheduler_args="",
