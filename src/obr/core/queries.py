@@ -320,6 +320,20 @@ def build_filter_query(filters: Iterable[str]) -> list[Query]:
     return q
 
 
+def statepoint_get(statepoint: dict, key: str):
+    """This function performs a basic recursive query of the statepoint dictionary
+    if the key: value pair is not found in statepoint it recurses into statepoint["parent"] if present
+
+    """
+    val = statepoint.get(key)
+    if val:
+        return val
+    else:
+        if statepoint.get("parent"):
+            return statepoint_get(statepoint["parent"], key)
+    return False
+
+
 def statepoint_query(statepoint: dict, key: str, value, predicate="=="):
     """This function performs a basic recursive query of the statepoint dictionary
     if the key: value pair is not found in statepoint it recurses into statepoint["parent"] if present
