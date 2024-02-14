@@ -11,7 +11,7 @@ Changelog
 - Use cached version of git repo instead of cloning, see https://github.com/hpsim/OBR/pull/166
 - Bump signac version, see https://github.com/hpsim/OBR/pull/169
 - Validate simulation state after runSerial|ParallelSolver, see https://github.com/hpsim/OBR/pull/168
-- Improve obr submit, see https://github.com/hpsim/OBR/pull/170
+- Improve obr submit, see https://github.com/hpsim/OBR/pull/170 and https://github.com/hpsim/OBR/pull/193
 - Fix broken test badge, see https://github.com/hpsim/OBR/pull/178
 - Fix decomposePar issues with non ESI versions of OF, see https://github.com/hpsim/OBR/issues/185
 - Automatically create temporary 0 folder before decomposePar, see https://github.com/hpsim/OBR/pull/186
