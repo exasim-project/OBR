@@ -666,7 +666,7 @@ def validate_state_impl(job: Job) -> None:
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.operation
 def validateState(job: Job, args={}) -> None:
-    """Dummy opertion which forwards to validate_state_impl. The reason for keeping this function
+    """Dummy operation which forwards to validate_state_impl. The reason for keeping this function
     is that it can be called from the cli to force a detailed update"""
     validate_state_impl(job)
 
