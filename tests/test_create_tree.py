@@ -4,7 +4,12 @@ import shutil
 
 from pathlib import Path
 
-from obr.create_tree import create_tree, add_variations, extract_from_operation
+from obr.create_tree import (
+    create_tree,
+    add_variations,
+    extract_from_operation,
+    expand_generator_block,
+)
 from obr.signac_wrapper.operations import OpenFOAMProject
 
 
@@ -115,6 +120,30 @@ def test_create_tree(tmpdir, emit_test_config):
     assert fvSolution_file.exists() == True
     shell_file = case_fold / "test"
     assert shell_file.exists() == True
+
+
+def test_expand_generator_block():
+    operation = {
+        "operation": "decomposePar",
+        "schema": "decompose/{method}_{partition}_N{nodes}_n{numberOfSubdomains}",
+        "common": {"method": "simple"},
+        "generator": {
+            "key": "nodes",
+            "values": [1, 2, 4, 6, 8, 10],
+            "template": [
+                {"numberOfSubdomains": "${{ 1 * nodes * 4 }}", "partition": "GPU"}
+            ],
+        },
+    }
+    values = expand_generator_block(operation)
+    assert isinstance(values, list)
+    assert len(values) == 6
+    assert values[0]["nodes"] == 1
+    assert values[1]["nodes"] == 2
+    assert values[2]["nodes"] == 4
+    assert values[0]["numberOfSubdomains"] == "${{ 1 * 1 * 4 }}"
+    assert values[1]["numberOfSubdomains"] == "${{ 1 * 2 * 4 }}"
+    assert values[2]["numberOfSubdomains"] == "${{ 1 * 4 * 4 }}"
 
 
 def test_call_generate_tree(tmpdir, emit_test_config):
