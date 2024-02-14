@@ -150,7 +150,6 @@ def expand_generator_block(operation):
     """given an operation this function"""
     # check if we have a generator
     if generator := operation.get("generator"):
-        print("operation", operation)
         if not (templates := generator.get("template")):
             raise AssertionError("No template section given.")
         if not (values := generator.get("values")):
