@@ -1,19 +1,3 @@
-#!/usr/bin/python
-"""
-    run ogl benchmarks
-
-    Usage:
-        runBenchmark.py [options]
-
-    Options:
-        -h --help           Show this screen
-        -v --version        Print version and exit
-        --clean             Remove existing cases [default: False].
-        --parameters=<json> pass the parameters for given parameter study
-        --folder=<folder>   Target folder  [default: Test].
-        --init=<ts>         Run the base case for ts timesteps [default: 100].
-"""
-
 import os
 import sys
 import logging
