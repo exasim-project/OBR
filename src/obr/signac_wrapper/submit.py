@@ -5,8 +5,9 @@ import logging
 from pathlib import Path
 from signac.job import Job
 from typing import Union
+from tqdm import tqdm
 
-from .operations import OpenFOAMProject
+from .operations import OpenFOAMProject, basic_eligible
 
 
 def submit_impl(
@@ -16,6 +17,7 @@ def submit_impl(
     template: Union[str, None],
     account: Union[str, None],
     partition: Union[str, None],
+    time: Union[str, None],
     pretend: bool,
     bundling_key: Union[str, None],
     scheduler_args: str,
@@ -41,6 +43,7 @@ def submit_impl(
         "partition": partition,
         "pretend": pretend,
         "account": account,
+        "walltime": time
     }
 
     # TODO improve this using regex
@@ -55,7 +58,7 @@ def submit_impl(
             selected_jobs: list[Job] = [
                 j for j in project if bundle_value in list(j.sp().values())
             ]
-            logging.info(f"Submit bundle {bundle_value} of {len(selected_jobs)} jobs")
+            logging.info(f"Submit bundle {bundle_value} of {len(eligible_jobs)} jobs")
             ret_submit = (
                 project.submit(
                     jobs=selected_jobs,
@@ -68,9 +71,17 @@ def submit_impl(
             logging.info("Submission response" + str(ret_submit))
             time.sleep(15)
     else:
-        logging.info(f"Submitting {len(jobs)} individual jobs")
+        eligible_jobs =  []
+
+        for operation in operations:
+            logging.info(f"Collecting eligible jobs for operation: {operation}.")
+            for job in tqdm(jobs):
+                if basic_eligible(job, operation):
+                    eligible_jobs.append(job)
+
+        logging.info(f"Submitting operations {operations}. In total {len(eligible_jobs)} of {len(jobs)} individual jobs.\nEligible jobs {[j.id for j in eligible_jobs]}")
         ret_submit = project.submit(
-            jobs=jobs,
+            jobs=eligible_jobs,
             names=operations,
             **cluster_args,
         )

@@ -169,6 +169,7 @@ def cli(ctx: click.Context, **kwargs):
 )
 @click.option("--bundling_key", default=None, help="")
 @click.option("-p", "--partition", default="cpuonly")
+@click.option("-t", "--time", default="60")
 @click.option("--account", default="")
 @click.option("--pretend", is_flag=True)
 @click.option(
@@ -191,6 +192,7 @@ def submit(ctx: click.Context, **kwargs):
         template=Path(kwargs.get("template")),
         account=kwargs.get("account"),
         partition=kwargs.get("partition"),
+        time=kwargs.get("time"),
         pretend=kwargs["pretend"],
         bundling_key=kwargs["bundling_key"],
         scheduler_args=kwargs.get("scheduler_args"),
