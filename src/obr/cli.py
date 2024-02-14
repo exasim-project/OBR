@@ -464,9 +464,8 @@ def query(ctx: click.Context, **kwargs):
 @click.option(
     "--folder",
     default=".",
-    help="Where to create the worspace and view. Default: '.' ",
+    help="Path to the workspace folder. Default: '.' ",
     type=str,
-    help="Path to OpenFOAMProject.",
 )
 @click.option(
     "--filter",
@@ -480,7 +479,9 @@ def query(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def apply(ctx: click.Context, **kwargs):
-    project = OpenFOAMProject.init_project(path=kwargs.get("folder"))
+    if kwargs.get("folder"):
+        os.chdir(kwargs["folder"])
+    project = OpenFOAMProject.get_project()
 
     filters: list[str] = kwargs.get("filter", [])
     # check if given path points to valid project
