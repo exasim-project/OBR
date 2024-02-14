@@ -15,7 +15,7 @@ from datetime import datetime
 from .labels import owns_mesh, final, finished
 from ..core.core import execute_shell
 from obr.OpenFOAM.case import OpenFOAMCase
-from obr.core.queries import filter_jobs, query_impl, Query
+from obr.core.queries import filter_jobs, query_impl, Query, statepoint_get
 from obr.core.caseOrigins import instantiate_origin_class
 
 # TODO operations should get an id/hash so that we can log success
