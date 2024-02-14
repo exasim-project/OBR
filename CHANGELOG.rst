@@ -19,6 +19,7 @@ Changelog
 - Add statepoint dependant filter for create_tree, see https://github.com/hpsim/OBR/pull/187
 - Add 'obr apply' mode, see https://github.com/hpsim/OBR/pull/188
 - Add 'obr --version', see https://github.com/hpsim/OBR/pull/188
+- Add template block generators, see https://github.com/hpsim/OBR/pull/18://github.com/hpsim/OBR/pull/190 
 
 
 0.2.0 (2023-09-14)

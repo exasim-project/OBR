@@ -22,10 +22,10 @@ def read_yaml(kwargs: dict) -> str:
         config_str = add_includes(yaml_location, config_str)
 
     return parse_special_variables(
-            parse_special_variables(config_str, dict(os.environ), "env"),
-            {"location": str(yaml_location)},
-            "yaml",
-        )
+        parse_special_variables(config_str, dict(os.environ), "env"),
+        {"location": str(yaml_location)},
+        "yaml",
+    )
 
 
 def add_includes(yaml_location: Path, config_str: str) -> str:

@@ -146,6 +146,39 @@ def to_dict(synced_dict) -> dict:
     return {k: v for k, v in synced_dict.items()}
 
 
+def expand_generator_block(operation):
+    """given an operation this function"""
+    # check if we have a generator
+    if generator := operation.get("generator"):
+        print("operation", operation)
+        if not (templates := generator.get("template")):
+            raise AssertionError("No template section given.")
+        if not (values := generator.get("values")):
+            raise AssertionError("No value section given.")
+        if not (key := generator.get("key")):
+            raise AssertionError("No key given.")
+
+        template_generated = []
+        for val in values:
+            # templates are a list of records
+            # every record needs to be scanned and updated
+            for template in templates:
+                # template records need to be replaced
+                # i.e. { numberOfSubdomains : foo, key: value}
+                # by whatever key and value specify
+                gen_dict = {}
+                # next k, v are the key values from the template record
+                # not to confused with the key value pair from the generator block
+                for k, v in template.items():
+                    gen_dict[k] = v.replace(key, str(val))
+                    # additionally the original key and current
+                    # val are added so that we can use it in schemas
+                    gen_dict[key] = val
+                template_generated.append(gen_dict)
+        return template_generated
+    return operation["values"]
+
+
 def add_variations(
     operations: list,
     project: OpenFOAMProject,
@@ -164,38 +197,9 @@ def add_variations(
         if not is_on_requested_parent(operation, parent_job):
             continue
 
-        # check if we have a generator
-        if generator := operation.get("generator"):
-            templates = generator.get("template")
-            if not templates:
-                logging.error("No template section given.")
-            values = generator.get("values")
-            if not values:
-                logging.error("No values section given.")
-            key = generator.get("key")
-            if not key:
-                logging.error("No key section given.")
+        values = expand_generator_block(operation)
 
-            template_generated = []
-            for val in values:
-                # templates are a list of records
-                # every record needs to be scanned and updated
-                for template in templates:
-                    # template records need to be replaced
-                    # i.e. { numberOfSubdomains : foo, key: value}
-                    # by whatever key and value specify
-                    gen_dict = {}
-                    # next k, v are the key values from the template record
-                    # not to confused with the key value pair from the generator block
-                    for k, v in template.items():
-                        gen_dict[k] = v.replace(key, str(val))
-                        # additionally the original key and current
-                        # val are added so that we can use it in schemas
-                        gen_dict[key] = val
-                    template_generated.append(gen_dict)
-            operation["values"] = template_generated
-
-        for value in operation["values"]:
+        for value in values:
             # support if statetment when values are a subdictionary
             if isinstance(value, dict) and not value.get("if", True):
                 continue
