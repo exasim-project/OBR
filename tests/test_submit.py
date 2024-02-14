@@ -103,6 +103,7 @@ def test_submit(tmpdir):
                 template=tmpdir / "local.sh",
                 account=account,
                 partition=partition,
+                time="60",
                 pretend=True,
                 bundling_key=None,
                 scheduler_args="",
