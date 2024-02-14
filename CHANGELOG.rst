@@ -19,6 +19,8 @@ Changelog
 - Add statepoint dependant filter for create_tree, see https://github.com/hpsim/OBR/pull/187
 - Add 'obr apply' mode, see https://github.com/hpsim/OBR/pull/188
 - Add 'obr --version', see https://github.com/hpsim/OBR/pull/188
+- Add 'validateState' operation, see https://github.com/hpsim/OBR/pull/189 
+- Improve 'run*Solver' launch speed, see https://github.com/hpsim/OBR/pull/189 
 
 
 0.2.0 (2023-09-14)
