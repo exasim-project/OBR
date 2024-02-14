@@ -88,6 +88,7 @@ def test_submit(tmpdir):
             template=tmpdir / "does_not_exists.sh",
             account=account,
             partition=partition,
+            time="60"
             pretend=True,
             bundling_key=None,
             scheduler_args="",
@@ -115,4 +116,5 @@ def test_submit(tmpdir):
         assert "test_token" in submit_log
         assert "--account=account" in submit_log
         assert "--partition=partition" in submit_log
+        assert "#SBATCH -t 60" in submit_log
         assert "--mem=" not in submit_log

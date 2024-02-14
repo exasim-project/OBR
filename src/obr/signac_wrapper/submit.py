@@ -43,7 +43,7 @@ def submit_impl(
         "partition": partition,
         "pretend": pretend,
         "account": account,
-        "walltime": time
+        "walltime": time,
     }
 
     # TODO improve this using regex
@@ -71,7 +71,7 @@ def submit_impl(
             logging.info("Submission response" + str(ret_submit))
             time.sleep(15)
     else:
-        eligible_jobs =  []
+        eligible_jobs = []
 
         for operation in operations:
             logging.info(f"Collecting eligible jobs for operation: {operation}.")
@@ -79,7 +79,11 @@ def submit_impl(
                 if basic_eligible(job, operation):
                     eligible_jobs.append(job)
 
-        logging.info(f"Submitting operations {operations}. In total {len(eligible_jobs)} of {len(jobs)} individual jobs.\nEligible jobs {[j.id for j in eligible_jobs]}")
+        logging.info(
+            f"Submitting operations {operations}. In total {len(eligible_jobs)} of"
+            f" {len(jobs)} individual jobs.\nEligible jobs"
+            f" {[j.id for j in eligible_jobs]}"
+        )
         ret_submit = project.submit(
             jobs=eligible_jobs,
             names=operations,
