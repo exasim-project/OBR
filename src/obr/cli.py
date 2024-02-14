@@ -292,9 +292,16 @@ def run(ctx: click.Context, **kwargs):
     default=".",
     help="Where to create the worspace and view. Default: '.' ",
 )
-@click.option("-e", "--execute", default=False)
+@click.option(
+    "-g", "--generate", is_flag=True, help="Call generate directly after init."
+)
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
-@click.option("-t", "--tasks", default=-1, help="Number of tasks to run concurrently.")
+@click.option(
+    "-t",
+    "--tasks",
+    default=-1,
+    help="Number of tasks to run concurrently for generate call.",
+)
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.option("--verbose", default=0, help="set verbosity")
 @click.pass_context
@@ -310,6 +317,14 @@ def init(ctx: click.Context, **kwargs):
     create_tree(project, config, kwargs)
 
     logging.info("successfully initialised")
+
+    if kwargs.get("generate"):
+        logging.info("Generating workspace")
+        project.run(
+            names=["generate"],
+            progress=True,
+            np=kwargs.get("tasks", -1),
+        )
 
 
 @cli.command()
