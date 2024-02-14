@@ -21,13 +21,11 @@ def read_yaml(kwargs: dict) -> str:
         # search for includes
         config_str = add_includes(yaml_location, config_str)
 
-    return eval_yaml_expressions(
-        parse_variables(
-            parse_variables(config_str, dict(os.environ), "env"),
+    return parse_special_variables(
+            parse_special_variables(config_str, dict(os.environ), "env"),
             {"location": str(yaml_location)},
             "yaml",
         )
-    )
 
 
 def add_includes(yaml_location: Path, config_str: str) -> str:
@@ -46,8 +44,8 @@ def add_includes(yaml_location: Path, config_str: str) -> str:
     return config_str
 
 
-def parse_variables(in_str: str, args: dict, domain: str) -> str:
-    """Replaces ${{ domain.value }} expressions with concrete values"""
+def parse_special_variables(in_str: str, args: dict, domain: str) -> str:
+    """Replaces ${{ domain.value }} expressions with environmental variable values"""
     ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
         if not args.get(inst, ""):
@@ -58,7 +56,7 @@ def parse_variables(in_str: str, args: dict, domain: str) -> str:
     return in_str
 
 
-def eval_yaml_expressions(in_str: str) -> str:
+def eval_generator_expressions(in_str: str) -> str:
     """Tries evaluate ${{ }} expressions"""
     expr = re.findall(r"\${{([\'\"\= 0.-9()*+A-Za-z_>!]*)}}", in_str)
     for inst in expr:
