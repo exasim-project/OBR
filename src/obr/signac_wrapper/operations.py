@@ -655,7 +655,7 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     return cmd_format.format(**cli_args) + "|| true" + postflight_cmd
 
 
-def validate_state_impl(job: Job) -> None:
+def validate_state_impl(_: str, job: Job) -> None:
     """Perform a detailed update of the job state"""
     case = OpenFOAMCase(Path(job.path) / "case", job)
     case.detailed_update()
