@@ -568,7 +568,7 @@ def checkMesh(job: Job, args={}):
 
 
 def get_number_of_procs(job: Job) -> int:
-    """Deduces the number of processor
+    """Deduces the number of processors
     For performance reasons the cache is used to store the number of subdomains
     """
     np = statepoint_get(job.sp(), "numberOfSubdomains")
