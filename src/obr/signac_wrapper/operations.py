@@ -665,6 +665,16 @@ def validate_state_impl(_: str, job: Job) -> None:
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.operation
+def resetCase(job: Job, args={}) -> None:
+    """Dummy operation that calls resetCase"""
+    case = OpenFOAMCase(Path(job.path) / "case", job)
+    case.resetCase()
+
+
+@OpenFOAMProject.pre(parent_job_is_ready)
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.pre(is_job)
+@OpenFOAMProject.operation
 def validateState(job: Job, args={}) -> None:
     """Dummy operation which forwards to validate_state_impl. The reason for keeping this function
     is that it can be called from the cli to force a detailed update"""

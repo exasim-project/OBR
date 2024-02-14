@@ -503,6 +503,65 @@ def apply(ctx: click.Context, **kwargs):
         np=1,
     )
 
+@cli.command()
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
+        ' runParallelSolver --filter "solver==pisoFoam"'
+    ),
+)
+@click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
+@click.option("-c", "--case", is_flag=True, help="reset the state of a case by deleting solver logs")
+@click.option(
+    "-v", "--view", default="remove case completely specified by a view folder"
+)
+@click.pass_context
+def reset(ctx: click.Context, **kwargs):
+    """deletes workspace or cases"""
+    def safe_delete(fn):
+        """This functions deletes the given path. If the path does not exists it does nothing """
+        path = Path(fn)
+        if path.exists():
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+
+    project, jobs = cli_cmd_setup(kwargs)
+
+    if kwargs.get("workspace"):
+        logging.warn(
+            f"Removing current obr workspace. This will remove all simulation results"
+        )
+        if click.confirm('Do you want to continue?', default=True):
+            safe_delete("workspace")
+            safe_delete("view")
+            safe_delete("signac.rc")
+            safe_delete(".signac")
+            return
+
+    if kwargs.get("case"):
+        logging.warn(
+            f"Reseting obr cases. This will remove all generated simulation results."
+        )
+        logging.warn(
+            f"obr reset --case, is not fully implemented and will only remove log solver logs."
+        )
+        if click.confirm('Do you want to continue?', default=True):
+            project.run(
+                jobs = jobs,
+                names=["resetCase"],
+                progress=True,
+                np=-1,
+            )
+
+    if kwargs.get("view"):
+        logging.error("Reseting by view path is not yet supported")
+
 
 @cli.command()
 @click.option(
