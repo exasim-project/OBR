@@ -5,6 +5,8 @@ import sys
 import obr.core.caseOrigins as caseOrigins
 import traceback
 import logging
+import json
+import shutil
 
 from pathlib import Path
 from subprocess import check_output
@@ -94,12 +96,14 @@ def basic_eligible(job: Job, operation: str) -> bool:
       - operation has been requested for job
       - copy and link files and folder
     """
-    # don't execute operation on cases that dont request them
+
     if (
         is_locked(job)
-        or not parent_job_is_ready(job) == "ready"
         or not operation == job.sp().get("operation")
-        or not needs_initialization(job)
+        or not parent_job_is_ready(job) == "ready"
+        or not initialize_if_required(
+            job
+        )  # keep this here start initialization only if operation is requested
         or not is_case(job)
     ):
         # For Debug purposes
@@ -110,8 +114,8 @@ def basic_eligible(job: Job, operation: str) -> bool:
             if not parent_job_is_ready(job) == "ready":
                 state = parent_job_is_ready(job)
                 logging.info(f"\tparent_job_is_ready={state} should be ready")
-            if not needs_initialization(job):
-                logging.info(f"\tneeds_initialization=False should be True")
+            if not initialize_if_required(job):
+                logging.info(f"\tinitialize_if_required=False should be True")
             if not is_case(job):
                 logging.info("\tis_case=False should be True")
         return False
@@ -120,23 +124,67 @@ def basic_eligible(job: Job, operation: str) -> bool:
 
 def parent_job_is_ready(job: Job) -> str:
     """Checks whether the parent of the given job is ready"""
-    if job.sp().get("parent_id"):
+    if parent_id := job.sp().get("parent_id"):
         project = OpenFOAMProject.get_project(path=job.path + "/../..")
-        parent_job = project.open_job(id=job.sp().get("parent_id"))
-        return parent_job.doc["state"].get("global", "")
+        with open(job.path + f"/../{parent_id}/signac_job_document.json", "r") as jh:
+            parent_job_dict = json.load(jh)
+            return parent_job_dict["state"].get("global", "")
     return ""
 
 
-def _link_path(base: Path, dst: Path, copy_instead_link: bool):
+def _link_path(base: Path, dst: Path, parent_id: str, copy_instead_link: bool):
     """creates file tree under dst with same folder structure as base but all
     files are relative symlinks
     """
+    # NOTE if copy instead linking is requested we
+    # just copy the full tree and are done
+    if copy_instead_link:
+        if dst.exists():
+            shutil.rmtree(f"{dst}")
+        shutil.copytree(src=f"{base}", dst=f"{dst}", symlinks=False)
+        return
+
     # ensure dst path exists
     check_output(["mkdir", "-p", str(dst)])
-
-    # base path might not be ready atm
     for root, folder, files in os.walk(Path(base)):
         relative_path = Path(root).relative_to(base)
+
+        # NOTE Treat processor folder separately
+        # Dont recurse into processor folders for now since that can
+        # become very costly. Instead we copy all processor folder
+        # entirely and pop the folder from the folder list
+        if "processor0" in folder:
+            for fold in folder:
+                if not fold.startswith("processor"):
+                    continue
+                proc_root, proc_folder, _ = next(os.walk(f"{base}/{fold}"))
+                # NOTE The constant folder is linked
+                # to reduce the resulting folder size
+                trgt_proc_fold = f"{dst}/{fold}"
+                for proc_cont in proc_folder:
+                    if proc_cont == "constant":
+                        check_output(["mkdir", "-p", trgt_proc_fold])
+                        check_output(
+                            [
+                                "ln",
+                                "-s",
+                                # we can use this folder format here because
+                                # we know where the parent job lies relative
+                                # to this one in the workspace
+                                f"../../../{parent_id}/case/{fold}/constant",
+                            ],
+                            cwd=trgt_proc_fold,
+                        )
+                    else:
+                        shutil.copytree(
+                            src=f"{proc_root}/{proc_cont}",
+                            dst=f"{trgt_proc_fold}/{proc_cont}",
+                            symlinks=False,
+                        )
+            # pop all processor folder to aviod recursing
+            pop_idx = [i for i, f in enumerate(folder) if f.startswith("processor")]
+            for i in sorted(pop_idx, reverse=True):
+                del folder[i]
 
         for fold in folder:
             src = Path(root) / fold
@@ -154,47 +202,36 @@ def _link_path(base: Path, dst: Path, copy_instead_link: bool):
             src = Path(root) / fn
             dst_ = Path(dst) / relative_path / fn
             if not dst_.exists():
-                if copy_instead_link:
-                    check_output(
-                        [
-                            "cp",
-                            str(os.path.relpath(src, dst / relative_path)),
-                            ".",
-                        ],
-                        cwd=dst / relative_path,
-                    )
-
-                else:
-                    check_output(
-                        [
-                            "ln",
-                            "-s",
-                            str(os.path.relpath(src, dst / relative_path)),
-                        ],
-                        cwd=dst / relative_path,
-                    )
+                check_output(
+                    [
+                        "ln",
+                        "-s",
+                        str(os.path.relpath(src, dst / relative_path)),
+                    ],
+                    cwd=dst / relative_path,
+                )
 
 
-def needs_initialization(job: Job) -> bool:
+def initialize_if_required(job: Job) -> bool:
     """check if this job has been already linked to
 
     The default strategy is to link all files. If a file is modified
     the modifying operations are responsible for unlinking and copying
     """
-    # shell scripts might change files as side effect hence we copy all files
-    # instead of linking to avoid side effects in future it might make sense to
-    # specify the files which are modified in the yaml file
-    copy_instead_link = job.sp().get("operation") == "shell"
-    if job.sp().get("parent_id"):
+    if parent_id := job.sp().get("parent_id"):
         if job.doc["state"].get("is_initialized"):
             return True
-        parent_id = job.sp().get("parent_id")
-
+        logging.info(f"Start initialization of case {job.id}")
         base_path = Path(job.path) / ".." / parent_id / "case"
         dst_path = Path(job.path) / "case"
         # logging.info(f"linking {base_path} to {dst_path}")
-        _link_path(base_path, dst_path, copy_instead_link)
+        # shell scripts might change files as side effect hence we copy all files
+        # instead of linking to avoid side effects in future it might make sense to
+        # specify the files which are modified in the yaml file
+        copy_instead_link = job.sp().get("operation") == "shell"
+        _link_path(base_path, dst_path, parent_id, copy_instead_link)
         job.doc["state"]["is_initialized"] = True
+        logging.info(f"Done initialization of case {job.id}")
         return True
     else:
         return False
