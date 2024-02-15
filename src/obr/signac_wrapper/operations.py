@@ -188,7 +188,7 @@ def _link_path(base: Path, dst: Path, parent_id: str, copy_instead_link: bool):
 
         for fold in folder:
             src = Path(root) / fold
-            dst_ = Path(dst) / relative_path / fold
+            dst_ = dst / relative_path / fold
             if not dst_.exists():
                 check_output(
                     [
