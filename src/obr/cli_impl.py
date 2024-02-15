@@ -10,6 +10,7 @@ from .core.queries import build_filter_query
 def query_impl(
     project: OpenFOAMProject,
     input_queries: tuple[str],
+    filters: list[str],
     quiet: bool,
     json_file: str,
     validation_file: str,
