@@ -21,7 +21,7 @@ def submit_impl(
     pretend: bool,
     bundling_key: Union[str, None],
     scheduler_args: str,
-    skip_eligible_check = False
+    skip_eligible_check=False,
 ):
     template_target_path = Path(project.path) / "templates/script.sh"
     template_src_path = Path(template)
