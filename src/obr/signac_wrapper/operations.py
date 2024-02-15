@@ -181,7 +181,7 @@ def _link_path(base: Path, dst: Path, parent_id: str, copy_instead_link: bool):
                             dst=f"{trgt_proc_fold}/{proc_cont}",
                             symlinks=False,
                         )
-            # pop all processor folder to aviod recursing
+            # pop all processor folder to avoid recursing
             pop_idx = [i for i, f in enumerate(folder) if f.startswith("processor")]
             for i in sorted(pop_idx, reverse=True):
                 del folder[i]
