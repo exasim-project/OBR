@@ -1,6 +1,6 @@
 [project]
 name = "obr"
-version = "0.3.12"
+version = "0.3.13"
 description = "A tool to create and run OpenFOAM parameter studies"
 authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"},
