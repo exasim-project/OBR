@@ -222,7 +222,7 @@ def initialize_if_required(job: Job) -> bool:
         if job.doc["state"].get("is_initialized"):
             return True
         logging.info(f"Start initialization of case {job.id}")
-        base_path = Path(job.path) / ".." / parent_id / "case"
+        base_path = Path(job.path).parent / parent_id / "case"
         dst_path = Path(job.path) / "case"
         # logging.info(f"linking {base_path} to {dst_path}")
         # shell scripts might change files as side effect hence we copy all files
