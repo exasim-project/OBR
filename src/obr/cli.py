@@ -29,7 +29,6 @@ from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union, Optional, Any
-from copy import deepcopy
 
 from .signac_wrapper.operations import OpenFOAMProject
 from .signac_wrapper.submit import submit_impl
