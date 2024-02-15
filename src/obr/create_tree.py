@@ -203,7 +203,6 @@ def add_variations(
             if isinstance(value, dict) and not value.get("if", True):
                 continue
 
-
             if isinstance(value, dict):
                 for k, v in value.items():
                     if isinstance(v, str):
@@ -213,8 +212,10 @@ def add_variations(
             parse_res = extract_from_operation(operation, value)
 
             # filter any if statements from operation dict
-            parse_res["keys"] = [ k for k in parse_res["keys"] if k != "if" ]
-            parse_res["args"] = { k:v for k,v in parse_res["args"].items() if k != "if" }
+            parse_res["keys"] = [k for k in parse_res["keys"] if k != "if"]
+            parse_res["args"] = {
+                k: v for k, v in parse_res["args"].items() if k != "if"
+            }
 
             clean_path(parse_res["path"])
             base_dict = deepcopy(to_dict(parent_job.sp))
