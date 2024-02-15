@@ -8,6 +8,7 @@ from typing import Union
 from tqdm import tqdm
 
 from .operations import OpenFOAMProject, basic_eligible
+from .labels import final
 
 
 def submit_impl(
@@ -74,10 +75,15 @@ def submit_impl(
     else:
         eligible_jobs = []
         for operation in operations:
-            logging.info(f"Collecting eligible jobs for operation: {operation}.")
-            for job in tqdm(jobs):
-                if basic_eligible(job, operation):
-                    eligible_jobs.append(job)
+            if operation == "runParallelSolver":
+                for job in tqdm(jobs):
+                    if final(job):
+                        eligible_jobs.append(job)
+            else:
+                logging.info(f"Collecting eligible jobs for operation: {operation}.")
+                for job in tqdm(jobs):
+                    if basic_eligible(job, operation):
+                        eligible_jobs.append(job)
 
         logging.info(
             f"Submitting operations {operations}. In total {len(eligible_jobs)} of"
