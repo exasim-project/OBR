@@ -30,12 +30,12 @@ from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union, Optional, Any
 
-from .signac_wrapper.operations import OpenFOAMProject
+from .signac_wrapper.operations import OpenFOAMProject, needs_initialization
 from .signac_wrapper.submit import submit_impl
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .cli_impl import query_impl
-from .core.core import map_view_folder_to_job_id, profile_call
+from .core.core import map_view_folder_to_job_id, profile_call, GLOBAL_UNINIT_COUNT
 
 
 def check_cli_operations(
@@ -270,6 +270,13 @@ def run(ctx: click.Context, **kwargs):
         return
 
     if not kwargs.get("aggregate"):
+
+        GLOBAL_UNINIT_COUNT = 0
+        for job in jobs:
+            if job.sp().get("operation") in operations and needs_initialization(job):
+                GLOBAL_UNINIT_COUNT += 1
+        os.environ["GLOBAL_UNINIT_COUNT"] = str(GLOBAL_UNINIT_COUNT)
+
         profile_call(
             project.run,
             names=operations,

@@ -15,7 +15,7 @@ from typing import Union, Literal
 from datetime import datetime
 
 from .labels import owns_mesh, final, finished
-from ..core.core import execute_shell
+from ..core.core import execute_shell, GLOBAL_INIT_COUNT, GLOBAL_UNINIT_COUNT
 from obr.OpenFOAM.case import OpenFOAMCase
 from obr.core.queries import filter_jobs, query_impl, Query, statepoint_get
 from obr.core.caseOrigins import instantiate_origin_class
@@ -212,6 +212,14 @@ def _link_path(base: Path, dst: Path, parent_id: str, copy_instead_link: bool):
                 )
 
 
+def needs_initialization(job: Job) -> bool:
+    """Check if this job has been initialized already, whithout performing the initialization"""
+    if parent_id := job.sp().get("parent_id"):
+        if job.doc["state"].get("is_initialized"):
+            return False
+    return True
+
+
 def initialize_if_required(job: Job) -> bool:
     """check if this job has been already linked to
 
@@ -221,7 +229,10 @@ def initialize_if_required(job: Job) -> bool:
     if parent_id := job.sp().get("parent_id"):
         if job.doc["state"].get("is_initialized"):
             return True
-        logging.info(f"Start initialization of case {job.id}")
+        global GLOBAL_INIT_COUNT
+        GLOBAL_UNINIT_COUNT = int(os.environ["GLOBAL_UNINIT_COUNT"])
+
+        GLOBAL_INIT_COUNT += 1
         base_path = Path(job.path).parent / parent_id / "case"
         dst_path = Path(job.path) / "case"
         # logging.info(f"linking {base_path} to {dst_path}")
@@ -231,7 +242,10 @@ def initialize_if_required(job: Job) -> bool:
         copy_instead_link = job.sp().get("operation") == "shell"
         _link_path(base_path, dst_path, parent_id, copy_instead_link)
         job.doc["state"]["is_initialized"] = True
-        logging.info(f"Done initialization of case {job.id}")
+        logging.info(
+            "Done initialization of case"
+            f" {job.id} [{GLOBAL_INIT_COUNT}/{GLOBAL_UNINIT_COUNT}]\r"
+        )
         return True
     else:
         return False
