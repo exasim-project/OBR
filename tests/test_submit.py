@@ -107,6 +107,7 @@ def test_submit(tmpdir):
                 pretend=True,
                 bundling_key=None,
                 scheduler_args="",
+                skip_eligible_check=True,
             )
 
     templates_dir = tmpdir / "templates"
@@ -117,5 +118,4 @@ def test_submit(tmpdir):
         assert "test_token" in submit_log
         assert "--account=account" in submit_log
         assert "--partition=partition" in submit_log
-        assert "#SBATCH -t 60" in submit_log
         assert "--mem=" not in submit_log

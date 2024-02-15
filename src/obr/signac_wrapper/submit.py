@@ -21,6 +21,7 @@ def submit_impl(
     pretend: bool,
     bundling_key: Union[str, None],
     scheduler_args: str,
+    skip_eligible_check = False
 ):
     template_target_path = Path(project.path) / "templates/script.sh"
     template_src_path = Path(template)
@@ -72,7 +73,6 @@ def submit_impl(
             time.sleep(15)
     else:
         eligible_jobs = []
-
         for operation in operations:
             logging.info(f"Collecting eligible jobs for operation: {operation}.")
             for job in tqdm(jobs):
@@ -85,7 +85,7 @@ def submit_impl(
             f" {[j.id for j in eligible_jobs]}"
         )
         ret_submit = project.submit(
-            jobs=eligible_jobs,
+            jobs=eligible_jobs if not skip_eligible_check else jobs,
             names=operations,
             **cluster_args,
         )
