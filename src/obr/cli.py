@@ -418,7 +418,8 @@ def query(ctx: click.Context, **kwargs):
     quiet: bool = kwargs.get("quiet", False)
     json_file: str = kwargs.get("export_to", "")
     validation_file: str = kwargs.get("validate_against", "")
-    profile_call(query_impl, project, input_queries, quiet, json_file, validation_file)
+    filters: list[str] = kwargs.get("filter", [])
+    profile_call(query_impl, project, input_queries, filters, quiet, json_file, validation_file)
 
 
 @cli.command()
