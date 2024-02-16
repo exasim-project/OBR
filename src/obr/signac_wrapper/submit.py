@@ -91,10 +91,21 @@ def submit_impl(
             f" {len(jobs)} individual jobs.\nEligible jobs"
             f" {[j.id for j in eligible_jobs]}"
         )
+
+        max_queue_size = 10
+        bundle_size = 1
+
+        # if len(eligible_jobs) > max_queue_size:
+        #     print("more jobs than queue size")
+        #     bundle_size = int(len(eligible_jobs)/max_queue_size)
+        #
+        # print(f" eligible job {len(eligible_jobs)}")
+        # print(f" bundle_size {bundle_size}")
+
         ret_submit = project.submit(
             jobs=eligible_jobs if not skip_eligible_check else jobs,
             names=operations,
-            bundle_size=int(bundle_size)
+            bundle_size=1,
             **cluster_args,
         )
         logging.info(ret_submit)
