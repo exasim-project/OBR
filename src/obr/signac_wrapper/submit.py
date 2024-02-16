@@ -20,6 +20,7 @@ def submit_impl(
     partition: Union[str, None],
     time: Union[str, None],
     pretend: bool,
+    bundle_size: Union[str, None],
     bundling_key: Union[str, None],
     scheduler_args: str,
     skip_eligible_check=False,

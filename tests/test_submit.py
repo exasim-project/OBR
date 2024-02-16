@@ -105,6 +105,7 @@ def test_submit(tmpdir):
                 partition=partition,
                 time="60",
                 pretend=True,
+                bundle_size=1,
                 bundling_key=None,
                 scheduler_args="",
                 skip_eligible_check=True,
