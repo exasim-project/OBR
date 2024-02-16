@@ -15,7 +15,7 @@ from typing import Union, Literal
 from datetime import datetime
 
 from .labels import owns_mesh, final, finished
-from ..core.core import execute_shell, GLOBAL_INIT_COUNT, GLOBAL_UNINIT_COUNT
+from ..core.core import execute_shell, GLOBAL_INIT_COUNT
 from obr.OpenFOAM.case import OpenFOAMCase
 from obr.core.queries import filter_jobs, query_impl, Query, statepoint_get
 from obr.core.caseOrigins import instantiate_origin_class
@@ -230,7 +230,7 @@ def initialize_if_required(job: Job) -> bool:
         if job.doc["state"].get("is_initialized"):
             return True
         global GLOBAL_INIT_COUNT
-        GLOBAL_UNINIT_COUNT = int(os.environ["GLOBAL_UNINIT_COUNT"])
+        GLOBAL_UNINIT_COUNT = int(os.environ.get("GLOBAL_UNINIT_COUNT", 0))
 
         GLOBAL_INIT_COUNT += 1
         base_path = Path(job.path).parent / parent_id / "case"
