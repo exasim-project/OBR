@@ -193,7 +193,7 @@ def submit(ctx: click.Context, **kwargs):
         partition=kwargs.get("partition"),
         time=kwargs.get("time"),
         pretend=kwargs["pretend"],
-        bundling_size=kwargs.get("bundle_size", 1),
+        bundle_size=kwargs.get("bundle_size", 1),
         bundling_key=kwargs["bundling_key"],
         scheduler_args=kwargs.get("scheduler_args"),
     )
