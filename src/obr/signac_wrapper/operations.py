@@ -213,7 +213,7 @@ def _link_path(base: Path, dst: Path, parent_id: str, copy_instead_link: bool):
 
 
 def needs_initialization(job: Job) -> bool:
-    """Check if this job has been initialized already, whithout performing the initialization"""
+    """Check if this job has been initialized already, without performing the initialization"""
     if parent_id := job.sp().get("parent_id"):
         if job.doc["state"].get("is_initialized"):
             return False
@@ -230,7 +230,7 @@ def initialize_if_required(job: Job) -> bool:
         if job.doc["state"].get("is_initialized"):
             return True
         global GLOBAL_INIT_COUNT
-        GLOBAL_UNINIT_COUNT = int(os.environ.get("GLOBAL_UNINIT_COUNT", 0))
+        GLOBAL_UNINIT_COUNT = os.environ.get("GLOBAL_UNINIT_COUNT")
 
         GLOBAL_INIT_COUNT += 1
         base_path = Path(job.path).parent / parent_id / "case"
@@ -242,10 +242,11 @@ def initialize_if_required(job: Job) -> bool:
         copy_instead_link = job.sp().get("operation") == "shell"
         _link_path(base_path, dst_path, parent_id, copy_instead_link)
         job.doc["state"]["is_initialized"] = True
-        logging.info(
-            "Done initialization of case"
-            f" {job.id} [{GLOBAL_INIT_COUNT}/{GLOBAL_UNINIT_COUNT}]\r"
-        )
+        if GLOBAL_UNINIT_COUNT:
+            logging.info(
+                "Done initialization of case"
+                f" {job.id} [{GLOBAL_INIT_COUNT}/{int(GLOBAL_UNINIT_COUNT)}]\r"
+            )
         return True
     else:
         return False
