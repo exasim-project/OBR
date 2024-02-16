@@ -35,7 +35,7 @@ from .signac_wrapper.submit import submit_impl
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .cli_impl import query_impl
-from .core.core import map_view_folder_to_job_id, profile_call, GLOBAL_UNINIT_COUNT
+from .core.core import map_view_folder_to_job_id, profile_call
 
 
 def check_cli_operations(
