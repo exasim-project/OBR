@@ -668,7 +668,7 @@ def validate_state_impl(_: str, job: Job) -> None:
 def resetCase(job: Job, args={}) -> None:
     """Dummy operation that calls resetCase"""
     case = OpenFOAMCase(Path(job.path) / "case", job)
-    case.resetCase()
+    case.reset_case()
 
 
 @OpenFOAMProject.pre(parent_job_is_ready)

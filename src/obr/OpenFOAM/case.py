@@ -229,6 +229,10 @@ class OpenFOAMCase(BlockMesh):
             return self.latest_log.footer.completed
         return False
 
+    @property
+    def solver(self):
+        return self.controlDict.get("application")
+
     def fetch_logs(self) -> list[Path]:
         solver = self.solver
         root, _, files = next(os.walk(self.path))
@@ -279,6 +283,12 @@ class OpenFOAMCase(BlockMesh):
         if not wm_project_dir:
             raise AssertionError("OpenFOAM not sourced. Cannot check OpenFOAM version")
         return (Path(wm_project_dir) / "CONTRIBUTORS.md").exists()
+
+    def reset_case(self):
+        """Removes all artifacts after case generation"""
+        self.remove_solver_logs()
+
+        self.job.doc["state"]["global"] = "ready"
 
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one

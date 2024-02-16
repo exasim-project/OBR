@@ -517,7 +517,7 @@ def apply(ctx: click.Context, **kwargs):
 @click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
 @click.option("-c", "--case", is_flag=True, help="reset the state of a case by deleting solver logs")
 @click.option(
-    "-v", "--view", default="remove case completely specified by a view folder"
+    "-v", "--view", default="", help="remove case completely specified by a view folder"
 )
 @click.pass_context
 def reset(ctx: click.Context, **kwargs):
@@ -545,8 +545,9 @@ def reset(ctx: click.Context, **kwargs):
             return
 
     if kwargs.get("case"):
+        jobids = [j.id for j in jobs]
         logging.warn(
-            f"Reseting obr cases. This will remove all generated simulation results."
+            f"Reseting obr cases. This will remove all generated simulation results of the following {len(jobids)} jobs {jobids}."
         )
         logging.warn(
             f"obr reset --case, is not fully implemented and will only remove log solver logs."
