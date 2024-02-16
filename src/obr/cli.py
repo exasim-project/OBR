@@ -24,9 +24,9 @@ import logging
 from signac.job import Job
 from pathlib import Path
 from subprocess import check_output
-from git.repo import Repo
-from git.util import Actor
-from git import InvalidGitRepositoryError
+#from git.repo import Repo
+#from git.util import Actor
+#from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union, Optional, Any
 
@@ -98,20 +98,20 @@ def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
     return project, jobs
 
 
-def copy_to_archive(
-    repo: Union[Repo, None], use_git_repo: bool, src_file: Path, target_file: Path
-) -> None:
-    """Copies files to archive repo"""
-    # ensure target directory exists()
-    target_path = target_file.parents[0]
-    if not target_path.exists():
-        target_path.mkdir(parents=True)
-    logging.info(f"cp \\\n\t{src_file}\n\t{target_file.resolve()}")
-    if src_file.is_symlink():
-        src_file = Path(os.path.realpath(src_file))
-    check_output(["cp", src_file, target_file])
-    if use_git_repo and repo:
-        repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
+#def copy_to_archive(
+#    repo: Union[Repo, None], use_git_repo: bool, src_file: Path, target_file: Path
+#) -> None:
+#    """Copies files to archive repo"""
+#    # ensure target directory exists()
+#    target_path = target_file.parents[0]
+#    if not target_path.exists():
+#        target_path.mkdir(parents=True)
+#    logging.info(f"cp \\\n\t{src_file}\n\t{target_file.resolve()}")
+#    if src_file.is_symlink():
+#        src_file = Path(os.path.realpath(src_file))
+#    check_output(["cp", src_file, target_file])
+#    if use_git_repo and repo:
+#        repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
 
 
 @click.group()
@@ -486,267 +486,267 @@ def apply(ctx: click.Context, **kwargs):
     )
 
 
-@cli.command()
-@click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    help=(
-        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
-        " archive --filter solver=pisoFoam --filter preconditioner=IC"
-    ),
-)
-@click.option(
-    "-f",
-    "--folder",
-    required=True,
-    default=".",
-    type=str,
-    help="Path to OpenFOAMProject.",
-)
-@click.option(
-    "-r",
-    "--repo",
-    required=True,
-    type=str,
-    help=(
-        "Path to data repository. If this is a valid Github repository, files will be"
-        " automatically added."
-    ),
-)
-@click.option(
-    "-s",
-    "--skip-logs",
-    required=False,
-    is_flag=True,
-    help=(
-        "If set, .log files will not be archived. This does not affect .log files"
-        " passed via the --file option."
-    ),
-)
-@click.option(
-    "-a",
-    "--file",
-    required=False,
-    multiple=True,
-    help="Path(s) to non-logfile(s) to be also added to the repository.",
-)
-@click.option(
-    "--campaign",
-    required=True,
-    type=str,
-    help="Specify the campaign",
-)
-@click.option(
-    "--tag",
-    required=False,
-    type=str,
-    help=(
-        "Specify prefix of branch name. Will checkout new branch with timestamp"
-        " <tag>-<timestamp>."
-    ),
-)
-@click.option(
-    "--amend",
-    is_flag=True,
-    required=False,
-    help="Add to existing branch instead of creating new one.",
-)
-@click.option(
-    "--push",
-    required=False,
-    is_flag=True,
-    help="Push changes directly to origin and switch to previous branch.",
-)
-@click.option(
-    "--dry-run",
-    required=False,
-    is_flag=True,
-    help=(
-        "If set, will log which files WOULD be copied and committed, without actually"
-        " doing it."
-    ),
-)
-@click.pass_context
-def archive(ctx: click.Context, **kwargs):
-    target_folder: Path = Path(kwargs.get("repo", "")).absolute()
-    if current_path := kwargs.get("folder", "."):
-        os.chdir(current_path)
-        current_path = Path(current_path).absolute()
-
-    # setup project and jobs
-    project = OpenFOAMProject().init_project()
-    filters: list[str] = list(kwargs.get("filter", ()))
-    # check if given path points to valid project
-    if not is_valid_workspace(filters):
-        return
-    jobs = project.filter_jobs(filters, False)
-
-    dry_run = kwargs.get("dry_run", False)
-    branch_name = None
-    previous_branch = None
-    campaign = kwargs["campaign"]
-    tag = kwargs.get("tag", "")
-    # check if given path is actually a github repository
-    use_git_repo = False
-    try:
-        repo = Repo(path=str(target_folder), search_parent_directories=True)
-        previous_branch = repo.active_branch.name
-        use_git_repo = True
-    except InvalidGitRepositoryError:
-        logging.warn(
-            f"Given directory {target_folder=} is not a github repository. Will only"
-            " copy files."
-        )
-    if use_git_repo:
-        if kwargs.get("amend"):
-            branches = [
-                (branch.name[-16 : len(branch.name)], branch.name)
-                for branch in repo.branches
-                if branch.name.startswith(campaign)
-            ]
-            branches.sort()
-
-            if not branches:
-                # throw error, return
-                logging.error(
-                    f"Cannot amend to {campaign} branch. Existing"
-                    f" branches include {repo.git.branch()}."
-                )
-                return
-            branch_name = branches[-1][1]
-            if dry_run:
-                logging.info(f"Would amend to {branch_name}.")
-            else:
-                logging.info(f"Amending to {branch_name} branch")
-                repo.git.checkout(branch_name)
-        else:
-            time_stamp = (
-                str(datetime.now())
-                .rsplit(":", 1)[0]
-                .replace(" ", ":")
-                .replace(":", "_")
-            )
-            branch_name = f"{campaign}/{time_stamp}"
-            if dry_run:
-                logging.info(f"Would checkout {branch_name}.")
-            else:
-                logging.info(f"checkout {branch_name}")
-                repo.git.checkout("HEAD", b=branch_name)
-
-    # setup target folder
-    if not target_folder.exists():
-        if dry_run:
-            logging.info(f"Would Create {str(target_folder)}")
-        else:
-            logging.info(f"creating {str(target_folder)}")
-            target_folder.mkdir()
-
-    skip = kwargs.get("skip_logs")
-    if not skip:
-        # iterate cases and copy log files into target repo
-        for job in jobs:
-            # copy signac state point
-            signac_statepoint = Path(job.path) / "signac_statepoint.json"
-            if not signac_statepoint.exists():
-                continue
-            target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
-            if dry_run:
-                logging.info(f"Would copy {signac_statepoint} to {target_file}.")
-            else:
-                logging.debug(f"{target_folder}, {signac_statepoint}")
-                copy_to_archive(repo, use_git_repo, signac_statepoint, target_file)
-
-            # copy signac state point
-            signac_job_document = Path(job.path) / "signac_job_document.json"
-            if not signac_job_document.exists():
-                continue
-
-            md5sum = check_output(
-                ["md5sum", str(signac_job_document)], text=True
-            ).split()[0]
-            target_file = (
-                target_folder / f"workspace/{job.id}/signac_job_document_{md5sum}.json"
-            )
-            if dry_run:
-                logging.info(f"Would copy {signac_job_document} to {target_file}.")
-            else:
-                logging.debug(f"{target_folder}, {signac_job_document}")
-                copy_to_archive(repo, use_git_repo, signac_job_document, target_file)
-
-            case_folder = Path(job.path) / "case"
-            if not case_folder.exists():
-                logging.info(f"Job with {job.id=} has no case folder.")
-                continue
-
-            # TODO: implement archival only of non-failed jobs
-            # skip if either the most recent obr action failed or the label is set to "not success"
-            # case = OpenFOAMCase(str(case_folder), job)
-            # if not case.was_successful():
-            #     logging.info(
-            #         f"Skipping Job with {job.id=} due to recent failure states."
-            #     )
-            #     continue
-
-            root, _, files = next(os.walk(case_folder))
-            tags = "/".join(tag.split(","))
-            for file in files:
-                src_file = Path(root) / file
-                if src_file.is_relative_to(current_path):
-                    src_file = src_file.relative_to(current_path)
-                if file.endswith("log"):
-                    target_file = (
-                        target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
-                    )
-                    if target_file.is_relative_to(current_path):
-                        target_file = target_file.relative_to(current_path)
-                    if dry_run:
-                        logging.info(f"Would copy {src_file} to {target_file}.")
-                    else:
-                        copy_to_archive(repo, use_git_repo, src_file, target_file)
-
-            # copy CLI-passed files into data repo and add if possible
-            extra_files: tuple[str] = kwargs.get("file", ())
-            for file in extra_files:
-                f = case_folder / file
-                target_file = (
-                    target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
-                )
-                if not f.exists():
-                    logging.info(f"invalid path {f}. Skipping.")
-                    continue
-                if dry_run:
-                    logging.info(f"Would copy {f} to {f.absolute}.")
-                else:
-                    copy_to_archive(repo, use_git_repo, f, target_file)
-
-    # commit and push
-    if use_git_repo and repo and branch_name:
-        message = f"Add new logs -> {str(target_folder)}"
-        author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
-        logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
-        logging.info(
-            f'config: {repo.git.config("user.name"), repo.git.config("user.email")}'
-        )
-        if dry_run:
-            logging.info(
-                f"Would commit changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
-                f" {message=} and remote name {repo.remote().name}"
-            )
-
-        else:
-            logging.info(
-                f"Committing changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
-                f" {message=} and remote name {repo.remote().name}"
-            )
-            try:
-                repo.index.commit(message, author=author, committer=author)
-                if kwargs.get("push"):
-                    repo.git.push("origin", "-u", branch_name)
-                    logging.info(f"Switching back to branch '{previous_branch}'")
-                    repo.git.checkout(previous_branch)
-            except Exception as e:
-                logging.error(e)
+#   @cli.command()
+#   @click.option(
+#       "--filter",
+#       type=str,
+#       multiple=True,
+#       help=(
+#           "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
+#           " archive --filter solver=pisoFoam --filter preconditioner=IC"
+#       ),
+#   )
+#   @click.option(
+#       "-f",
+#       "--folder",
+#       required=True,
+#       default=".",
+#       type=str,
+#       help="Path to OpenFOAMProject.",
+#   )
+#   @click.option(
+#       "-r",
+#       "--repo",
+#       required=True,
+#       type=str,
+#       help=(
+#           "Path to data repository. If this is a valid Github repository, files will be"
+#           " automatically added."
+#       ),
+#   )
+#   @click.option(
+#       "-s",
+#       "--skip-logs",
+#       required=False,
+#       is_flag=True,
+#       help=(
+#           "If set, .log files will not be archived. This does not affect .log files"
+#           " passed via the --file option."
+#       ),
+#   )
+#   @click.option(
+#       "-a",
+#       "--file",
+#       required=False,
+#       multiple=True,
+#       help="Path(s) to non-logfile(s) to be also added to the repository.",
+#   )
+#   @click.option(
+#       "--campaign",
+#       required=True,
+#       type=str,
+#       help="Specify the campaign",
+#   )
+#   @click.option(
+#       "--tag",
+#       required=False,
+#       type=str,
+#       help=(
+#           "Specify prefix of branch name. Will checkout new branch with timestamp"
+#           " <tag>-<timestamp>."
+#       ),
+#   )
+#   @click.option(
+#       "--amend",
+#       is_flag=True,
+#       required=False,
+#       help="Add to existing branch instead of creating new one.",
+#   )
+#   @click.option(
+#       "--push",
+#       required=False,
+#       is_flag=True,
+#       help="Push changes directly to origin and switch to previous branch.",
+#   )
+#   @click.option(
+#       "--dry-run",
+#       required=False,
+#       is_flag=True,
+#       help=(
+#           "If set, will log which files WOULD be copied and committed, without actually"
+#           " doing it."
+#       ),
+#   )
+#   @click.pass_context
+#   def archive(ctx: click.Context, **kwargs):
+#       target_folder: Path = Path(kwargs.get("repo", "")).absolute()
+#       if current_path := kwargs.get("folder", "."):
+#           os.chdir(current_path)
+#           current_path = Path(current_path).absolute()
+#
+#       # setup project and jobs
+#       project = OpenFOAMProject().init_project()
+#       filters: list[str] = list(kwargs.get("filter", ()))
+#       # check if given path points to valid project
+#       if not is_valid_workspace(filters):
+#           return
+#       jobs = project.filter_jobs(filters, False)
+#
+#       dry_run = kwargs.get("dry_run", False)
+#       branch_name = None
+#       previous_branch = None
+#       campaign = kwargs["campaign"]
+#       tag = kwargs.get("tag", "")
+#       # check if given path is actually a github repository
+#       use_git_repo = False
+#       try:
+#           repo = Repo(path=str(target_folder), search_parent_directories=True)
+#           previous_branch = repo.active_branch.name
+#           use_git_repo = True
+#       except InvalidGitRepositoryError:
+#           logging.warn(
+#               f"Given directory {target_folder=} is not a github repository. Will only"
+#               " copy files."
+#           )
+#       if use_git_repo:
+#           if kwargs.get("amend"):
+#               branches = [
+#                   (branch.name[-16 : len(branch.name)], branch.name)
+#                   for branch in repo.branches
+#                   if branch.name.startswith(campaign)
+#               ]
+#               branches.sort()
+#
+#               if not branches:
+#                   # throw error, return
+#                   logging.error(
+#                       f"Cannot amend to {campaign} branch. Existing"
+#                       f" branches include {repo.git.branch()}."
+#                   )
+#                   return
+#               branch_name = branches[-1][1]
+#               if dry_run:
+#                   logging.info(f"Would amend to {branch_name}.")
+#               else:
+#                   logging.info(f"Amending to {branch_name} branch")
+#                   repo.git.checkout(branch_name)
+#           else:
+#               time_stamp = (
+#                   str(datetime.now())
+#                   .rsplit(":", 1)[0]
+#                   .replace(" ", ":")
+#                   .replace(":", "_")
+#               )
+#               branch_name = f"{campaign}/{time_stamp}"
+#               if dry_run:
+#                   logging.info(f"Would checkout {branch_name}.")
+#               else:
+#                   logging.info(f"checkout {branch_name}")
+#                   repo.git.checkout("HEAD", b=branch_name)
+#
+#       # setup target folder
+#       if not target_folder.exists():
+#           if dry_run:
+#               logging.info(f"Would Create {str(target_folder)}")
+#           else:
+#               logging.info(f"creating {str(target_folder)}")
+#               target_folder.mkdir()
+#
+#       skip = kwargs.get("skip_logs")
+#       if not skip:
+#           # iterate cases and copy log files into target repo
+#           for job in jobs:
+#               # copy signac state point
+#               signac_statepoint = Path(job.path) / "signac_statepoint.json"
+#               if not signac_statepoint.exists():
+#                   continue
+#               target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
+#               if dry_run:
+#                   logging.info(f"Would copy {signac_statepoint} to {target_file}.")
+#               else:
+#                   logging.debug(f"{target_folder}, {signac_statepoint}")
+#                   copy_to_archive(repo, use_git_repo, signac_statepoint, target_file)
+#
+#               # copy signac state point
+#               signac_job_document = Path(job.path) / "signac_job_document.json"
+#               if not signac_job_document.exists():
+#                   continue
+#
+#               md5sum = check_output(
+#                   ["md5sum", str(signac_job_document)], text=True
+#               ).split()[0]
+#               target_file = (
+#                   target_folder / f"workspace/{job.id}/signac_job_document_{md5sum}.json"
+#               )
+#               if dry_run:
+#                   logging.info(f"Would copy {signac_job_document} to {target_file}.")
+#               else:
+#                   logging.debug(f"{target_folder}, {signac_job_document}")
+#                   copy_to_archive(repo, use_git_repo, signac_job_document, target_file)
+#
+#               case_folder = Path(job.path) / "case"
+#               if not case_folder.exists():
+#                   logging.info(f"Job with {job.id=} has no case folder.")
+#                   continue
+#
+#               # TODO: implement archival only of non-failed jobs
+#               # skip if either the most recent obr action failed or the label is set to "not success"
+#               # case = OpenFOAMCase(str(case_folder), job)
+#               # if not case.was_successful():
+#               #     logging.info(
+#               #         f"Skipping Job with {job.id=} due to recent failure states."
+#               #     )
+#               #     continue
+#
+#               root, _, files = next(os.walk(case_folder))
+#               tags = "/".join(tag.split(","))
+#               for file in files:
+#                   src_file = Path(root) / file
+#                   if src_file.is_relative_to(current_path):
+#                       src_file = src_file.relative_to(current_path)
+#                   if file.endswith("log"):
+#                       target_file = (
+#                           target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
+#                       )
+#                       if target_file.is_relative_to(current_path):
+#                           target_file = target_file.relative_to(current_path)
+#                       if dry_run:
+#                           logging.info(f"Would copy {src_file} to {target_file}.")
+#                       else:
+#                           copy_to_archive(repo, use_git_repo, src_file, target_file)
+#
+#               # copy CLI-passed files into data repo and add if possible
+#               extra_files: tuple[str] = kwargs.get("file", ())
+#               for file in extra_files:
+#                   f = case_folder / file
+#                   target_file = (
+#                       target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
+#                   )
+#                   if not f.exists():
+#                       logging.info(f"invalid path {f}. Skipping.")
+#                       continue
+#                   if dry_run:
+#                       logging.info(f"Would copy {f} to {f.absolute}.")
+#                   else:
+#                       copy_to_archive(repo, use_git_repo, f, target_file)
+#
+#       # commit and push
+#       if use_git_repo and repo and branch_name:
+#           message = f"Add new logs -> {str(target_folder)}"
+#           author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
+#           logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
+#           logging.info(
+#               f'config: {repo.git.config("user.name"), repo.git.config("user.email")}'
+#           )
+#           if dry_run:
+#               logging.info(
+#                   f"Would commit changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
+#                   f" {message=} and remote name {repo.remote().name}"
+#               )
+#
+#           else:
+#               logging.info(
+#                   f"Committing changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
+#                   f" {message=} and remote name {repo.remote().name}"
+#               )
+#               try:
+#                   repo.index.commit(message, author=author, committer=author)
+#                   if kwargs.get("push"):
+#                       repo.git.push("origin", "-u", branch_name)
+#                       logging.info(f"Switching back to branch '{previous_branch}'")
+#                       repo.git.checkout(previous_branch)
+#               except Exception as e:
+#                   logging.error(e)
 
 
 def main():
