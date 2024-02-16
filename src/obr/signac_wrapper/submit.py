@@ -94,6 +94,7 @@ def submit_impl(
         ret_submit = project.submit(
             jobs=eligible_jobs if not skip_eligible_check else jobs,
             names=operations,
+            bundle_size=int(bundle_size)
             **cluster_args,
         )
         logging.info(ret_submit)
