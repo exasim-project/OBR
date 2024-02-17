@@ -320,10 +320,6 @@ def reset(ctx: click.Context, **kwargs):
 @click.pass_context
 def run(ctx: click.Context, **kwargs):
     """Run specified operations"""
-<<<<<<< HEAD
-    print("run", kwargs)
-=======
->>>>>>> dev
     project, jobs = cli_cmd_setup(kwargs)
 
     operations = kwargs.get("operations", "").split(",")
