@@ -493,6 +493,7 @@ def apply(ctx: click.Context, **kwargs):
         np=1,
     )
 
+
 @cli.command()
 @click.option(
     "--filter",
@@ -505,15 +506,21 @@ def apply(ctx: click.Context, **kwargs):
     ),
 )
 @click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
-@click.option("-c", "--case", is_flag=True, help="reset the state of a case by deleting solver logs")
+@click.option(
+    "-c",
+    "--case",
+    is_flag=True,
+    help="reset the state of a case by deleting solver logs",
+)
 @click.option(
     "-v", "--view", default="", help="remove case completely specified by a view folder"
 )
 @click.pass_context
 def reset(ctx: click.Context, **kwargs):
     """deletes workspace or cases"""
+
     def safe_delete(fn):
-        """This functions deletes the given path. If the path does not exists it does nothing """
+        """This functions deletes the given path. If the path does not exists it does nothing"""
         path = Path(fn)
         if path.exists():
             if path.is_dir():
@@ -527,7 +534,7 @@ def reset(ctx: click.Context, **kwargs):
         logging.warn(
             f"Removing current obr workspace. This will remove all simulation results"
         )
-        if click.confirm('Do you want to continue?', default=True):
+        if click.confirm("Do you want to continue?", default=True):
             safe_delete("workspace")
             safe_delete("view")
             safe_delete("signac.rc")
@@ -537,21 +544,23 @@ def reset(ctx: click.Context, **kwargs):
     if kwargs.get("case"):
         jobids = [j.id for j in jobs]
         logging.warn(
-            f"Reseting obr cases. This will remove all generated simulation results of the following {len(jobids)} jobs {jobids}."
+            "Resetting obr cases. This will remove all generated simulation results of"
+            f" the following {len(jobids)} jobs {jobids}."
         )
         logging.warn(
-            f"obr reset --case, is not fully implemented and will only remove log solver logs."
+            f"obr reset --case, is not fully implemented and will only remove log"
+            f" solver logs."
         )
-        if click.confirm('Do you want to continue?', default=True):
+        if click.confirm("Do you want to continue?", default=True):
             project.run(
-                jobs = jobs,
+                jobs=jobs,
                 names=["resetCase"],
                 progress=True,
                 np=-1,
             )
 
     if kwargs.get("view"):
-        logging.error("Reseting by view path is not yet supported")
+        logging.error("Resetting by view path is not yet supported")
 
 
 @cli.command()
