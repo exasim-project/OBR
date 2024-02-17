@@ -202,7 +202,7 @@ def submit(ctx: click.Context, **kwargs):
         time=kwargs.get("time"),
         pretend=kwargs["pretend"],
         bundling_key=kwargs["bundling_key"],
-        max_queue_size=kwargs.get("max_queue_size", 100),
+        max_queue_size=int(kwargs.get("max_queue_size", 100)),
         scheduler_args=kwargs.get("scheduler_args"),
     )
 
