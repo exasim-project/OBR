@@ -94,8 +94,13 @@ def submit_impl(
 
         bundle_size = 1
         if len(eligible_jobs) > max_queue_size:
-            logging.warning(f"Found more eligible jobs than maximum allowed queue size of {max_queue_size}. Bundling jobs together. This might fail if jobs request different resources. For more fine grained control use --bundling_key option.")
-            bundle_size = int(len(eligible_jobs)/max_queue_size)
+            logging.warning(
+                "Found more eligible jobs than maximum allowed queue size of"
+                f" {max_queue_size}. Bundling jobs together. This might fail if jobs"
+                " request different resources. For more fine grained control use"
+                " --bundling_key option."
+            )
+            bundle_size = int(len(eligible_jobs) / max_queue_size)
 
         ret_submit = project.submit(
             jobs=eligible_jobs if not skip_eligible_check else jobs,
