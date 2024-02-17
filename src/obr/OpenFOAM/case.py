@@ -288,11 +288,12 @@ class OpenFOAMCase(BlockMesh):
                 logging.warning(f"Using existing 0.orig folder")
                 zero_target_path = self.path / "0"
                 tmp_zero = TemporaryFolder(
-                    zero_orig_path, zero_target_path, self.esi_version
+                    zero_orig_path, zero_target_path, not self.esi_version
                 )
 
         constant_folder = None
         if not self.esi_version:
+            logging.warning(f"Non ESI version of foam detected delinking")
             constant_folder = DelinkFolder(self.constant_folder)
             # set a dummy member to avoid issues with autoflake
             constant_folder.dummy = None

@@ -8,6 +8,7 @@ from typing import Union
 from tqdm import tqdm
 
 from .operations import OpenFOAMProject, basic_eligible
+from .labels import final
 
 
 def submit_impl(
@@ -20,6 +21,7 @@ def submit_impl(
     time: Union[str, None],
     pretend: bool,
     bundling_key: Union[str, None],
+    max_queue_size: Union[str, None],
     scheduler_args: str,
     skip_eligible_check=False,
 ):
@@ -74,19 +76,36 @@ def submit_impl(
     else:
         eligible_jobs = []
         for operation in operations:
-            logging.info(f"Collecting eligible jobs for operation: {operation}.")
-            for job in tqdm(jobs):
-                if basic_eligible(job, operation):
-                    eligible_jobs.append(job)
+            if operation == "runParallelSolver":
+                for job in tqdm(jobs):
+                    if final(job):
+                        eligible_jobs.append(job)
+            else:
+                logging.info(f"Collecting eligible jobs for operation: {operation}.")
+                for job in tqdm(jobs):
+                    if basic_eligible(job, operation):
+                        eligible_jobs.append(job)
 
         logging.info(
             f"Submitting operations {operations}. In total {len(eligible_jobs)} of"
             f" {len(jobs)} individual jobs.\nEligible jobs"
             f" {[j.id for j in eligible_jobs]}"
         )
+
+        bundle_size = 1
+        if len(eligible_jobs) > max_queue_size:
+            logging.warning(
+                "Found more eligible jobs than maximum allowed queue size of"
+                f" {max_queue_size}. Bundling jobs together. This might fail if jobs"
+                " request different resources. For more fine grained control use"
+                " --bundling_key option."
+            )
+            bundle_size = int(len(eligible_jobs) / max_queue_size)
+
         ret_submit = project.submit(
             jobs=eligible_jobs if not skip_eligible_check else jobs,
             names=operations,
+            bundle_size=bundle_size,
             **cluster_args,
         )
         logging.info(ret_submit)

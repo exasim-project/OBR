@@ -91,6 +91,7 @@ def test_submit(tmpdir):
             time="60",
             pretend=True,
             bundling_key=None,
+            max_queue_size=10,
             scheduler_args="",
         )
 
@@ -106,6 +107,7 @@ def test_submit(tmpdir):
                 time="60",
                 pretend=True,
                 bundling_key=None,
+                max_queue_size=10,
                 scheduler_args="",
                 skip_eligible_check=True,
             )

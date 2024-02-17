@@ -17,6 +17,9 @@ from copy import deepcopy
 SIGNAC_PATH_TOKEN = "_dot_"
 PATH_TOKEN = "."
 
+GLOBAL_INIT_COUNT = 0
+GLOBAL_UNINIT_COUNT = 0
+
 
 def parse_variables_impl(in_str, args, domain):
     ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)

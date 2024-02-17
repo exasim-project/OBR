@@ -24,13 +24,14 @@ import logging
 from signac.job import Job
 from pathlib import Path
 from subprocess import check_output
+
 from git.repo import Repo
 from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union, Optional, Any
 
-from .signac_wrapper.operations import OpenFOAMProject
+from .signac_wrapper.operations import OpenFOAMProject, needs_initialization
 from .signac_wrapper.submit import submit_impl
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
@@ -166,6 +167,14 @@ def cli(ctx: click.Context, **kwargs):
     ),
 )
 @click.option("--bundling_key", default=None, help="")
+@click.option(
+    "--max_queue_size",
+    default=None,
+    help=(
+        "Maximum Number of submissions for the scheduler. If more jobs are eligible"
+        " jobs are bundled together."
+    ),
+)
 @click.option("-p", "--partition", default="cpuonly")
 @click.option("-t", "--time", default="60")
 @click.option("--account", default="")
@@ -193,6 +202,7 @@ def submit(ctx: click.Context, **kwargs):
         time=kwargs.get("time"),
         pretend=kwargs["pretend"],
         bundling_key=kwargs["bundling_key"],
+        max_queue_size=kwargs.get("max_queue_size", 100),
         scheduler_args=kwargs.get("scheduler_args"),
     )
 
@@ -270,6 +280,13 @@ def run(ctx: click.Context, **kwargs):
         return
 
     if not kwargs.get("aggregate"):
+
+        GLOBAL_UNINIT_COUNT = 0
+        for job in jobs:
+            if job.sp().get("operation") in operations and needs_initialization(job):
+                GLOBAL_UNINIT_COUNT += 1
+        os.environ["GLOBAL_UNINIT_COUNT"] = str(GLOBAL_UNINIT_COUNT)
+
         profile_call(
             project.run,
             names=operations,
