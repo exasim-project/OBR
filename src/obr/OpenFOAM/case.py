@@ -236,7 +236,9 @@ class OpenFOAMCase(BlockMesh):
     def fetch_logs(self) -> list[Path]:
         solver = self.solver
         root, _, files = next(os.walk(self.path))
-        log_files = [Path(root) / f for f in files if f.endswith(".log") and f.startswith(solver)]
+        log_files = [
+            Path(root) / f for f in files if f.endswith(".log") and f.startswith(solver)
+        ]
         log_files.sort()
         return log_files
 
@@ -439,7 +441,6 @@ class OpenFOAMCase(BlockMesh):
             # if parsing of log file fails, check failure handler
             self.job.doc["state"]["global"] = "failure"
             return False
-
 
     def detailed_update(self):
         """Perform a detailed update on the job doc state"""
