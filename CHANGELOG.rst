@@ -11,7 +11,7 @@ Changelog
 - Use cached version of git repo instead of cloning, see https://github.com/hpsim/OBR/pull/166
 - Bump signac version, see https://github.com/hpsim/OBR/pull/169
 - Validate simulation state after runSerial|ParallelSolver, see https://github.com/hpsim/OBR/pull/168
-- Improve obr submit, see https://github.com/hpsim/OBR/pull/170
+- Improve obr submit, see https://github.com/hpsim/OBR/pull/170, https://github.com/hpsim/OBR/pull/193, https://github.com/hpsim/OBR/pull/195
 - Fix broken test badge, see https://github.com/hpsim/OBR/pull/178
 - Fix decomposePar issues with non ESI versions of OF, see https://github.com/hpsim/OBR/issues/185
 - Automatically create temporary 0 folder before decomposePar, see https://github.com/hpsim/OBR/pull/186
@@ -19,8 +19,10 @@ Changelog
 - Add statepoint dependant filter for create_tree, see https://github.com/hpsim/OBR/pull/187
 - Add 'obr apply' mode, see https://github.com/hpsim/OBR/pull/188
 - Add 'obr --version', see https://github.com/hpsim/OBR/pull/188
+- Add template block generators, see https://github.com/hpsim/OBR/pull/18://github.com/hpsim/OBR/pull/190 
 - Add 'validateState' operation, see https://github.com/hpsim/OBR/pull/189 
 - Improve 'run*Solver' launch speed, see https://github.com/hpsim/OBR/pull/189 
+- Add '--generate' flag to 'obr init', see https://github.com/hpsim/OBR/pull/191
 
 
 0.2.0 (2023-09-14)

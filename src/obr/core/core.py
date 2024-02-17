@@ -17,6 +17,9 @@ from copy import deepcopy
 SIGNAC_PATH_TOKEN = "_dot_"
 PATH_TOKEN = "."
 
+GLOBAL_INIT_COUNT = 0
+GLOBAL_UNINIT_COUNT = 0
+
 
 def parse_variables_impl(in_str, args, domain):
     ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
@@ -422,3 +425,19 @@ def find_time_folder(path: Path) -> list[Path]:
     ret = [path / f for f in fs if is_time(f)]
     ret.sort()
     return ret
+
+
+def profile_call(f, *args, **kwargs):
+    if os.environ.get("OBR_PROFILE"):
+        logging.info("Generating profile")
+        import cProfile
+        import pstats
+
+        with cProfile.Profile() as pr:
+            f(*args, **kwargs)
+        stats = pstats.Stats(pr)
+        stats.sort_stats(pstats.SortKey.TIME)
+        stats.print_stats()
+        stats.dump_stats(filename="obr_profile.prof")
+    else:
+        f(*args, **kwargs)

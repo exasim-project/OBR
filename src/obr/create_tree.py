@@ -1,19 +1,3 @@
-#!/usr/bin/python
-"""
-    run ogl benchmarks
-
-    Usage:
-        runBenchmark.py [options]
-
-    Options:
-        -h --help           Show this screen
-        -v --version        Print version and exit
-        --clean             Remove existing cases [default: False].
-        --parameters=<json> pass the parameters for given parameter study
-        --folder=<folder>   Target folder  [default: Test].
-        --init=<ts>         Run the base case for ts timesteps [default: 100].
-"""
-
 import os
 import sys
 import logging
@@ -24,6 +8,7 @@ from subprocess import check_output
 from signac.job import Job
 from obr.signac_wrapper.operations import OpenFOAMProject
 from obr.core.queries import statepoint_query
+from obr.core.parse_yaml import eval_generator_expressions
 from copy import deepcopy
 
 
@@ -161,6 +146,38 @@ def to_dict(synced_dict) -> dict:
     return {k: v for k, v in synced_dict.items()}
 
 
+def expand_generator_block(operation):
+    """given an operation this function"""
+    # check if we have a generator
+    if generator := operation.get("generator"):
+        if not (templates := generator.get("template")):
+            raise AssertionError("No template section given.")
+        if not (values := generator.get("values")):
+            raise AssertionError("No value section given.")
+        if not (key := generator.get("key")):
+            raise AssertionError("No key given.")
+
+        template_generated = []
+        for val in values:
+            # templates are a list of records
+            # every record needs to be scanned and updated
+            for template in templates:
+                # template records need to be replaced
+                # i.e. { numberOfSubdomains : foo, key: value}
+                # by whatever key and value specify
+                gen_dict = {}
+                # next k, v are the key values from the template record
+                # not to confused with the key value pair from the generator block
+                for k, v in template.items():
+                    gen_dict[k] = v.replace(key, str(val))
+                    # additionally the original key and current
+                    # val are added so that we can use it in schemas
+                    gen_dict[key] = val
+                template_generated.append(gen_dict)
+        return template_generated
+    return operation["values"]
+
+
 def add_variations(
     operations: list,
     project: OpenFOAMProject,
@@ -179,13 +196,27 @@ def add_variations(
         if not is_on_requested_parent(operation, parent_job):
             continue
 
-        for value in operation["values"]:
+        values = expand_generator_block(operation)
+
+        for value in values:
             # support if statetment when values are a subdictionary
             if isinstance(value, dict) and not value.get("if", True):
                 continue
 
+            if isinstance(value, dict):
+                for k, v in value.items():
+                    if isinstance(v, str):
+                        value[k] = eval_generator_expressions(v)
+
             # derive path name from schema or key value
             parse_res = extract_from_operation(operation, value)
+
+            # filter any if statements from operation dict
+            parse_res["keys"] = [k for k in parse_res["keys"] if k != "if"]
+            parse_res["args"] = {
+                k: v for k, v in parse_res["args"].items() if k != "if"
+            }
+
             clean_path(parse_res["path"])
             base_dict = deepcopy(to_dict(parent_job.sp))
 

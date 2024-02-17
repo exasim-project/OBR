@@ -88,8 +88,10 @@ def test_submit(tmpdir):
             template=tmpdir / "does_not_exists.sh",
             account=account,
             partition=partition,
+            time="60",
             pretend=True,
             bundling_key=None,
+            max_queue_size=10,
             scheduler_args="",
         )
 
@@ -102,9 +104,12 @@ def test_submit(tmpdir):
                 template=tmpdir / "local.sh",
                 account=account,
                 partition=partition,
+                time="60",
                 pretend=True,
                 bundling_key=None,
+                max_queue_size=10,
                 scheduler_args="",
+                skip_eligible_check=True,
             )
 
     templates_dir = tmpdir / "templates"

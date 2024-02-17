@@ -5,8 +5,10 @@ import logging
 from pathlib import Path
 from signac.job import Job
 from typing import Union
+from tqdm import tqdm
 
-from .operations import OpenFOAMProject
+from .operations import OpenFOAMProject, basic_eligible
+from .labels import final
 
 
 def submit_impl(
@@ -16,9 +18,12 @@ def submit_impl(
     template: Union[str, None],
     account: Union[str, None],
     partition: Union[str, None],
+    time: Union[str, None],
     pretend: bool,
     bundling_key: Union[str, None],
+    max_queue_size: Union[str, None],
     scheduler_args: str,
+    skip_eligible_check=False,
 ):
     template_target_path = Path(project.path) / "templates/script.sh"
     template_src_path = Path(template)
@@ -41,6 +46,7 @@ def submit_impl(
         "partition": partition,
         "pretend": pretend,
         "account": account,
+        "walltime": time,
     }
 
     # TODO improve this using regex
@@ -55,7 +61,7 @@ def submit_impl(
             selected_jobs: list[Job] = [
                 j for j in project if bundle_value in list(j.sp().values())
             ]
-            logging.info(f"Submit bundle {bundle_value} of {len(selected_jobs)} jobs")
+            logging.info(f"Submit bundle {bundle_value} of {len(eligible_jobs)} jobs")
             ret_submit = (
                 project.submit(
                     jobs=selected_jobs,
@@ -68,10 +74,38 @@ def submit_impl(
             logging.info("Submission response" + str(ret_submit))
             time.sleep(15)
     else:
-        logging.info(f"Submitting {len(jobs)} individual jobs")
+        eligible_jobs = []
+        for operation in operations:
+            if operation == "runParallelSolver":
+                for job in tqdm(jobs):
+                    if final(job):
+                        eligible_jobs.append(job)
+            else:
+                logging.info(f"Collecting eligible jobs for operation: {operation}.")
+                for job in tqdm(jobs):
+                    if basic_eligible(job, operation):
+                        eligible_jobs.append(job)
+
+        logging.info(
+            f"Submitting operations {operations}. In total {len(eligible_jobs)} of"
+            f" {len(jobs)} individual jobs.\nEligible jobs"
+            f" {[j.id for j in eligible_jobs]}"
+        )
+
+        bundle_size = 1
+        if len(eligible_jobs) > max_queue_size:
+            logging.warning(
+                "Found more eligible jobs than maximum allowed queue size of"
+                f" {max_queue_size}. Bundling jobs together. This might fail if jobs"
+                " request different resources. For more fine grained control use"
+                " --bundling_key option."
+            )
+            bundle_size = int(len(eligible_jobs) / max_queue_size)
+
         ret_submit = project.submit(
-            jobs=jobs,
+            jobs=eligible_jobs if not skip_eligible_check else jobs,
             names=operations,
+            bundle_size=bundle_size,
             **cluster_args,
         )
         logging.info(ret_submit)

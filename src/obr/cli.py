@@ -19,25 +19,24 @@ import click
 import yaml  # type: ignore[import]
 import os
 import sys
-import json
 import logging
 
 from signac.job import Job
 from pathlib import Path
 from subprocess import check_output
+
 from git.repo import Repo
 from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
 from typing import Union, Optional, Any
-from copy import deepcopy
 
-from .signac_wrapper.operations import OpenFOAMProject
+from .signac_wrapper.operations import OpenFOAMProject, needs_initialization
 from .signac_wrapper.submit import submit_impl
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .core.queries import build_filter_query, Query
-from .core.core import map_view_folder_to_job_id
+from .cli_impl import query_impl
+from .core.core import map_view_folder_to_job_id, profile_call
 
 
 def check_cli_operations(
@@ -168,7 +167,16 @@ def cli(ctx: click.Context, **kwargs):
     ),
 )
 @click.option("--bundling_key", default=None, help="")
+@click.option(
+    "--max_queue_size",
+    default=None,
+    help=(
+        "Maximum Number of submissions for the scheduler. If more jobs are eligible"
+        " jobs are bundled together."
+    ),
+)
 @click.option("-p", "--partition", default="cpuonly")
+@click.option("-t", "--time", default="60")
 @click.option("--account", default="")
 @click.option("--pretend", is_flag=True)
 @click.option(
@@ -191,8 +199,10 @@ def submit(ctx: click.Context, **kwargs):
         template=Path(kwargs.get("template")),
         account=kwargs.get("account"),
         partition=kwargs.get("partition"),
+        time=kwargs.get("time"),
         pretend=kwargs["pretend"],
         bundling_key=kwargs["bundling_key"],
+        max_queue_size=kwargs.get("max_queue_size", 100),
         scheduler_args=kwargs.get("scheduler_args"),
     )
 
@@ -270,18 +280,23 @@ def run(ctx: click.Context, **kwargs):
         return
 
     if not kwargs.get("aggregate"):
-        project.run(
-            jobs=jobs,  # project.groupby("doc.is_base"),
+
+        GLOBAL_UNINIT_COUNT = 0
+        for job in jobs:
+            if job.sp().get("operation") in operations and needs_initialization(job):
+                GLOBAL_UNINIT_COUNT += 1
+        os.environ["GLOBAL_UNINIT_COUNT"] = str(GLOBAL_UNINIT_COUNT)
+
+        profile_call(
+            project.run,
             names=operations,
+            jobs=jobs,
             progress=True,
             np=kwargs.get("tasks", -1),
         )
     else:
         # calling for aggregates does not work with jobs
-        project.run(
-            names=operations,
-            np=kwargs.get("tasks", -1),
-        )
+        profile_call(project.run, names=operations, np=kwargs.get("tasks", -1))
     logging.info("completed all operations")
 
 
@@ -292,9 +307,16 @@ def run(ctx: click.Context, **kwargs):
     default=".",
     help="Where to create the worspace and view. Default: '.' ",
 )
-@click.option("-e", "--execute", default=False)
+@click.option(
+    "-g", "--generate", is_flag=True, help="Call generate directly after init."
+)
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
-@click.option("-t", "--tasks", default=-1, help="Number of tasks to run concurrently.")
+@click.option(
+    "-t",
+    "--tasks",
+    default=-1,
+    help="Number of tasks to run concurrently for generate call.",
+)
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.option("--verbose", default=0, help="set verbosity")
 @click.pass_context
@@ -310,6 +332,14 @@ def init(ctx: click.Context, **kwargs):
     create_tree(project, config, kwargs)
 
     logging.info("successfully initialised")
+
+    if kwargs.get("generate"):
+        logging.info("Generating workspace")
+        project.run(
+            names=["generate"],
+            progress=True,
+            np=kwargs.get("tasks", -1),
+        )
 
 
 @cli.command()
@@ -399,56 +429,16 @@ def status(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def query(ctx: click.Context, **kwargs):
-    # TODO refactor
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-
-    project = OpenFOAMProject.get_project()
-    filters: list[str] = list(kwargs.get("filter", ()))
-    if not is_valid_workspace(filters):
-        return
+    project, jobs = cli_cmd_setup(kwargs)
 
     input_queries: tuple[str] = kwargs.get("query", ())
     quiet: bool = kwargs.get("quiet", False)
-
-    if input_queries == "":
-        logging.warning("--query argument cannot be empty!")
-        return
-    queries: list[Query] = build_filter_query(input_queries)
-    jobs = project.filter_jobs(filters=list(filters))
-    query_results = project.query(jobs=jobs, query=queries)
-    if not quiet:
-        for job_id, query_res in deepcopy(query_results).items():
-            out_str = f"{job_id}:"
-            for k, v in query_res.items():
-                out_str += f" {k}: {v}"
-            logging.info(out_str)
-
     json_file: str = kwargs.get("export_to", "")
-    if json_file:
-        with open(json_file, "w") as outfile:
-            # json_data refers to the above JSON
-            json.dump(query_results, outfile)
     validation_file: str = kwargs.get("validate_against", "")
-    if validation_file:
-        with open(validation_file, "r") as infile:
-            # json_data refers to the above JSON
-            validation_dict = json.load(infile)
-            if validation_dict.get("$schema"):
-                logging.info("using json schema for validation")
-                from jsonschema import validate
-
-                validate(query_results, validation_dict)
-            else:
-                from deepdiff import DeepDiff
-
-                logging.info("using deepdiff for validation")
-                difference_dict = DeepDiff(validation_dict, query_results)
-
-                if difference_dict:
-                    print(difference_dict)
-                    logging.warn("validation failed")
-                    sys.exit(1)
+    filters: list[str] = kwargs.get("filter", [])
+    profile_call(
+        query_impl, project, input_queries, filters, quiet, json_file, validation_file
+    )
 
 
 @cli.command()
