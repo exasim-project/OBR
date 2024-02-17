@@ -166,7 +166,7 @@ def cli(ctx: click.Context, **kwargs):
     ),
 )
 @click.option("--bundling_key", default=None, help="")
-@click.option("--bundle_size", default=None, help="")
+@click.option("--max_queue_size", default=None, help="Maximum Number of submissions for the scheduler. If more jobs are eligible jobs are bundled together.")
 @click.option("-p", "--partition", default="cpuonly")
 @click.option("-t", "--time", default="60")
 @click.option("--account", default="")
@@ -193,8 +193,8 @@ def submit(ctx: click.Context, **kwargs):
         partition=kwargs.get("partition"),
         time=kwargs.get("time"),
         pretend=kwargs["pretend"],
-        bundle_size=kwargs.get("bundle_size", 1),
         bundling_key=kwargs["bundling_key"],
+        max_queue_size=kwargs.get("max_queue_size", 100),
         scheduler_args=kwargs.get("scheduler_args"),
     )
 

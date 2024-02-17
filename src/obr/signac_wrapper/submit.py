@@ -20,8 +20,8 @@ def submit_impl(
     partition: Union[str, None],
     time: Union[str, None],
     pretend: bool,
-    bundle_size: Union[str, None],
     bundling_key: Union[str, None],
+    max_queue_size: Union[str, None],
     scheduler_args: str,
     skip_eligible_check=False,
 ):
@@ -91,18 +91,16 @@ def submit_impl(
             f" {len(jobs)} individual jobs.\nEligible jobs"
             f" {[j.id for j in eligible_jobs]}"
         )
-        max_queue_size = 10
+
         bundle_size = 1
         if len(eligible_jobs) > max_queue_size:
-            print("more jobs than queue size")
+            logging.warning(f"Found more eligible jobs than maximum allowed queue size of {max_queue_size}. Bundling jobs together. This might fail if jobs request different resources. For more fine grained control use --bundling_key option.")
             bundle_size = int(len(eligible_jobs)/max_queue_size)
 
-        print(f" eligible job {len(eligible_jobs)}")
-        print(f" bundle_size {bundle_size}")
         ret_submit = project.submit(
             jobs=eligible_jobs if not skip_eligible_check else jobs,
-            bundle_size=bundle_size,
             names=operations,
+            bundle_size=bundle_size,
             **cluster_args,
         )
         logging.info(ret_submit)
