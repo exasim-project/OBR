@@ -229,14 +229,25 @@ class OpenFOAMCase(BlockMesh):
             return self.latest_log.footer.completed
         return False
 
-    def fetch_latest_log(self) -> None:
-        solver = self.controlDict.get("application")
+    @property
+    def solver(self):
+        return self.controlDict.get("application")
 
+    def fetch_logs(self) -> list[Path]:
+        solver = self.solver
         root, _, files = next(os.walk(self.path))
-        log_files = [f for f in files if f.endswith(".log") and f.startswith(solver)]
+        log_files = [
+            Path(root) / f for f in files if f.endswith(".log") and f.startswith(solver)
+        ]
         log_files.sort()
+        return log_files
+
+    def fetch_latest_log(self) -> None:
+        log_files = self.fetch_logs()
         if log_files:
-            self.latest_log_path_ = Path(root) / log_files[-1]
+            self.latest_log_path_ = log_files[-1]
+        else:
+            self.latest_log_path_ = None
 
     @property
     def config_file_tree(self) -> list[str]:
@@ -274,6 +285,12 @@ class OpenFOAMCase(BlockMesh):
         if not wm_project_dir:
             raise AssertionError("OpenFOAM not sourced. Cannot check OpenFOAM version")
         return (Path(wm_project_dir) / "CONTRIBUTORS.md").exists()
+
+    def reset_case(self):
+        """Removes all artifacts after case generation"""
+        self.remove_solver_logs()
+
+        self.job.doc["state"]["global"] = "ready"
 
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one
@@ -428,6 +445,11 @@ class OpenFOAMCase(BlockMesh):
     def detailed_update(self):
         """Perform a detailed update on the job doc state"""
         self.process_latest_time_stats()
+
+    def remove_solver_logs(self):
+        """Search for solver logs and deletes them"""
+        for log in self.fetch_logs():
+            log = self._exec_operation(["rm", str(log)])
 
     def perform_post_md5sum_calculations(self):
         """

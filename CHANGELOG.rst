@@ -23,6 +23,7 @@ Changelog
 - Add 'validateState' operation, see https://github.com/hpsim/OBR/pull/189 
 - Improve 'run*Solver' launch speed, see https://github.com/hpsim/OBR/pull/189 
 - Add '--generate' flag to 'obr init', see https://github.com/hpsim/OBR/pull/191
+- Add 'obr reset' mode, see https://github.com/hpsim/OBR/pull/192
 
 
 0.2.0 (2023-09-14)
