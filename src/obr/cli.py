@@ -520,7 +520,7 @@ def reset(ctx: click.Context, **kwargs):
     """deletes workspace or cases"""
 
     def safe_delete(fn):
-        """This functions deletes the given path. If the path does not exists it does nothing"""
+        """This functions deletes the given path. If the path does not exist, it does nothing"""
         path = Path(fn)
         if path.exists():
             if path.is_dir():
