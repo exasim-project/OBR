@@ -20,6 +20,7 @@ import yaml  # type: ignore[import]
 import os
 import sys
 import logging
+import shutil
 
 from signac.job import Job
 from pathlib import Path
