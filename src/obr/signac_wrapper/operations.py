@@ -658,10 +658,10 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     case = OpenFOAMCase(str(job.path) + "/case", job)
 
     # if the case folder contains any modified files skip execution
-    if case.is_tree_modified():
-        logging.info(f"Skipping Job {job.id} since it is has modified files.")
-        job.doc["state"]["global"] = "dirty"
-        return "true"
+    # if case.is_tree_modified():
+    #     logging.info(f"Skipping Job {job.id} since it is has modified files.")
+    #     job.doc["state"]["global"] = "dirty"
+    #     return "true"
 
     solver = case.controlDict.get("application")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
