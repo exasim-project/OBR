@@ -746,7 +746,7 @@ def runParallelSolver(job: Job, args={}) -> str:
         env_run_template
         if env_run_template
         else (
-            "mpirun -np {np} {solver} -case {path}/case >"
+            "mpirun -np {np} {solver} -parallel -case {path}/case >"
             " {path}/case/{solver}_{timestamp}.log 2>&1"
         )
     )
