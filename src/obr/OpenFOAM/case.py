@@ -284,7 +284,7 @@ class OpenFOAMCase(BlockMesh):
         wm_project_dir = os.environ.get("WM_PROJECT_DIR")
         if not wm_project_dir:
             raise AssertionError("OpenFOAM not sourced. Cannot check OpenFOAM version")
-        return (Path(wm_project_dir) / "CONTRIBUTORS.md").exists()
+        return (Path(wm_project_dir) / "META-INFO").exists()
 
     def reset_case(self):
         """Removes all artifacts after case generation"""
