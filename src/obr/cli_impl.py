@@ -37,17 +37,18 @@ def query_impl(
             # json_data refers to the above JSON
             validation_dict = json.load(infile)
             if validation_dict.get("$schema"):
-                logging.info("using json schema for validation")
+                logging.info("Using json schema for validation")
                 from jsonschema import validate
 
                 validate(query_results, validation_dict)
             else:
                 from deepdiff import DeepDiff
 
-                logging.info("using deepdiff for validation")
+                logging.info("Using deepdiff for validation")
                 difference_dict = DeepDiff(validation_dict, query_results)
 
                 if difference_dict:
                     print(difference_dict)
-                    logging.warn("validation failed")
+                    logging.warn("Validation failed!")
                     sys.exit(1)
+                logging.info("Validation successful")
