@@ -21,6 +21,7 @@ import os
 import sys
 import logging
 import shutil
+import functools
 
 from signac.job import Job
 from pathlib import Path
@@ -39,6 +40,15 @@ from .core.parse_yaml import read_yaml
 from .cli_impl import query_impl
 from .core.core import map_view_folder_to_job_id, profile_call
 
+
+def common_params(func):
+    @click.option('--debug')
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if kwargs.get("debug"):
+            print("in debug mode")
+        return func(*args, **kwargs)
+    return wrapper
 
 def check_cli_operations(
     project: OpenFOAMProject, operations: list[str], list_operations: Optional[Any]
@@ -209,6 +219,7 @@ def submit(ctx: click.Context, **kwargs):
 
 
 @cli.command()
+@common_params
 @click.option("-f", "--folder", default=".")
 @click.option(
     "-o",
