@@ -42,11 +42,25 @@ from .core.core import map_view_folder_to_job_id, profile_call
 
 
 def common_params(func):
-    @click.option('--debug')
+    @click.option('--debug', is_flag=True, help="Increase verbosity of the output to debug mode")
+    @click.option("-f", "--folder", default=".", help="Path to OBR workspace folder")
+    @click.option(
+        "--filter",
+        type=str,
+        multiple=True,
+        help=(
+            "Pass a <key><predicate><value> value pair per occurrence of --filter."
+            " Predicates include ==, !=, <=, <, >=, >. For instance, obr query --filter"
+            "solver==pisoFoam"
+        ),
+    )
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if kwargs.get("debug"):
-            print("in debug mode")
+            logging.info("Setting output level to debug")
+            logging.basicConfig(
+                level=0
+            )
         return func(*args, **kwargs)
     return wrapper
 
@@ -313,12 +327,7 @@ def run(ctx: click.Context, **kwargs):
 
 
 @cli.command()
-@click.option(
-    "-f",
-    "--folder",
-    default=".",
-    help="Where to create the worspace and view. Default: '.' ",
-)
+@common_params
 @click.option(
     "-g", "--generate", is_flag=True, help="Call generate directly after init."
 )
@@ -330,15 +339,11 @@ def run(ctx: click.Context, **kwargs):
     help="Number of tasks to run concurrently for generate call.",
 )
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
-@click.option("--verbose", default=0, help="set verbosity")
 @click.pass_context
 def init(ctx: click.Context, **kwargs):
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
-
-    if kwargs.get("verbose", 0) >= 1:
-        logging.info(config)
 
     project = OpenFOAMProject.init_project(path=kwargs["folder"])
     create_tree(project, config, kwargs)
@@ -355,7 +360,7 @@ def init(ctx: click.Context, **kwargs):
 
 
 @cli.command()
-@click.option("-f", "--folder", default=".")
+@common_params
 @click.option("-d", "--detailed", is_flag=True)
 @click.option(
     "--filter",
@@ -400,17 +405,7 @@ def status(ctx: click.Context, **kwargs):
 
 
 @cli.command()
-@click.option("-f", "--folder", default=".")
-@click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    help=(
-        "Pass a <key><predicate><value> value pair per occurrence of --filter."
-        " Predicates include ==, !=, <=, <, >=, >. For instance, obr query --filter"
-        "solver==pisoFoam"
-    ),
-)
+@common_params
 @click.option("-d", "--detailed", is_flag=True)
 @click.option("-a", "--all", is_flag=True)
 @click.option(
@@ -467,22 +462,6 @@ def query(ctx: click.Context, **kwargs):
     multiple=False,
     help="",
 )
-@click.option(
-    "--folder",
-    default=".",
-    help="Path to the workspace folder. Default: '.' ",
-    type=str,
-)
-@click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    help=(
-        "Pass a <key><predicate><value> value pair per occurrence of --filter."
-        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
-        ' runParallelSolver --filter "solver==pisoFoam"'
-    ),
-)
 @click.pass_context
 def apply(ctx: click.Context, **kwargs):
     if kwargs.get("folder"):
@@ -507,16 +486,7 @@ def apply(ctx: click.Context, **kwargs):
 
 
 @cli.command()
-@click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    help=(
-        "Pass a <key><predicate><value> value pair per occurrence of --filter."
-        " Predicates include ==, !=, <=, <, >=, >. For instance, obr run -o"
-        ' runParallelSolver --filter "solver==pisoFoam"'
-    ),
-)
+@common_params
 @click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
 @click.option(
     "-c",
@@ -576,23 +546,7 @@ def reset(ctx: click.Context, **kwargs):
 
 
 @cli.command()
-@click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    help=(
-        "Pass a <key>=<value> value pair per occurrence of --filter. For instance, obr"
-        " archive --filter solver=pisoFoam --filter preconditioner=IC"
-    ),
-)
-@click.option(
-    "-f",
-    "--folder",
-    required=True,
-    default=".",
-    type=str,
-    help="Path to OpenFOAMProject.",
-)
+@common_params
 @click.option(
     "-r",
     "--repo",
@@ -837,12 +791,40 @@ def archive(ctx: click.Context, **kwargs):
             except Exception as e:
                 logging.error(e)
 
+class CustomFormatter(logging.Formatter):
+
+    # log formating stuff
+    grey = "\x1b[38;20m"
+    yellow = "\x1b[33;20m"
+    red = "\x1b[31;20m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    format="(levelname)7s: %(message)s".ljust(50,".") + "[%(filename)s:%(lineno)d]"
+
+    FORMATS = {
+        logging.DEBUG: grey + format + reset,
+        logging.INFO: grey + format + reset,
+        logging.WARNING: yellow + format + reset,
+        logging.ERROR: red + format + reset,
+        logging.CRITICAL: bold_red + format + reset
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
 
 def main():
     logging.basicConfig(
-        format="[%(filename)s:%(lineno)d]\t%(levelname)7s: %(message)s",
         level=logging.INFO,
     )
+    logger = logging.getLogger()
+    ch = logging.StreamHandler()
+    ch.setFormatter(CustomFormatter())
+
+    logger.addHandler(ch)
+
+
     cli(obj={})
 
 
