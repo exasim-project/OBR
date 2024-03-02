@@ -51,4 +51,4 @@ def query_impl(
                     print(difference_dict)
                     logging.warn("Validation failed!")
                     sys.exit(1)
-                logging.info("Validation successful")
+            logging.info("Validation successful")
