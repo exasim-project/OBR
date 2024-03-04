@@ -52,4 +52,4 @@ def query_impl(
                     print(difference_dict)
                     logger.warn("Validation failed!")
                     sys.exit(1)
-            logger.info("Validation successful")
+            logger.success("Validation successful")

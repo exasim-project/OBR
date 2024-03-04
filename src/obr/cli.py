@@ -39,9 +39,7 @@ from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .cli_impl import query_impl
 from .core.core import map_view_folder_to_job_id, profile_call
-from .core.logger_setup import setup_logging
-
-logger = logging.getLogger("OBR")
+from .core.logger_setup import logger, setup_logging
 
 def common_params(func):
     @click.option(
@@ -328,7 +326,7 @@ def run(ctx: click.Context, **kwargs):
     else:
         # calling for aggregates does not work with jobs
         profile_call(project.run, names=operations, np=kwargs.get("tasks", -1))
-    logger.info("completed all operations")
+    logger.success("Completed all operations")
 
 
 @cli.command()
@@ -353,7 +351,7 @@ def init(ctx: click.Context, **kwargs):
     project = OpenFOAMProject.init_project(path=kwargs["folder"])
     create_tree(project, config, kwargs)
 
-    logger.info("successfully initialised")
+    logger.success("Successfully initialised")
 
     if kwargs.get("generate"):
         logger.info("Generating workspace")
@@ -488,6 +486,7 @@ def apply(ctx: click.Context, **kwargs):
         progress=True,
         np=1,
     )
+    logger.success("Successfully applied")
 
 
 @cli.command()
@@ -548,6 +547,7 @@ def reset(ctx: click.Context, **kwargs):
 
     if kwargs.get("view"):
         logger.error("Resetting by view path is not yet supported")
+    logger.success("Successfully reseted")
 
 
 @cli.command()

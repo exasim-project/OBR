@@ -1,28 +1,14 @@
 import logging
 
-# class CustomFormatter(logging.Formatter):
-#
-#     # log formating stuff
-#     grey = "\x1b[38;20m"
-#     yellow = "\x1b[33;20m"
-#     red = "\x1b[31;20m"
-#     bold_red = "\x1b[31;1m"
-#     reset = "\x1b[0m"
-#     format="%(message)-150s [OBR %(levelname)s, %(filename)s:%(lineno)d]"
-#
-#     FORMATS = {
-#         logging.DEBUG: grey + format + reset,
-#         logging.INFO: grey + format + reset,
-#         logging.WARNING: yellow + format + reset,
-#         logging.ERROR: red + format + reset,
-#         logging.CRITICAL: bold_red + format + reset
-#     }
-#
-#     def format(self, record):
-#         log_fmt = self.FORMATS.get(record.levelno)
-#         formatter = logging.Formatter(log_fmt)
-#         return formatter.format(record)
+logger = logging.getLogger("OBR")
 
+
+SUCCESS_LEVELV_NUM = 25
+logging.addLevelName(SUCCESS_LEVELV_NUM, "SUCCESS")
+def success(self, message, *args, **kws):
+    # Yes, logger takes its '*args' as 'args'.
+    self._log(SUCCESS_LEVELV_NUM, message, args, **kws)
+logging.Logger.success = success
 
 def setup_logging():
     grey = "\x1b[38;20m"

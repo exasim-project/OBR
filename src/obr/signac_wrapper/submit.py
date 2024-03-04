@@ -1,6 +1,5 @@
 import shutil
 import os
-import logging
 
 from pathlib import Path
 from signac.job import Job
@@ -9,6 +8,7 @@ from tqdm import tqdm
 
 from .operations import OpenFOAMProject, basic_eligible
 from .labels import final
+from ..core.logger_setup import logger
 
 
 def submit_impl(
@@ -61,7 +61,7 @@ def submit_impl(
             selected_jobs: list[Job] = [
                 j for j in project if bundle_value in list(j.sp().values())
             ]
-            logging.info(f"Submit bundle {bundle_value} of {len(eligible_jobs)} jobs")
+            logger.info(f"Submit bundle {bundle_value} of {len(eligible_jobs)} jobs")
             ret_submit = (
                 project.submit(
                     jobs=selected_jobs,
@@ -71,7 +71,7 @@ def submit_impl(
                 )
                 or ""
             )
-            logging.info("Submission response" + str(ret_submit))
+            logger.info("Submission response" + str(ret_submit))
             time.sleep(15)
     else:
         eligible_jobs = []
@@ -81,12 +81,12 @@ def submit_impl(
                     if final(job):
                         eligible_jobs.append(job)
             else:
-                logging.info(f"Collecting eligible jobs for operation: {operation}.")
+                logger.info(f"Collecting eligible jobs for operation: {operation}.")
                 for job in tqdm(jobs):
                     if basic_eligible(job, operation):
                         eligible_jobs.append(job)
 
-        logging.info(
+        logger.info(
             f"Submitting operations {operations}. In total {len(eligible_jobs)} of"
             f" {len(jobs)} individual jobs.\nEligible jobs"
             f" {[j.id for j in eligible_jobs]}"
@@ -94,7 +94,7 @@ def submit_impl(
 
         bundle_size = 1
         if len(eligible_jobs) > max_queue_size:
-            logging.warning(
+            logger.warning(
                 "Found more eligible jobs than maximum allowed queue size of"
                 f" {max_queue_size}. Bundling jobs together. This might fail if jobs"
                 " request different resources. For more fine grained control use"
@@ -108,4 +108,5 @@ def submit_impl(
             bundle_size=bundle_size,
             **cluster_args,
         )
-        logging.info(ret_submit)
+        logger.info(ret_submit)
+    logger.success("Successfully submited")
