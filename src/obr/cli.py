@@ -39,10 +39,14 @@ from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
 from .cli_impl import query_impl
 from .core.core import map_view_folder_to_job_id, profile_call
+from .core.logger_setup import setup_logging
 
+logger = logging.getLogger("OBR")
 
 def common_params(func):
-    @click.option('--debug', is_flag=True, help="Increase verbosity of the output to debug mode")
+    @click.option(
+        "--debug", is_flag=True, help="Increase verbosity of the output to debug mode"
+    )
     @click.option("-f", "--folder", default=".", help="Path to OBR workspace folder")
     @click.option(
         "--filter",
@@ -57,12 +61,13 @@ def common_params(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if kwargs.get("debug"):
-            logging.info("Setting output level to debug")
-            logging.basicConfig(
-                level=0
-            )
+            logger = logging.getLogger("OBR")
+            logger.setLevel(logging.DEBUG)
+            logger.info("Setting output level to debug")
         return func(*args, **kwargs)
+
     return wrapper
+
 
 def check_cli_operations(
     project: OpenFOAMProject, operations: list[str], list_operations: Optional[Any]
@@ -74,12 +79,12 @@ def check_cli_operations(
         project.print_operations()
         return False
     elif not operations:
-        logging.info("No operation(s) specified.")
+        logging.warning("No operation(s) specified.")
         project.print_operations()
-        logging.info("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
+        logging.warning("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
         return False
     elif any((false_op := op) not in project.operations for op in operations):
-        logging.info(f"Specified operation {false_op} is not a valid operation.")
+        logging.warning(f"Specified operation {false_op} is not a valid operation.")
         project.print_operations()
         return False
     return True
@@ -132,7 +137,7 @@ def copy_to_archive(
     target_path = target_file.parents[0]
     if not target_path.exists():
         target_path.mkdir(parents=True)
-    logging.info(f"cp \\\n\t{src_file}\n\t{target_file.resolve()}")
+    logging.debug(f"cp \\\n\t{src_file}\n\t{target_file.resolve()}")
     if src_file.is_symlink():
         src_file = Path(os.path.realpath(src_file))
     check_output(["cp", src_file, target_file])
@@ -791,40 +796,9 @@ def archive(ctx: click.Context, **kwargs):
             except Exception as e:
                 logging.error(e)
 
-class CustomFormatter(logging.Formatter):
-
-    # log formating stuff
-    grey = "\x1b[38;20m"
-    yellow = "\x1b[33;20m"
-    red = "\x1b[31;20m"
-    bold_red = "\x1b[31;1m"
-    reset = "\x1b[0m"
-    format="(levelname)7s: %(message)s".ljust(50,".") + "[%(filename)s:%(lineno)d]"
-
-    FORMATS = {
-        logging.DEBUG: grey + format + reset,
-        logging.INFO: grey + format + reset,
-        logging.WARNING: yellow + format + reset,
-        logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
-    }
-
-    def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
-        return formatter.format(record)
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-    )
-    logger = logging.getLogger()
-    ch = logging.StreamHandler()
-    ch.setFormatter(CustomFormatter())
-
-    logger.addHandler(ch)
-
-
+    setup_logging()
     cli(obj={})
 
 

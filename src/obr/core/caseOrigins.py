@@ -1,11 +1,14 @@
+import logging
+import shutil
+
 from os import environ
 from os.path import expandvars, isdir
-from distutils.dir_util import copy_tree
 from pathlib import Path
 from typing import Union
 from subprocess import check_output
-import logging
 from git.repo import Repo
+
+logger = logging.getLogger("OBR")
 
 
 class MultiCase:
@@ -18,7 +21,7 @@ class MultiCase:
 
     def init(self, path):
         if not isdir(self.path):
-            logging.warning(
+            logger.warning(
                 f"{self.path.absolute} or some parent directory does not exist!"
             )
             return
@@ -35,13 +38,17 @@ class CaseOnDisk:
             origin = expandvars(origin)
         self.path = Path(origin).expanduser()
 
-    def init(self, path):
+    def init(self, path:str):
         if not isdir(self.path):
-            logging.warning(
+            logger.warning(
                 f"{self.path.absolute} or some parent directory does not exist!"
             )
             return
-        copy_tree(str(self.path), str(Path(path) / "case"))
+
+
+        dst = Path(path)/"case"
+        logger.debug(f"copying {self.path} to {dst}")
+        shutil.copytree(src=f"{str(self.path)}", dst=f"{str(dst)}")
 
 
 class OpenFOAMTutorialCase(CaseOnDisk):
