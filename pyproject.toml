@@ -23,7 +23,7 @@ dependencies = [
     "pandas",
     "DeepDiff",
     "jsonschema==4.19.1",
-    "colorlogs",
+    "coloredlogs",
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0",
 ]
 
