@@ -110,6 +110,9 @@ def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
     """This function performs the common pattern of checking project folders for existence and creating the project and extracting the jobs."""
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
+        # ensure .obr exists
+        Path(".obr").mkdir(parents=True, exist_ok=True)
+    setup_logging()
     project = OpenFOAMProject.get_project()
     filters: list[str] = kwargs.get("filter", [])
     if len(filters) > 0 and kwargs.get("job"):
@@ -344,11 +347,20 @@ def run(ctx: click.Context, **kwargs):
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.pass_context
 def init(ctx: click.Context, **kwargs):
+
+    # needs folder/.obr to exists before logger can be initialised
+    ws_fold = kwargs.get("folder")
+    if ws_fold:
+        (Path(ws_fold) /".obr").mkdir(parents=True, exist_ok=True)
+    else:
+        Path(".obr").mkdir(parents=True, exist_ok=True)
+    setup_logging(log_fold=ws_fold)
+
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
 
-    project = OpenFOAMProject.init_project(path=kwargs["folder"])
+    project = OpenFOAMProject.init_project(path=ws_fold)
     create_tree(project, config, kwargs)
 
     logger.success("Successfully initialised")
@@ -496,7 +508,12 @@ def apply(ctx: click.Context, **kwargs):
     "-c",
     "--case",
     is_flag=True,
-    help="reset the state of a case by deleting solver logs",
+    help="Reset the state of a case by deleting solver logs",
+)
+@click.option(
+    "-y",
+    is_flag=True,
+    help="Confirm resetting",
 )
 @click.option(
     "-v", "--view", default="", help="remove case completely specified by a view folder"
@@ -516,11 +533,14 @@ def reset(ctx: click.Context, **kwargs):
 
     project, jobs = cli_cmd_setup(kwargs)
 
+    confirmed = kwargs.get("y",False)
     if kwargs.get("workspace"):
         logger.warn(
             f"Removing current obr workspace. This will remove all simulation results"
         )
-        if click.confirm("Do you want to continue?", default=True):
+        if not confirmed:
+            confirmed = click.confirm("Do you want to continue?", default=True)
+        if confirmed:
             safe_delete("workspace")
             safe_delete("view")
             safe_delete("signac.rc")
@@ -537,7 +557,10 @@ def reset(ctx: click.Context, **kwargs):
             f"obr reset --case, is not fully implemented and will only remove log"
             f" solver logs."
         )
-        if click.confirm("Do you want to continue?", default=True):
+
+        if not confirmed:
+            confirmed = click.confirm("Do you want to continue?", default=True)
+        if confirmed:
             project.run(
                 jobs=jobs,
                 names=["resetCase"],
@@ -621,6 +644,7 @@ def archive(ctx: click.Context, **kwargs):
     if current_path := kwargs.get("folder", "."):
         os.chdir(current_path)
         current_path = Path(current_path).absolute()
+    setup_logging()
 
     # setup project and jobs
     project = OpenFOAMProject().init_project()
@@ -798,7 +822,6 @@ def archive(ctx: click.Context, **kwargs):
 
 
 def main():
-    setup_logging()
     cli(obj={})
 
 

@@ -10,12 +10,14 @@ def success(self, message, *args, **kws):
     self._log(SUCCESS_LEVELV_NUM, message, args, **kws)
 logging.Logger.success = success
 
-def setup_logging():
+def setup_logging(log_fold=""):
     grey = "\x1b[38;20m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
+
+    log_fold = log_fold + "/" if log_fold else log_fold
 
     config_dict = {
         "version": 1,
@@ -43,7 +45,7 @@ def setup_logging():
                 "class": "logging.handlers.RotatingFileHandler",
                 "level": "DEBUG",
                 "formatter": "detailed",
-                "filename": ".obr/obr.log",
+                "filename": f"{log_fold}.obr/obr.log",
                 "maxBytes": 10000,
                 "backupCount": 3,
             },
