@@ -41,6 +41,7 @@ from .cli_impl import query_impl
 from .core.core import map_view_folder_to_job_id, profile_call
 from .core.logger_setup import logger, setup_logging
 
+
 def common_params(func):
     @click.option(
         "--debug", is_flag=True, help="Increase verbosity of the output to debug mode"
@@ -351,7 +352,7 @@ def init(ctx: click.Context, **kwargs):
     # needs folder/.obr to exists before logger can be initialised
     ws_fold = kwargs.get("folder")
     if ws_fold:
-        (Path(ws_fold) /".obr").mkdir(parents=True, exist_ok=True)
+        (Path(ws_fold) / ".obr").mkdir(parents=True, exist_ok=True)
     else:
         Path(".obr").mkdir(parents=True, exist_ok=True)
     setup_logging(log_fold=ws_fold)
@@ -533,7 +534,7 @@ def reset(ctx: click.Context, **kwargs):
 
     project, jobs = cli_cmd_setup(kwargs)
 
-    confirmed = kwargs.get("y",False)
+    confirmed = kwargs.get("y", False)
     if kwargs.get("workspace"):
         logger.warn(
             f"Removing current obr workspace. This will remove all simulation results"

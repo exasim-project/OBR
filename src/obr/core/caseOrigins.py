@@ -38,15 +38,14 @@ class CaseOnDisk:
             origin = expandvars(origin)
         self.path = Path(origin).expanduser()
 
-    def init(self, path:str):
+    def init(self, path: str):
         if not isdir(self.path):
             logger.warning(
                 f"{self.path.absolute} or some parent directory does not exist!"
             )
             return
 
-
-        dst = Path(path)/"case"
+        dst = Path(path) / "case"
         logger.debug(f"copying {self.path} to {dst}")
         shutil.copytree(src=f"{str(self.path)}", dst=f"{str(dst)}")
 

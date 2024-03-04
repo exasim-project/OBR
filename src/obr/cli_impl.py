@@ -8,6 +8,7 @@ from .core.queries import build_filter_query
 
 logger = logging.getLogger("OBR")
 
+
 def query_impl(
     project: OpenFOAMProject,
     input_queries: tuple[str],

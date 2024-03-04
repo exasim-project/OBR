@@ -22,12 +22,12 @@ from obr.core.caseOrigins import instantiate_origin_class
 
 logger = logging.getLogger("OBR")
 
+
 class OpenFOAMProject(flow.FlowProject):
     filtered_jobs: list[Job] = []
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
 
     def print_operations(self):
         ops = sorted(self.groups.keys())

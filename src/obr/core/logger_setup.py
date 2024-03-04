@@ -5,10 +5,15 @@ logger = logging.getLogger("OBR")
 
 SUCCESS_LEVELV_NUM = 25
 logging.addLevelName(SUCCESS_LEVELV_NUM, "SUCCESS")
+
+
 def success(self, message, *args, **kws):
     # Yes, logger takes its '*args' as 'args'.
     self._log(SUCCESS_LEVELV_NUM, message, args, **kws)
+
+
 logging.Logger.success = success
+
 
 def setup_logging(log_fold=""):
     grey = "\x1b[38;20m"

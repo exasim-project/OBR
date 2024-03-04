@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("OBR")
 
+
 @dataclass
 class query_result:
     id: str = field()
