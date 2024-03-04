@@ -79,12 +79,12 @@ def check_cli_operations(
         project.print_operations()
         return False
     elif not operations:
-        logging.warning("No operation(s) specified.")
+        logger.warning("No operation(s) specified.")
         project.print_operations()
-        logging.warning("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
+        logger.warning("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
         return False
     elif any((false_op := op) not in project.operations for op in operations):
-        logging.warning(f"Specified operation {false_op} is not a valid operation.")
+        logger.warning(f"Specified operation {false_op} is not a valid operation.")
         project.print_operations()
         return False
     return True
@@ -99,9 +99,9 @@ def is_valid_workspace(filters: list = []) -> bool:
     jobs: list[Job] = project.filter_jobs(filters=filters)
     if len(jobs) == 0:
         if filters == []:
-            logging.warning("No jobs found in workspace folder!")
+            logger.warning("No jobs found in workspace folder!")
             return False
-        logging.warning(
+        logger.warning(
             f"Found no jobs that satisfy the given filter(s) {' and '.join(filters)}!"
         )
         return False
@@ -124,7 +124,7 @@ def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
 
     # check if given path points to valid project
     if not is_valid_workspace(filters):
-        logging.warning("Workspace is not valid! Exiting.")
+        logger.warning("Workspace is not valid! Exiting.")
         sys.exit(1)
     return project, jobs
 
@@ -137,7 +137,7 @@ def copy_to_archive(
     target_path = target_file.parents[0]
     if not target_path.exists():
         target_path.mkdir(parents=True)
-    logging.debug(f"cp \\\n\t{src_file}\n\t{target_file.resolve()}")
+    logger.debug(f"cp \\\n\t{src_file}\n\t{target_file.resolve()}")
     if src_file.is_symlink():
         src_file = Path(os.path.realpath(src_file))
     check_output(["cp", src_file, target_file])
@@ -289,7 +289,7 @@ def run(ctx: click.Context, **kwargs):
         os.environ["OBR_JOB"] = kwargs.get("job", "")
 
     if kwargs.get("operations") == "apply":
-        logging.warning(
+        logger.warning(
             "Calling the apply operation via run has been discontinued. Call 'obr"
             " apply' directly"
         )
@@ -328,7 +328,7 @@ def run(ctx: click.Context, **kwargs):
     else:
         # calling for aggregates does not work with jobs
         profile_call(project.run, names=operations, np=kwargs.get("tasks", -1))
-    logging.info("completed all operations")
+    logger.info("completed all operations")
 
 
 @cli.command()
@@ -353,10 +353,10 @@ def init(ctx: click.Context, **kwargs):
     project = OpenFOAMProject.init_project(path=kwargs["folder"])
     create_tree(project, config, kwargs)
 
-    logging.info("successfully initialised")
+    logger.info("successfully initialised")
 
     if kwargs.get("generate"):
-        logging.info("Generating workspace")
+        logger.info("Generating workspace")
         project.run(
             names=["generate"],
             progress=True,
@@ -387,7 +387,7 @@ def status(ctx: click.Context, **kwargs):
 
     finished, unfinished = [], []
     max_view_len = 0
-    logging.info("Detailed overview:\n" + "=" * 90)
+    logger.info("Detailed overview:\n" + "=" * 90)
     for job in jobs:
         jobid = job.id
         job.doc["state"]["view"] = id_view_map.get(jobid)
@@ -401,12 +401,12 @@ def status(ctx: click.Context, **kwargs):
     finished.sort()
     for view, jobid, labels in finished:
         pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| C | {jobid}")
+        logger.info(f"{view}:{pad}| C | {jobid}")
     unfinished.sort()
     for view, jobid, labels in unfinished:
         pad = " " * (max_view_len - len(view) + 1)
-        logging.info(f"{view}:{pad}| I | {jobid}")
-    logging.info("Flags: C - Completed, I - Incomplete")
+        logger.info(f"{view}:{pad}| I | {jobid}")
+    logger.info("Flags: C - Completed, I - Incomplete")
 
 
 @cli.command()
@@ -518,7 +518,7 @@ def reset(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
 
     if kwargs.get("workspace"):
-        logging.warn(
+        logger.warn(
             f"Removing current obr workspace. This will remove all simulation results"
         )
         if click.confirm("Do you want to continue?", default=True):
@@ -530,11 +530,11 @@ def reset(ctx: click.Context, **kwargs):
 
     if kwargs.get("case"):
         jobids = [j.id for j in jobs]
-        logging.warn(
+        logger.warn(
             "Resetting obr cases. This will remove all generated simulation results of"
             f" the following {len(jobids)} jobs {jobids}."
         )
-        logging.warn(
+        logger.warn(
             f"obr reset --case, is not fully implemented and will only remove log"
             f" solver logs."
         )
@@ -547,7 +547,7 @@ def reset(ctx: click.Context, **kwargs):
             )
 
     if kwargs.get("view"):
-        logging.error("Resetting by view path is not yet supported")
+        logger.error("Resetting by view path is not yet supported")
 
 
 @cli.command()
@@ -642,7 +642,7 @@ def archive(ctx: click.Context, **kwargs):
         previous_branch = repo.active_branch.name
         use_git_repo = True
     except InvalidGitRepositoryError:
-        logging.warn(
+        logger.warn(
             f"Given directory {target_folder=} is not a github repository. Will only"
             " copy files."
         )
@@ -657,16 +657,16 @@ def archive(ctx: click.Context, **kwargs):
 
             if not branches:
                 # throw error, return
-                logging.error(
+                logger.error(
                     f"Cannot amend to {campaign} branch. Existing"
                     f" branches include {repo.git.branch()}."
                 )
                 return
             branch_name = branches[-1][1]
             if dry_run:
-                logging.info(f"Would amend to {branch_name}.")
+                logger.info(f"Would amend to {branch_name}.")
             else:
-                logging.info(f"Amending to {branch_name} branch")
+                logger.info(f"Amending to {branch_name} branch")
                 repo.git.checkout(branch_name)
         else:
             time_stamp = (
@@ -677,17 +677,17 @@ def archive(ctx: click.Context, **kwargs):
             )
             branch_name = f"{campaign}/{time_stamp}"
             if dry_run:
-                logging.info(f"Would checkout {branch_name}.")
+                logger.info(f"Would checkout {branch_name}.")
             else:
-                logging.info(f"checkout {branch_name}")
+                logger.info(f"checkout {branch_name}")
                 repo.git.checkout("HEAD", b=branch_name)
 
     # setup target folder
     if not target_folder.exists():
         if dry_run:
-            logging.info(f"Would Create {str(target_folder)}")
+            logger.info(f"Would Create {str(target_folder)}")
         else:
-            logging.info(f"creating {str(target_folder)}")
+            logger.info(f"creating {str(target_folder)}")
             target_folder.mkdir()
 
     skip = kwargs.get("skip_logs")
@@ -700,9 +700,9 @@ def archive(ctx: click.Context, **kwargs):
                 continue
             target_file = target_folder / f"workspace/{job.id}/signac_statepoint.json"
             if dry_run:
-                logging.info(f"Would copy {signac_statepoint} to {target_file}.")
+                logger.info(f"Would copy {signac_statepoint} to {target_file}.")
             else:
-                logging.debug(f"{target_folder}, {signac_statepoint}")
+                logger.debug(f"{target_folder}, {signac_statepoint}")
                 copy_to_archive(repo, use_git_repo, signac_statepoint, target_file)
 
             # copy signac state point
@@ -717,14 +717,14 @@ def archive(ctx: click.Context, **kwargs):
                 target_folder / f"workspace/{job.id}/signac_job_document_{md5sum}.json"
             )
             if dry_run:
-                logging.info(f"Would copy {signac_job_document} to {target_file}.")
+                logger.info(f"Would copy {signac_job_document} to {target_file}.")
             else:
-                logging.debug(f"{target_folder}, {signac_job_document}")
+                logger.debug(f"{target_folder}, {signac_job_document}")
                 copy_to_archive(repo, use_git_repo, signac_job_document, target_file)
 
             case_folder = Path(job.path) / "case"
             if not case_folder.exists():
-                logging.info(f"Job with {job.id=} has no case folder.")
+                logger.info(f"Job with {job.id=} has no case folder.")
                 continue
 
             # TODO: implement archival only of non-failed jobs
@@ -749,7 +749,7 @@ def archive(ctx: click.Context, **kwargs):
                     if target_file.is_relative_to(current_path):
                         target_file = target_file.relative_to(current_path)
                     if dry_run:
-                        logging.info(f"Would copy {src_file} to {target_file}.")
+                        logger.info(f"Would copy {src_file} to {target_file}.")
                     else:
                         copy_to_archive(repo, use_git_repo, src_file, target_file)
 
@@ -761,10 +761,10 @@ def archive(ctx: click.Context, **kwargs):
                     target_folder / f"workspace/{job.id}/{campaign}/{tags}/{file}"
                 )
                 if not f.exists():
-                    logging.info(f"invalid path {f}. Skipping.")
+                    logger.info(f"invalid path {f}. Skipping.")
                     continue
                 if dry_run:
-                    logging.info(f"Would copy {f} to {f.absolute}.")
+                    logger.info(f"Would copy {f} to {f.absolute}.")
                 else:
                     copy_to_archive(repo, use_git_repo, f, target_file)
 
@@ -772,18 +772,18 @@ def archive(ctx: click.Context, **kwargs):
     if use_git_repo and repo and branch_name:
         message = f"Add new logs -> {str(target_folder)}"
         author = Actor(repo.git.config("user.name"), repo.git.config("user.email"))
-        logging.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
-        logging.info(
+        logger.info(f"Actor with {author.conf_name=} and {author.conf_email=}")
+        logger.info(
             f'config: {repo.git.config("user.name"), repo.git.config("user.email")}'
         )
         if dry_run:
-            logging.info(
+            logger.info(
                 f"Would commit changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
                 f" {message=} and remote name {repo.remote().name}"
             )
 
         else:
-            logging.info(
+            logger.info(
                 f"Committing changes to repo {repo.working_dir.rsplit('/',1)[1]} with"
                 f" {message=} and remote name {repo.remote().name}"
             )
@@ -791,10 +791,10 @@ def archive(ctx: click.Context, **kwargs):
                 repo.index.commit(message, author=author, committer=author)
                 if kwargs.get("push"):
                     repo.git.push("origin", "-u", branch_name)
-                    logging.info(f"Switching back to branch '{previous_branch}'")
+                    logger.info(f"Switching back to branch '{previous_branch}'")
                     repo.git.checkout(previous_branch)
             except Exception as e:
-                logging.error(e)
+                logger.error(e)
 
 
 def main():
