@@ -109,4 +109,4 @@ def submit_impl(
             **cluster_args,
         )
         logger.info(ret_submit)
-    logger.success("Successfully submited")
+    logger.success("Successfully submitted")

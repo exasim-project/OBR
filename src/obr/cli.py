@@ -571,7 +571,7 @@ def reset(ctx: click.Context, **kwargs):
 
     if kwargs.get("view"):
         logger.error("Resetting by view path is not yet supported")
-    logger.success("Successfully reseted")
+    logger.success("Reset successful")
 
 
 @cli.command()
