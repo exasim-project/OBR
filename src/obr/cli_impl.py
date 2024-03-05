@@ -50,7 +50,7 @@ def query_impl(
                 difference_dict = DeepDiff(validation_dict, query_results)
 
                 if difference_dict:
-                    print(difference_dict)
                     logger.warn("Validation failed!")
+                    logger.warn(difference_dict)
                     sys.exit(1)
             logger.success("Validation successful")
