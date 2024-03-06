@@ -22,6 +22,8 @@ from ..core.core import (
 )
 from .BlockMesh import BlockMesh, calculate_simple_partition
 
+logger = logging.getLogger("OBR")
+
 OF_HEADER_REGEX = r"""(/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\
 (\||)\s*=========                 \|(\s*\||)
 (\||)\s*\\\\      /  F ield         \| (OpenFOAM:|foam-extend:)\s*[\d\w\W]*\s*(\||)
@@ -297,12 +299,12 @@ class OpenFOAMCase(BlockMesh):
         gets created"""
         tmp_zero = None
         if not self.time_folder:
-            logging.warning(
+            logger.warning(
                 f"No time folder found! Decomposition might lead to an unusable case."
             )
             zero_orig_path = self.path / "0.orig"
             if zero_orig_path.exists():
-                logging.warning(f"Using existing 0.orig folder")
+                logger.warning(f"Using existing 0.orig folder")
                 zero_target_path = self.path / "0"
                 tmp_zero = TemporaryFolder(
                     zero_orig_path, zero_target_path, not self.esi_version
@@ -310,7 +312,7 @@ class OpenFOAMCase(BlockMesh):
 
         constant_folder = None
         if not self.esi_version:
-            logging.warning(f"Non ESI version of foam detected delinking")
+            logger.warning(f"Non ESI version of foam detected delinking")
             constant_folder = DelinkFolder(self.constant_folder)
             # set a dummy member to avoid issues with autoflake
             constant_folder.dummy = None
@@ -355,7 +357,7 @@ class OpenFOAMCase(BlockMesh):
             self.fvSolution.set(fvSolutionArgs)
 
         if not find_time_folder(self.path / "processor0"):
-            logging.warning(
+            logger.warning(
                 f"No time in processor folder found. This indicates an unusable"
                 f" decomposition."
             )
@@ -474,7 +476,7 @@ class OpenFOAMCase(BlockMesh):
         # check state of last obr operation
         last_op_state = "Failure"
         if "cache" not in self.job.doc:
-            logging.info(f"Job with {self.job.id} has no cache key.")
+            logger.info(f"Job with {self.job.id} has no cache key.")
             # TODO possibly debatable if this should return false
             return False
         else:
