@@ -464,7 +464,6 @@ def query(ctx: click.Context, **kwargs):
 
 @cli.command()
 @click.option(
-    "-c",
     "--campaign",
     type=str,
     multiple=False,
@@ -473,21 +472,20 @@ def query(ctx: click.Context, **kwargs):
 @click.option(
     "--file",
     type=str,
+    required=True,
     multiple=False,
-    help="",
+    help="Path to script to apply to the workspace",
 )
 @click.pass_context
 def apply(ctx: click.Context, **kwargs):
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-    project = OpenFOAMProject.get_project()
+    apply_file_path = Path(kwargs["file"]).resolve()
+    if not apply_file_path.exists():
+        logger.error(f"Could not find {kwargs['file']}")
+        sys.exit(1)
 
-    filters: list[str] = kwargs.get("filter", [])
-    # check if given path points to valid project
-    if not is_valid_workspace(filters, path=kwargs.get("folder", None)):
-        return
-    jobs = project.filter_jobs(filters=filters)
-    os.environ["OBR_APPLY_FILE"] = kwargs.get("file", "")
+    project, jobs = cli_cmd_setup(kwargs)
+
+    os.environ["OBR_APPLY_FILE"] = str(apply_file_path)
     os.environ["OBR_APPLY_CAMPAIGN"] = kwargs.get("campaign", "")
     sys.argv.append("--aggregate")
     sys.argv.append("-t")
