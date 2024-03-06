@@ -313,14 +313,12 @@ class OpenFOAMCase(BlockMesh):
                     zero_orig_path, zero_target_path, not self.esi_version
                 )
 
-        constant_folder = None
+        tmp_constant_folder = None
+        tmp_zero_folder = None
         if not self.esi_version:
             logger.warning(f"Non ESI version of foam detected! Delinking symlinks")
-            constant_folder = DelinkFolder(self.constant_folder)
-            zeroFolder = DelinkFolder(self.path / "0")
-            # set a dummy member to avoid issues with autoflake
-            constant_folder.dummy = None
-            zeroFolder.dummy = None
+            tmp_constant_folder = DelinkFolder(self.constant_folder)
+            tmp_zeroFolder = DelinkFolder(self.path / "0")
 
         if not self.decomposeParDict:
             decomposeParDictFile = Path(self.system_folder / "decomposeParDict")
@@ -357,6 +355,13 @@ class OpenFOAMCase(BlockMesh):
             })
 
         log = self._exec_operation(["decomposePar", "-force"])
+
+        if tmp_zero_folder:
+            tmp_zero_folder.tear_down()
+        if tmp_constant_folder:
+            tmp_constant_folder.tear_down()
+
+
         fvSolutionArgs = args.get("fvSolution", {})
         if fvSolutionArgs:
             self.fvSolution.set(fvSolutionArgs)

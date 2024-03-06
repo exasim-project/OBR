@@ -408,9 +408,12 @@ class DelinkFolder:
         self.source = source
         self.source_bck = link_folder_to_copy(source)
 
-    def __del__(self):
+    def tear_down(self):
         shutil.rmtree(str(self.source))
         check_output(["mv", self.source_bck, self.source])
+
+    def __del__(self):
+        self.tear_down()
 
 
 def find_time_folder(path: Path) -> list[Path]:
