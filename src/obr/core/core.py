@@ -13,6 +13,8 @@ from datetime import datetime
 from signac.job import Job
 from copy import deepcopy
 
+logger = logging.getLogger("OBR")
+
 # these are to be replaced with each other
 SIGNAC_PATH_TOKEN = "_dot_"
 PATH_TOKEN = "."
@@ -366,7 +368,7 @@ def link_folder_to_copy(source: Path) -> Path:
     for fn in files:
         src_file_path = src_root / fn
         if src_file_path.is_symlink():
-            logging.warning(
+            logger.warning(
                 f"{os.readlink(src_file_path)} is a symlink\n"
                 "Some openfoam versions refuse to decompose files if content of"
                 " zero folder are symlinks. Thus we temporarily copy this file."
