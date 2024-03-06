@@ -409,8 +409,9 @@ class DelinkFolder:
         self.source_bck = link_folder_to_copy(source)
 
     def tear_down(self):
-        shutil.rmtree(str(self.source))
-        check_output(["mv", self.source_bck, self.source])
+        if self.source_bck.exists():
+            shutil.rmtree(str(self.source))
+            check_output(["mv", self.source_bck, self.source])
 
     def __del__(self):
         self.tear_down()
