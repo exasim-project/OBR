@@ -300,11 +300,11 @@ class OpenFOAMCase(BlockMesh):
         tmp_zero = None
         if not self.time_folder:
             logger.warning(
-                f"No time folder found! Decomposition might lead to an unusable case."
+                f"Problem decomposing case {self.job.id}. No time folder found! Decomposition might lead to an unusable case."
             )
             zero_orig_path = self.path / "0.orig"
             if zero_orig_path.exists():
-                logger.warning(f"Using existing 0.orig folder")
+                logger.info(f"Decomposing case {self.job.id}, Using existing 0.orig folder")
                 zero_target_path = self.path / "0"
                 tmp_zero = TemporaryFolder(
                     zero_orig_path, zero_target_path, not self.esi_version
@@ -358,7 +358,7 @@ class OpenFOAMCase(BlockMesh):
 
         if not find_time_folder(self.path / "processor0"):
             logger.warning(
-                f"No time in processor folder found. This indicates an unusable"
+                f"Decomposing case {self.job.id}. No time in processor folder found. This indicates an unusable"
                 f" decomposition."
             )
         return log
