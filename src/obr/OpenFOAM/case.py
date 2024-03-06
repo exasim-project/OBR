@@ -300,11 +300,14 @@ class OpenFOAMCase(BlockMesh):
         tmp_zero = None
         if not self.time_folder:
             logger.warning(
-                f"Problem decomposing case {self.job.id}. No time folder found! Decomposition might lead to an unusable case."
+                f"Problem decomposing case {self.job.id}. No time folder found!"
+                " Decomposition might lead to an unusable case."
             )
             zero_orig_path = self.path / "0.orig"
             if zero_orig_path.exists():
-                logger.info(f"Decomposing case {self.job.id}, Using existing 0.orig folder")
+                logger.info(
+                    f"Decomposing case {self.job.id}, Using existing 0.orig folder"
+                )
                 zero_target_path = self.path / "0"
                 tmp_zero = TemporaryFolder(
                     zero_orig_path, zero_target_path, not self.esi_version
@@ -314,7 +317,7 @@ class OpenFOAMCase(BlockMesh):
         if not self.esi_version:
             logger.warning(f"Non ESI version of foam detected! Delinking symlinks")
             constant_folder = DelinkFolder(self.constant_folder)
-            zeroFolder = DelinkFolder(self.path/"0")
+            zeroFolder = DelinkFolder(self.path / "0")
             # set a dummy member to avoid issues with autoflake
             constant_folder.dummy = None
             zeroFolder.dummy = None
@@ -360,8 +363,8 @@ class OpenFOAMCase(BlockMesh):
 
         if not find_time_folder(self.path / "processor0"):
             logger.warning(
-                f"Decomposing case {self.job.id}. No time in processor folder found. This indicates an unusable"
-                f" decomposition."
+                f"Decomposing case {self.job.id}. No time in processor folder found."
+                " This indicates an unusable decomposition."
             )
         return log
 
