@@ -318,7 +318,7 @@ class OpenFOAMCase(BlockMesh):
         if not self.esi_version:
             logger.warning(f"Non ESI version of foam detected! Delinking symlinks")
             tmp_constant_folder = DelinkFolder(self.constant_folder)
-            tmp_zeroFolder = DelinkFolder(self.path / "0")
+            tmp_zero_folder = DelinkFolder(self.path / "0")
 
         if not self.decomposeParDict:
             decomposeParDictFile = Path(self.system_folder / "decomposeParDict")
@@ -360,7 +360,6 @@ class OpenFOAMCase(BlockMesh):
             tmp_zero_folder.tear_down()
         if tmp_constant_folder:
             tmp_constant_folder.tear_down()
-
 
         fvSolutionArgs = args.get("fvSolution", {})
         if fvSolutionArgs:
