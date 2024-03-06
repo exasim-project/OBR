@@ -481,6 +481,7 @@ def apply(ctx: click.Context, **kwargs):
     apply_file_path = Path(kwargs["file"]).resolve()
     if not apply_file_path.exists():
         logger.error(f"Could not find {kwargs['file']}")
+        sys.exit(1)
 
     project, jobs = cli_cmd_setup(kwargs)
 
