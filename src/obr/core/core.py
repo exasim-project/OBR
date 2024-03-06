@@ -364,6 +364,9 @@ def link_folder_to_copy(source: Path) -> Path:
     targ_root, _, _ = next(os.walk(source))
     src_root = Path(src_root)
     targ_root = Path(targ_root)
+
+    # NOTE this can be improved by only moving the symlinks in the backup folder.
+    # currently the implementation does unneeded copies of non symlink files
     for fn in files:
         src_file_path = src_root / fn
         if src_file_path.is_symlink():
