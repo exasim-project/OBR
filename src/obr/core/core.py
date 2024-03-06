@@ -356,7 +356,6 @@ def link_folder_to_copy(source: Path) -> Path:
     Returns: path of the backup folder
     -------
     """
-    import os
 
     source_bck = str(source.absolute()) + ".bck"
     check_output(["mv", source, source_bck])
@@ -376,6 +375,10 @@ def link_folder_to_copy(source: Path) -> Path:
             src_file_path = src_file_path.resolve()
             target_file_path = targ_root / fn
             check_output(["cp", src_file_path, target_file_path])
+        else:
+            target_file_path = targ_root / fn
+            check_output(["cp", src_file_path, target_file_path])
+
     for fold in folder:
         src_fold_path = src_root / fold
         target_path = targ_root / fold
