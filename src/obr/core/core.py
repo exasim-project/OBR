@@ -368,16 +368,14 @@ def link_folder_to_copy(source: Path) -> Path:
     for fn in files:
         src_file_path = src_root / fn
         if src_file_path.is_symlink():
-            symlink_src = src_file_path.resolve()
             logger.debug(
-                f"{src_file_path} {os.readlink(src_file_path)} {symlink_src} is a symlink\n"
+                f"{src_file_path} {os.readlink(src_file_path)} is a symlink\n"
                 "Some openfoam versions refuse to decompose files if content of"
                 " zero folder are symlinks. Thus we temporarily copy this file."
             )
             src_file_path = src_file_path.resolve()
             target_file_path = targ_root / fn
-            check_output(["rm", src_file_path])
-            check_output(["cp", symlink_src, src_file_path])
+            check_output(["cp", src_file_path, target_file_path])
     for fold in folder:
         src_fold_path = src_root / fold
         target_path = targ_root / fold
