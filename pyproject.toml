@@ -1,6 +1,6 @@
 [project]
 name = "obr"
-version = "0.3.15"
+version = "0.3.16"
 description = "A tool to create and run OpenFOAM parameter studies"
 authors = [
     {name = "Gregor Olenik", email = "go@hpsim.de"},
@@ -23,6 +23,7 @@ dependencies = [
     "pandas",
     "DeepDiff",
     "jsonschema==4.19.1",
+    "coloredlogs",
     "Owls @ git+https://github.com/greole/Owls.git@Owls2.0",
 ]
 

@@ -6,6 +6,8 @@ from copy import deepcopy
 from .signac_wrapper.operations import OpenFOAMProject
 from .core.queries import build_filter_query
 
+logger = logging.getLogger("OBR")
+
 
 def query_impl(
     project: OpenFOAMProject,
@@ -16,7 +18,7 @@ def query_impl(
     validation_file: str,
 ):
     if input_queries == "":
-        logging.warning("--query argument cannot be empty!")
+        logger.warning("--query argument cannot be empty!")
         return
     queries: list[Query] = build_filter_query(input_queries)
     jobs = project.filter_jobs(filters=list(filters))
@@ -26,7 +28,7 @@ def query_impl(
             out_str = f"{job_id}:"
             for k, v in query_res.items():
                 out_str += f" {k}: {v}"
-            logging.info(out_str)
+            logger.info(out_str)
 
     if json_file:
         with open(json_file, "w") as outfile:
@@ -37,17 +39,18 @@ def query_impl(
             # json_data refers to the above JSON
             validation_dict = json.load(infile)
             if validation_dict.get("$schema"):
-                logging.info("using json schema for validation")
+                logger.info("Using json schema for validation")
                 from jsonschema import validate
 
                 validate(query_results, validation_dict)
             else:
                 from deepdiff import DeepDiff
 
-                logging.info("using deepdiff for validation")
+                logger.info("Using deepdiff for validation")
                 difference_dict = DeepDiff(validation_dict, query_results)
 
                 if difference_dict:
-                    print(difference_dict)
-                    logging.warn("validation failed")
+                    logger.warn("Validation failed!")
+                    logger.warn(difference_dict)
                     sys.exit(1)
+            logger.success("Validation successful")

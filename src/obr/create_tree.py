@@ -1,6 +1,5 @@
 import os
 import sys
-import logging
 
 from collections.abc import MutableMapping
 from pathlib import Path
@@ -9,6 +8,7 @@ from signac.job import Job
 from obr.signac_wrapper.operations import OpenFOAMProject
 from obr.core.queries import statepoint_query
 from obr.core.parse_yaml import eval_generator_expressions
+from obr.core.logger_setup import logger
 from copy import deepcopy
 
 
@@ -29,7 +29,7 @@ def get_path_from(operation: dict, value: dict) -> str:
     Returns: a view path as string
     """
     if not operation.get("schema"):
-        logging.error("Error Schema missing for Set schema to allow creating views")
+        logger.error("Error Schema missing for Set schema to allow creating views")
         raise KeyError
 
     return operation["schema"].format(**flatten(value)) + "/"
@@ -247,7 +247,7 @@ def add_variations(
                     key, value = list(filter_record.items())[0]
                     skip = not statepoint_query(statepoint, key, value, predicate)
                     if skip:
-                        logging.debug(
+                        logger.debug(
                             f"skipping generating statepoint {statepoint} because of"
                             f" {key}=={value} filter"
                         )
@@ -293,7 +293,7 @@ def create_tree(
     skip_foam_src_check: bool = False,
 ):
     if not skip_foam_src_check and not os.environ.get("FOAM_ETC"):
-        logging.error("Error OpenFOAM not sourced")
+        logger.error("Error OpenFOAM not sourced")
         sys.exit(-1)
 
     # Add base case

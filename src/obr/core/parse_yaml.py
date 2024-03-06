@@ -2,8 +2,9 @@ import re
 import os
 import urllib.request
 from pathlib import Path
-import logging
 import sys
+
+from .logger_setup import logger
 
 
 def read_yaml(kwargs: dict) -> str:
@@ -49,7 +50,7 @@ def parse_special_variables(in_str: str, args: dict, domain: str) -> str:
     ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
     for inst in ocurrances:
         if not args.get(inst, ""):
-            logging.warning(f"warning {inst} not defined")
+            logger.warning(f"warning {inst} not defined")
         in_str = in_str.replace(
             "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
         )
@@ -63,8 +64,8 @@ def eval_generator_expressions(in_str: str) -> str:
         try:
             in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
         except Exception as e:
-            logging.error(in_str + inst)
-            logging.error(e)
+            logger.error(in_str + inst)
+            logger.error(e)
 
             sys.exit(1)
     return in_str

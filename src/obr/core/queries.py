@@ -12,6 +12,8 @@ from enum import Enum
 if TYPE_CHECKING:
     from obr.signac_wrapper.operations import OpenFOAMProject
 
+logger = logging.getLogger("OBR")
+
 
 @dataclass
 class query_result:
@@ -83,15 +85,15 @@ class Query:
                 self.state = {key: value}
         except TypeError as e:
             # After the prior type conversion, this case should not happen anymore.
-            logging.error(f"{e}:")
-            logging.error(
+            logger.error(f"{e}:")
+            logger.error(
                 f"\tTried to compare {self.value}({type(self.value)}) and"
                 f" {value}({type(value)}) for {key=}."
             )
         except ValueError as e:
             # In case of a funky type conversion. Not expected behavior though.
-            logging.info(value)
-            logging.error(e)
+            logger.warning(value)
+            logger.error(e)
 
     def match(self):
         return self.state
@@ -307,12 +309,12 @@ def build_filter_query(filters: Iterable[str]) -> list[Query]:
         for predicate in Predicates:
             # check if predicates like =, >, <=.. are in the filter
             if predicate.value in filter:
-                logging.info(f"Found predicate {predicate} in {filter=}")
+                logger.debug(f"Found predicate {predicate} in {filter=}")
                 lhs, rhs = filter.split(predicate.value)
                 q.append(Query(key=lhs, value=rhs, predicate=predicate.name))
                 break
         else:
-            logging.warning(
+            logger.debug(
                 f"No applicable predicate found in {filter=}. Will assume '!= None'."
             )
             q.append(Query(key=filter, value=None, predicate=Predicates.neq.name))

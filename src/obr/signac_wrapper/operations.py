@@ -20,11 +20,7 @@ from obr.OpenFOAM.case import OpenFOAMCase
 from obr.core.queries import filter_jobs, query_impl, Query, statepoint_get
 from obr.core.caseOrigins import instantiate_origin_class
 
-# TODO operations should get an id/hash so that we can log success
-# TODO add:
-# - reconstructPar
-# - unlockTmpLock
-# - renumberMesh
+logger = logging.getLogger("OBR")
 
 
 class OpenFOAMProject(flow.FlowProject):
@@ -35,7 +31,7 @@ class OpenFOAMProject(flow.FlowProject):
 
     def print_operations(self):
         ops = sorted(self.groups.keys())
-        logging.info("Available operations are:\n\t" + "\n\t".join(ops))
+        logger.info("Available operations are:\n\t" + "\n\t".join(ops))
         return
 
     def filter_jobs(self, filters: list[str]) -> list[Job]:
@@ -108,16 +104,16 @@ def basic_eligible(job: Job, operation: str) -> bool:
     ):
         # For Debug purposes
         if False and (operation == job.sp().get("operation")):
-            logging.info(f"check if job {job.id} is eligible is False")
+            logger.info(f"check if job {job.id} is eligible is False")
             if is_locked(job):
-                logging.info(f"\tis_locked=True, should be False")
+                logger.info(f"\tis_locked=True, should be False")
             if not parent_job_is_ready(job) == "ready":
                 state = parent_job_is_ready(job)
-                logging.info(f"\tparent_job_is_ready={state} should be ready")
+                logger.info(f"\tparent_job_is_ready={state} should be ready")
             if not initialize_if_required(job):
-                logging.info(f"\tinitialize_if_required=False should be True")
+                logger.info(f"\tinitialize_if_required=False should be True")
             if not is_case(job):
-                logging.info("\tis_case=False should be True")
+                logger.info("\tis_case=False should be True")
         return False
     return True
 
@@ -235,7 +231,7 @@ def initialize_if_required(job: Job) -> bool:
         GLOBAL_INIT_COUNT += 1
         base_path = Path(job.path).parent / parent_id / "case"
         dst_path = Path(job.path) / "case"
-        # logging.info(f"linking {base_path} to {dst_path}")
+        # logger.info(f"linking {base_path} to {dst_path}")
         # shell scripts might change files as side effect hence we copy all files
         # instead of linking to avoid side effects in future it might make sense to
         # specify the files which are modified in the yaml file
@@ -243,7 +239,7 @@ def initialize_if_required(job: Job) -> bool:
         _link_path(base_path, dst_path, parent_id, copy_instead_link)
         job.doc["state"]["is_initialized"] = True
         if GLOBAL_UNINIT_COUNT:
-            logging.info(
+            logger.info(
                 "Done initialization of case"
                 f" {job.id} [{GLOBAL_INIT_COUNT}/{int(GLOBAL_UNINIT_COUNT)}]\r"
             )
@@ -286,8 +282,8 @@ def execute_operation(job: Job, operation_name: str, operations) -> Literal[True
                 getattr(sys.modules[__name__], func)(job, operation.get(func))
         except Exception as e:
             tb = traceback.format_exc()
-            logging.info(tb)
-            logging.error(e)
+            logger.info(tb)
+            logger.error(e)
             job.doc["state"]["global"] == "failure"
     return True
 
@@ -398,7 +394,8 @@ def MultiCase(job: Job, args={}):
             "Please specify a type for the MultiCase. Valid types: GitRepo, CaseOnDisk,"
             " OpenFOAMTutorialCase"
         )
-    instantiate_origin_class(args["type"], args).init(job.path)
+    if not (Path(job.path) / "case").exists():
+        instantiate_origin_class(args["type"], args).init(job.path)
 
 
 @generate
@@ -652,7 +649,7 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
 
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
     if skip_complete and finished(job):
-        logging.info(f"Skipping Job {job.id} since it is completed.")
+        logger.info(f"Skipping Job {job.id} since it is completed.")
         return "true"
 
     case = OpenFOAMCase(str(job.path) + "/case", job)
