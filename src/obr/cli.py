@@ -94,8 +94,6 @@ def is_valid_workspace(filters: list = []) -> bool:
     - the `workspace` folder is not empty, and
     - applying filters would return an empty list
     """
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
     project: OpenFOAMProject = OpenFOAMProject.get_project()
     jobs: list[Job] = project.filter_jobs(filters=filters)
     if len(jobs) == 0:
