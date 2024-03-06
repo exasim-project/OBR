@@ -782,7 +782,7 @@ def archive(job: Job, args={}) -> Literal[True]:
 def apply(*jobs, args={}):
     import importlib.util
 
-    fp = Path(os.environ.get("OBR_CALL_ARGS"))
+    fp = Path(os.environ.get("OBR_APPLY_FILE"))
     spec = importlib.util.spec_from_file_location("apply_func", fp)
     apply_functor = importlib.util.module_from_spec(spec)
     # sys.modules["apply_func"] = apply_functor
