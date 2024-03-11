@@ -107,7 +107,7 @@ def is_valid_workspace(filters: list = []) -> bool:
     return True
 
 
-def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
+def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, list[Job]]:
     """This function performs the common pattern of checking project folders for existence and creating the project and extracting the jobs."""
     if kwargs.get("folder"):
         os.chdir(kwargs["folder"])
@@ -376,46 +376,77 @@ def init(ctx: click.Context, **kwargs):
 @cli.command()
 @common_params
 @click.option("-d", "--detailed", is_flag=True)
-@click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    default=[],
-    help=(
-        "Pass a <key><predicate><value> value pair per occurrence of --filter."
-        " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
-        ' "solver==pisoFoam"'
-    ),
-)
+@click.option("-S", "--summarize", type=int, required=False, default=0, help="summarize the by joining the last N views.")
 @click.pass_context
 def status(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
 
     # project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
-
+    summarize = int(kwargs.get("summarize", 0))
     finished, unfinished = [], []
     max_view_len = 0
-    logger.info("Detailed overview:\n" + "=" * 90)
+    if not summarize:
+        logger.info("Detailed overview:\n" + "=" * 90)
+    else:
+        too_far = 0
+        stats = dict()
+        logger.info("Summarized overview:\n" + "=" * 90)
+
     for job in jobs:
         jobid = job.id
+
+        if summarize:
+            # if job.statepoint["has_child"]:
+                # only consider leaf nodes for now
+                # continue
+            rec = 1
+            current = job.statepoint
+            parent = current.get("parent", {})
+            pid = current.get("parent_id", None)
+            while rec < summarize:
+                parent = parent.get("parent", {})
+                pid = parent.get("parent_id", None)
+                if not parent:
+                    too_far += 1
+                    break
+                rec += 1
+
+            if not pid:
+                pid = jobid
+            p_view = id_view_map.get(pid)
+            if p_view and p_view not in stats:
+                stats[p_view] = {
+                    "finished":  0,
+                    "unfinished":  0
+                }
         job.doc["state"]["view"] = id_view_map.get(jobid)
         if view := id_view_map.get(jobid):
             labels = project.labels(job)
             max_view_len = max(len(view), max_view_len)
             if "finished" in labels:
+                if summarize:
+                    stats[p_view]["finished"] += 1
                 finished.append((view, jobid, labels))
             else:
+                if summarize:
+                    stats[p_view]["unfinished"] += 1
                 unfinished.append((view, jobid, labels))
-    finished.sort()
-    for view, jobid, labels in finished:
-        pad = " " * (max_view_len - len(view) + 1)
-        logger.info(f"{view}:{pad}| C | {jobid}")
-    unfinished.sort()
-    for view, jobid, labels in unfinished:
-        pad = " " * (max_view_len - len(view) + 1)
-        logger.info(f"{view}:{pad}| I | {jobid}")
-    logger.info("Flags: C - Completed, I - Incomplete")
+    if not summarize:
+        finished.sort()
+        unfinished.sort()
+        for view, jobid, labels in finished:
+            pad = " " * (max_view_len - len(view) + 1)
+            logger.info(f"{view}:{pad}| C | {jobid}")
+        for view, jobid, labels in unfinished:
+            pad = " " * (max_view_len - len(view) + 1)
+            logger.info(f"{view}:{pad}| I | {jobid}")
+        logger.info("Flags: C - Completed, I - Incomplete")
+    else:
+        for sview, sstats in sorted(stats.items()):
+            pad = " " * (max_view_len - len(sview) + 1)
+            logger.info(f"{sview}:{pad}| {sstats['finished']}x Completed | {sstats['unfinished']}x Incomplete")
+        logger.warning(f"Summarize value was too high for {too_far}/{len(jobs)} cases.")
 
 
 @cli.command()
