@@ -311,7 +311,6 @@ def run(ctx: click.Context, **kwargs):
         return
 
     if not kwargs.get("aggregate"):
-
         GLOBAL_UNINIT_COUNT = 0
         for job in jobs:
             if job.sp().get("operation") in operations and needs_initialization(job):
@@ -346,7 +345,6 @@ def run(ctx: click.Context, **kwargs):
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.pass_context
 def init(ctx: click.Context, **kwargs):
-
     # needs folder/.obr to exists before logger can be initialised
     ws_fold = kwargs.get("folder")
     if ws_fold:
@@ -376,12 +374,17 @@ def init(ctx: click.Context, **kwargs):
 @cli.command()
 @common_params
 @click.option("-d", "--detailed", is_flag=True)
-@click.option("-S", "--summarize", type=int, required=False, default=0, help="summarize the by joining the last N views.")
+@click.option(
+    "-S",
+    "--summarize",
+    type=int,
+    required=False,
+    default=0,
+    help="Summarize the by joining the last N views. ",
+)
 @click.pass_context
 def status(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
-
-    # project.print_status(detailed=kwargs["detailed"], pretty=True)
     id_view_map = map_view_folder_to_job_id("view")
     summarize = int(kwargs.get("summarize", 0))
     finished, unfinished = [], []
@@ -390,47 +393,51 @@ def status(ctx: click.Context, **kwargs):
         logger.info("Detailed overview:\n" + "=" * 90)
     else:
         too_far = 0
-        stats = dict()
+        not_leaf = 0
+
+        summary = dict()
         logger.info("Summarized overview:\n" + "=" * 90)
 
     for job in jobs:
         jobid = job.id
 
         if summarize:
-            # if job.statepoint["has_child"]:
-                # only consider leaf nodes for now
-                # continue
+            # only consider leaf nodes for now
+            if job.statepoint["has_child"]:
+                not_leaf += 1
+                continue
             rec = 1
             current = job.statepoint
+            # Follow parent links until summarize value is exceeded
             parent = current.get("parent", {})
             pid = current.get("parent_id", None)
             while rec < summarize:
                 parent = parent.get("parent", {})
                 pid = parent.get("parent_id", None)
+                # Stop when root is reached
                 if not parent:
-                    too_far += 1
                     break
                 rec += 1
-
-            if not pid:
-                pid = jobid
+            # If no pid is found, -S was too large, inc too_far.
+            if pid is None:
+                too_far += 1
+                continue
+            # Otherwise, add parent view to summary
             p_view = id_view_map.get(pid)
-            if p_view and p_view not in stats:
-                stats[p_view] = {
-                    "finished":  0,
-                    "unfinished":  0
-                }
+            if p_view and p_view not in summary:
+                summary[p_view] = {"finished": 0, "unfinished": 0}
+
         job.doc["state"]["view"] = id_view_map.get(jobid)
         if view := id_view_map.get(jobid):
             labels = project.labels(job)
             max_view_len = max(len(view), max_view_len)
             if "finished" in labels:
-                if summarize:
-                    stats[p_view]["finished"] += 1
+                if summarize and p_view:
+                    summary[p_view]["finished"] += 1
                 finished.append((view, jobid, labels))
             else:
-                if summarize:
-                    stats[p_view]["unfinished"] += 1
+                if summarize and p_view:
+                    summary[p_view]["unfinished"] += 1
                 unfinished.append((view, jobid, labels))
     if not summarize:
         finished.sort()
@@ -443,10 +450,15 @@ def status(ctx: click.Context, **kwargs):
             logger.info(f"{view}:{pad}| I | {jobid}")
         logger.info("Flags: C - Completed, I - Incomplete")
     else:
-        for sview, sstats in sorted(stats.items()):
+        for sview, sorted_summary in sorted(summary.items()):
             pad = " " * (max_view_len - len(sview) + 1)
-            logger.info(f"{sview}:{pad}| {sstats['finished']}x Completed | {sstats['unfinished']}x Incomplete")
-        logger.warning(f"Summarize value was too high for {too_far}/{len(jobs)} cases.")
+            logger.info(
+                f"{sview}:{pad}| {sorted_summary['finished']}x Completed |"
+                f" {sorted_summary['unfinished']}x Incomplete |"
+            )
+        logger.warning(
+            f"Summarize value was too high for {too_far}/{len(jobs)-not_leaf} cases."
+        )
 
 
 @cli.command()
