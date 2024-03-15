@@ -376,7 +376,14 @@ def init(ctx: click.Context, **kwargs):
 @cli.command()
 @common_params
 @click.option("-d", "--detailed", is_flag=True)
-@click.option("-S", "--summarize", type=int, required=False, default=0, help="summarize the by joining the last N views.")
+@click.option(
+    "-S",
+    "--summarize",
+    type=int,
+    required=False,
+    default=0,
+    help="summarize the by joining the last N views.",
+)
 @click.pass_context
 def status(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
@@ -398,8 +405,8 @@ def status(ctx: click.Context, **kwargs):
 
         if summarize:
             # if job.statepoint["has_child"]:
-                # only consider leaf nodes for now
-                # continue
+            # only consider leaf nodes for now
+            # continue
             rec = 1
             current = job.statepoint
             parent = current.get("parent", {})
@@ -416,10 +423,7 @@ def status(ctx: click.Context, **kwargs):
                 pid = jobid
             p_view = id_view_map.get(pid)
             if p_view and p_view not in stats:
-                stats[p_view] = {
-                    "finished":  0,
-                    "unfinished":  0
-                }
+                stats[p_view] = {"finished": 0, "unfinished": 0}
         job.doc["state"]["view"] = id_view_map.get(jobid)
         if view := id_view_map.get(jobid):
             labels = project.labels(job)
@@ -445,7 +449,10 @@ def status(ctx: click.Context, **kwargs):
     else:
         for sview, sstats in sorted(stats.items()):
             pad = " " * (max_view_len - len(sview) + 1)
-            logger.info(f"{sview}:{pad}| {sstats['finished']}x Completed | {sstats['unfinished']}x Incomplete")
+            logger.info(
+                f"{sview}:{pad}| {sstats['finished']}x Completed |"
+                f" {sstats['unfinished']}x Incomplete"
+            )
         logger.warning(f"Summarize value was too high for {too_far}/{len(jobs)} cases.")
 
 
