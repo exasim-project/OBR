@@ -15,7 +15,7 @@ from typing import Union, Literal
 from datetime import datetime
 
 from .labels import owns_mesh, final, finished
-from ..core.core import execute_shell, GLOBAL_INIT_COUNT  # noqa
+from ..core.core import execute_shell, GLOBAL_INIT_COUNT, map_view_folder_to_job_id  # noqa
 from obr.OpenFOAM.case import OpenFOAMCase
 from obr.core.queries import filter_jobs, query_impl, Query, statepoint_get
 from obr.core.caseOrigins import instantiate_origin_class
@@ -54,6 +54,43 @@ class OpenFOAMProject(flow.FlowProject):
         call
         """
         self._entrypoint = entrypoint
+
+    def group_jobs(self, jobs: list[Job], summarize: int = 0) -> dict[str, list[Job]]:
+        grouped = {}
+        id_view_map = map_view_folder_to_job_id("view")
+        for job in jobs:
+            jobid = job.id
+            # only consider leaf nodes for now
+            if summarize and job.statepoint["has_child"]:
+                continue
+            current = job.statepoint
+            parent = None
+            pid = None
+            rec = summarize
+            while rec > 0 and (parent := current.get("parent", {})):
+                current = parent
+                pid = parent.get("parent_id", None)
+                # Stop when root is reached
+                if not parent:
+                    break
+                rec -= 1
+            if summarize and pid is None:
+                continue
+            p_view = None
+            if summarize and pid:
+                p_view = id_view_map.get(pid, "")
+                p_view = p_view.replace(pid, "")
+                if p_view and p_view not in grouped:
+                    grouped[p_view] = []
+
+            view = p_view or id_view_map.get(jobid)
+            job.doc["state"]["view"] = view
+            if view:
+                view = view.replace(jobid, "")
+                if view not in grouped:
+                    grouped[view] = []
+                grouped[view].append(job)
+        return grouped
 
 
 generate = OpenFOAMProject.make_group(name="generate")
