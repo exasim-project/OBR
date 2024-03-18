@@ -56,40 +56,44 @@ class OpenFOAMProject(flow.FlowProject):
         self._entrypoint = entrypoint
 
     def group_jobs(self, jobs: list[Job], summarize: int = 0) -> dict[str, list[Job]]:
+        """Returns the list of jobs of the given OpenFOAMProject where the last `summarize` levels are grouped together at the corresponding parent view.
+        """
         grouped = {}
         id_view_map = map_view_folder_to_job_id("view")
         for job in jobs:
-            jobid = job.id
+            jobid = str(job.id)
             # only consider leaf nodes for now
             if summarize and job.statepoint["has_child"]:
                 continue
+            # follow parent links "bottom-up" in statepoint <summarize> times
             current = job.statepoint
             parent = None
+            p_view = None
             pid = None
             rec = summarize
             while rec > 0 and (parent := current.get("parent", {})):
                 current = parent
                 pid = parent.get("parent_id", None)
-                # Stop when root is reached
+                # Stop when root is reached / no parent is set
                 if not parent:
                     break
                 rec -= 1
             if summarize and pid is None:
+                # ignore if summarize value is too large for current job
                 continue
-            p_view = None
             if summarize and pid:
                 p_view = id_view_map.get(pid, "")
-                p_view = p_view.replace(pid, "")
+                p_view = p_view.replace(pid, "")  # remove pid from view
                 if p_view and p_view not in grouped:
                     grouped[p_view] = []
 
             view = p_view or id_view_map.get(jobid)
             job.doc["state"]["view"] = view
             if view:
-                view = view.replace(jobid, "")
+                view = view.replace(jobid, "")  # also remove id from view here
                 if view not in grouped:
                     grouped[view] = []
-                grouped[view].append(job)
+                grouped[view].append(job)  # add job to group job list
         return grouped
 
 
