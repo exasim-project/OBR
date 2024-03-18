@@ -35,7 +35,13 @@ from .signac_wrapper.operations import OpenFOAMProject, needs_initialization
 from .signac_wrapper.submit import submit_impl
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .cli_util import query_impl, check_cli_operations, is_valid_workspace, cli_cmd_setup, copy_to_archive
+from .cli_util import (
+    query_impl,
+    check_cli_operations,
+    is_valid_workspace,
+    cli_cmd_setup,
+    copy_to_archive,
+)
 from .core.core import map_view_folder_to_job_id, profile_call
 from .core.logger_setup import logger, setup_logging
 
@@ -64,6 +70,7 @@ def common_params(func):
         return func(*args, **kwargs)
 
     return wrapper
+
 
 @click.group()
 @click.version_option()
@@ -317,10 +324,7 @@ def status(ctx: click.Context, **kwargs):
             else:
                 unfinished += 1
         pad = " " * (max_view_len - len(view) + 1)
-        logger.info(
-            f"{view}:{pad}| {finished}x Completed |"
-            f" {unfinished}x Incomplete |"
-        )
+        logger.info(f"{view}:{pad}| {finished}x Completed | {unfinished}x Incomplete |")
 
 
 @cli.command()
