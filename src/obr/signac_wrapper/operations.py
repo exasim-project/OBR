@@ -29,7 +29,7 @@ logger = logging.getLogger("OBR")
 
 def calc_nth_parent(to_go: int, parent: dict) -> str:
     """Recursively follow parent links and return parent id."""
-    if to_go == 0 or parent == {}:
+    if to_go == 1 or parent == {}:
         pid = parent.get("parent_id", None)
         return pid
     return calc_nth_parent(to_go-1, parent.get("parent", {}))
@@ -71,7 +71,7 @@ class OpenFOAMProject(flow.FlowProject):
         """Returns the list of jobs of the given OpenFOAMProject where the last `summarize` levels are grouped together at the corresponding parent view.
         """
         grouped = {}
-        id_view_map = map_view_folder_to_job_id("view")
+        id_view_map = map_view_folder_to_job_id(os.path.join(self.path, "view"))
         for job in jobs:
             jobid = str(job.id)
             # only consider leaf nodes for now
@@ -80,7 +80,7 @@ class OpenFOAMProject(flow.FlowProject):
             current = dict(job.statepoint)
             p_view = None
             # follow parent links "bottom-up" in statepoint <summarize> times
-            pid = calc_nth_parent(to_go=summarize, parent=current)
+            pid = calc_nth_parent(to_go=summarize, parent=current) if summarize else jobid
             if summarize and pid is None:
                 # if pid is None, that means that the chosen summarize value was larger than the tree level of job
                 continue
