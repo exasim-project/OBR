@@ -27,6 +27,14 @@ from obr.core.caseOrigins import instantiate_origin_class
 logger = logging.getLogger("OBR")
 
 
+def calc_nth_parent(to_go: int, parent: dict) -> str:
+    """Recursively follow parent links and return parent id."""
+    if to_go == 0 or parent == {}:
+        pid = parent.get("parent_id", None)
+        return pid
+    return calc_nth_parent(to_go-1, parent.get("parent", {}))
+
+
 class OpenFOAMProject(flow.FlowProject):
     filtered_jobs: list[Job] = []
 
@@ -69,28 +77,18 @@ class OpenFOAMProject(flow.FlowProject):
             # only consider leaf nodes for now
             if summarize and job.statepoint["has_child"]:
                 continue
-            # follow parent links "bottom-up" in statepoint <summarize> times
-            current = job.statepoint
-            parent = None
+            current = dict(job.statepoint)
             p_view = None
-            pid = None
-            rec = summarize
-            while rec > 0 and (parent := current.get("parent", {})):
-                current = parent
-                pid = parent.get("parent_id", None)
-                # Stop when root is reached / no parent is set
-                if not parent:
-                    break
-                rec -= 1
+            # follow parent links "bottom-up" in statepoint <summarize> times
+            pid = calc_nth_parent(to_go=summarize, parent=current)
             if summarize and pid is None:
-                # ignore if summarize value is too large for current job
+                # if pid is None, that means that the chosen summarize value was larger than the tree level of job
                 continue
             if summarize and pid:
-                p_view = id_view_map.get(pid, "")
-                p_view = p_view.replace(pid, "")  # remove pid from view
-                if p_view and p_view not in grouped:
-                    grouped[p_view] = []
-
+                p_view = id_view_map.get(pid, "")  # default shouldn't be needed, but just to be safe
+                p_view = p_view.replace(pid, "")  # remove pid from end of view
+            if p_view and p_view not in grouped:
+                grouped[p_view] = []
             view = p_view or id_view_map.get(jobid)
             job.doc["state"]["view"] = view
             if view:
