@@ -67,11 +67,17 @@ class OpenFOAMProject(flow.FlowProject):
         """
         self._entrypoint = entrypoint
 
-    def group_jobs(self, jobs: list[Job], summarize: int = 0) -> dict[str, list[Job]]:
+    def update_job_views(self, job_view_mapping: dict[str, str]):
+        for job in self:
+            if view := job_view_mapping.get(job.id, None):
+                job.doc["state"]["view"] = view
+
+    def group_jobs(self, jobs: list[Job], path: str = "", summarize: int = 0) -> dict[str, list[Job]]:
         """Returns the list of jobs of the given OpenFOAMProject where the last `summarize` levels are grouped together at the corresponding parent view.
         """
         grouped = {}
-        id_view_map = map_view_folder_to_job_id(os.path.join(self.path, "view"))
+        path = path or self.path
+        id_view_map = map_view_folder_to_job_id(os.path.join(path, "view"))
         for job in jobs:
             jobid = str(job.id)
             # only consider leaf nodes for now
@@ -89,9 +95,7 @@ class OpenFOAMProject(flow.FlowProject):
                 p_view = p_view.replace(pid, "")  # remove pid from end of view
             if p_view and p_view not in grouped:
                 grouped[p_view] = []
-            view = p_view or id_view_map.get(jobid)
-            job.doc["state"]["view"] = view
-            if view:
+            if view := p_view or id_view_map.get(jobid):
                 view = view.replace(jobid, "")  # also remove id from view here
                 if view not in grouped:
                     grouped[view] = []

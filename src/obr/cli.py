@@ -311,7 +311,8 @@ def init(ctx: click.Context, **kwargs):
 def status(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
     sum = int(kwargs.get("summarize", 0))
-    grouped_jobs = project.group_jobs(jobs=jobs, summarize=sum)
+    grouped_jobs = project.group_jobs(jobs=jobs, path=project.path, summarize=sum)
+
     if len(grouped_jobs) == 0:
         logger.warning(f"No jobs can be displayed for summarize depth {sum}")
         return
