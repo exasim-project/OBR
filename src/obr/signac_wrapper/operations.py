@@ -28,7 +28,13 @@ logger = logging.getLogger("OBR")
 
 
 def calc_nth_parent(to_go: int, parent: dict) -> str:
-    """Recursively follow parent links and return parent id."""
+    """Recursively follow parent links and return parent id.
+    
+    Parameters:
+      to_go: depth to search for for parent id
+      parent: nested dictionary with the following structure 
+        { ..., 'parent_id': 'id', 'parent': { ... }}
+    """
     if to_go == 1 or parent == {}:
         pid = parent.get("parent_id", None)
         return pid
