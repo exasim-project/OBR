@@ -10,6 +10,7 @@ from obr.create_tree import (
     extract_from_operation,
     expand_generator_block,
 )
+from obr.core.core import map_view_folder_to_job_id
 from obr.signac_wrapper.operations import OpenFOAMProject
 
 
@@ -216,9 +217,10 @@ def test_group_jobs(tmpdir, emit_test_config):
     }
     emit_test_config.update(variation)
     create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
-
+    id_view_map = map_view_folder_to_job_id(os.path.join(project.path,"view"))
+    
     project.run(names=["fetchCase"])
-    group = project.group_jobs(project.filter_jobs(filters=[]), 0)
+    group = project.group_jobs(project.filter_jobs(filters=[]), id_view_map, 0)
     non_base_jobs = [j.id for j in project.filter_jobs([]) if not j.statepoint.get("has_child")]
     group_ids = set()
     for job_g in group.values():

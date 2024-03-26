@@ -299,6 +299,7 @@ def init(ctx: click.Context, **kwargs):
 @cli.command()
 @common_params
 @click.option("-d", "--detailed", is_flag=True)
+@click.option("-S", "--summarize", type=int, default=0)
 @click.option(
     "-S",
     "--summarize",
@@ -311,11 +312,13 @@ def init(ctx: click.Context, **kwargs):
 def status(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
     sum = int(kwargs.get("summarize", 0))
-    grouped_jobs = project.group_jobs(jobs=jobs, path=project.path, summarize=sum)
+    id_view_map = map_view_folder_to_job_id("view")
+    grouped_jobs = project.group_jobs(jobs, id_view_map, summarize=sum)
 
     if len(grouped_jobs) == 0:
         logger.warning(f"No jobs can be displayed for summarize depth {sum}")
         return
+
     max_view_len = len(max(grouped_jobs.keys(), key=lambda k: len(k)))
     for view, jobs in sorted(grouped_jobs.items()):
         finished = unfinished = 0

@@ -27,14 +27,6 @@ from obr.core.caseOrigins import instantiate_origin_class
 logger = logging.getLogger("OBR")
 
 
-def calc_nth_parent(to_go: int, parent: dict) -> str:
-    """Recursively follow parent links and return parent id."""
-    if to_go == 1 or parent == {}:
-        pid = parent.get("parent_id", None)
-        return pid
-    return calc_nth_parent(to_go-1, parent.get("parent", {}))
-
-
 class OpenFOAMProject(flow.FlowProject):
     filtered_jobs: list[Job] = []
 
@@ -67,40 +59,22 @@ class OpenFOAMProject(flow.FlowProject):
         """
         self._entrypoint = entrypoint
 
-    def update_job_views(self, job_view_mapping: dict[str, str]):
-        for job in self:
-            if view := job_view_mapping.get(job.id, None):
-                job.doc["state"]["view"] = view
-
-    def group_jobs(self, jobs: list[Job], path: str = "", summarize: int = 0) -> dict[str, list[Job]]:
-        """Returns the list of jobs of the given OpenFOAMProject where the last `summarize` levels are grouped together at the corresponding parent view.
+    def group_jobs(self, jobs, view_id_map: dict[str, str], summarize: int = 0) -> dict[str, list[str]]:
+        """Groups `jobs` based on their nth parent.
+        Returns a `dict[str, list[str]]` which maps the view path to a list of child jobs. 
         """
-        grouped = {}
-        path = path or self.path
-        id_view_map = map_view_folder_to_job_id(os.path.join(path, "view"))
+        group: dict[str, list] = dict()
         for job in jobs:
-            jobid = str(job.id)
-            # only consider leaf nodes for now
-            if summarize and job.statepoint["has_child"]:
+            jobid = job.id
+            p_view = view_id_map.get(jobid)
+            if not p_view:
                 continue
-            current = dict(job.statepoint)
-            p_view = None
-            # follow parent links "bottom-up" in statepoint <summarize> times
-            pid = calc_nth_parent(to_go=summarize, parent=current) if summarize else jobid
-            if summarize and pid is None:
-                # if pid is None, that means that the chosen summarize value was larger than the tree level of job
-                continue
-            if summarize and pid:
-                p_view = id_view_map.get(pid, "")  # default shouldn't be needed, but just to be safe
-                p_view = p_view.replace(pid, "")  # remove pid from end of view
-            if p_view and p_view not in grouped:
-                grouped[p_view] = []
-            if view := p_view or id_view_map.get(jobid):
-                view = view.replace(jobid, "")  # also remove id from view here
-                if view not in grouped:
-                    grouped[view] = []
-                grouped[view].append(job)  # add job to group job list
-        return grouped
+            # "traverse" the view tree bottom up -> remove the last n parts
+            p_view = p_view.rsplit("/", summarize)[0]
+            if p_view not in group:
+                group[p_view] = []
+            group[p_view].append(job)
+        return group
 
 
 generate = OpenFOAMProject.make_group(name="generate")
