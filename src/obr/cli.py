@@ -476,6 +476,17 @@ def query(ctx: click.Context, **kwargs):
     multiple=False,
     help="Path to script to apply to the workspace",
 )
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    default=[],
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
+        ' "solver==pisoFoam"'
+    ),
+)
 @click.pass_context
 def apply(ctx: click.Context, **kwargs):
     apply_file_path = Path(kwargs["file"]).resolve()
@@ -491,6 +502,7 @@ def apply(ctx: click.Context, **kwargs):
     sys.argv.append("-t")
     sys.argv.append("1")
     project.run(
+        jobs=jobs,
         names=["apply"],
         progress=True,
         np=1,
@@ -644,12 +656,7 @@ def archive(ctx: click.Context, **kwargs):
     setup_logging()
 
     # setup project and jobs
-    project = OpenFOAMProject().init_project()
-    filters: list[str] = list(kwargs.get("filter", ()))
-    # check if given path points to valid project
-    if not is_valid_workspace(filters):
-        return
-    jobs = project.filter_jobs(filters, False)
+    project, jobs = cli_cmd_setup(kwargs)
 
     dry_run = kwargs.get("dry_run", False)
     branch_name = None
