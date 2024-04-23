@@ -2,8 +2,9 @@
 Changelog
 =========
 
-0.3.0 (unreleased)
+0.3.x (unreleased)
 ------------------
+- Fix issues with filters, see https://github.com/hpsim/OBR/pull/204
 - Add common notation see https://github.com/hpsim/OBR/pull/146
 - Make numberOfSubdomains argument in yaml consistent see https://github.com/hpsim/OBR/pull/148
 - Fix missing of groups in `obr run --list-operations` view, see https://github.com/hpsim/OBR/pull/159.
