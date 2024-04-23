@@ -59,9 +59,11 @@ class OpenFOAMProject(flow.FlowProject):
         """
         self._entrypoint = entrypoint
 
-    def group_jobs(self, jobs, view_id_map: dict[str, str], summarize: int = 0) -> dict[str, list[str]]:
+    def group_jobs(
+        self, jobs, view_id_map: dict[str, str], summarize: int = 0
+    ) -> dict[str, list[str]]:
         """Returns the list of jobs of the given OpenFOAMProject where the last `summarize` levels are grouped together at the corresponding parent view.
-        Returns a `dict[str, list[str]]` which maps the view path to a list of child jobs. 
+        Returns a `dict[str, list[str]]` which maps the view path to a list of child jobs.
         """
         group: dict[str, list] = dict()
         for job in jobs:
