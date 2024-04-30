@@ -782,6 +782,7 @@ def archive(job: Job, args={}) -> Literal[True]:
 def apply(*jobs, args={}):
     import importlib.util
     import obr.cli
+
     # NOTE in order to allow job filtering for apply
     # we need to bypass the whatever project.run provides
     jobs = obr.cli.filtered_jobs
