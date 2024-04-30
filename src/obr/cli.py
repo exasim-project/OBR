@@ -494,7 +494,8 @@ def apply(ctx: click.Context, **kwargs):
         logger.error(f"Could not find {kwargs['file']}")
         sys.exit(1)
 
-    project, jobs = cli_cmd_setup(kwargs)
+    global filtered_jobs
+    project, filtered_jobs = cli_cmd_setup(kwargs)
 
     os.environ["OBR_APPLY_FILE"] = str(apply_file_path)
     os.environ["OBR_APPLY_CAMPAIGN"] = kwargs.get("campaign", "")
@@ -502,7 +503,6 @@ def apply(ctx: click.Context, **kwargs):
     sys.argv.append("-t")
     sys.argv.append("1")
     project.run(
-        jobs=jobs,
         names=["apply"],
         progress=True,
         np=1,
