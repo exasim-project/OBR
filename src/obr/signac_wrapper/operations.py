@@ -781,6 +781,12 @@ def archive(job: Job, args={}) -> Literal[True]:
 @OpenFOAMProject.operation(aggregator=flow.aggregator())
 def apply(*jobs, args={}):
     import importlib.util
+    import obr.cli
+
+    # NOTE in order to allow job filtering for apply
+    # we need to bypass the whatever project.run provides
+    jobs = obr.cli.filtered_jobs
+    print(len(jobs))
 
     fp = Path(os.environ.get("OBR_APPLY_FILE"))
     spec = importlib.util.spec_from_file_location("apply_func", fp)
