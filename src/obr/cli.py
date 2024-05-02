@@ -337,7 +337,7 @@ def run(ctx: click.Context, **kwargs):
     "-g", "--generate", is_flag=True, help="Call generate directly after init."
 )
 @click.option(
-    "-r", "--reset", is_flag=True, help="Call reset before trying ."
+    "-r", "--reset", is_flag=True, help="Call reset before running init."
 )
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
 @click.option(
