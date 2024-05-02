@@ -4,6 +4,7 @@ Changelog
 
 0.3.x (unreleased)
 ------------------
+- Add warning if running obr init on existing workspace, see https://github.com/hpsim/OBR/pull/207
 - Fix issues with filters, see https://github.com/hpsim/OBR/pull/204
 - Add common notation see https://github.com/hpsim/OBR/pull/146
 - Make numberOfSubdomains argument in yaml consistent see https://github.com/hpsim/OBR/pull/148
