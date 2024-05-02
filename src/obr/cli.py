@@ -351,14 +351,15 @@ def init(ctx: click.Context, **kwargs):
     ws_fold = kwargs.get("folder")
 
     # Check if workspace already exists
-    if (Path(ws_fold)/"workspace").exists():
+    if (Path(ws_fold) / "workspace").exists():
         logger.warn(
-            f"Existing workspace found! Re-initializing over existing  workspace might lead to unexpected behaviour. Consider purging existing workspace with obr reset -w"
+            f"Existing workspace found! Re-initializing over existing  workspace might"
+            f" lead to unexpected behaviour. Consider purging existing workspace with"
+            f" obr reset -w"
         )
         confirmed = click.confirm("Do you want to continue?", default=True)
         if not confirmed:
             return
-
 
     if ws_fold:
         (Path(ws_fold) / ".obr").mkdir(parents=True, exist_ok=True)
