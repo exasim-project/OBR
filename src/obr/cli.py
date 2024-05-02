@@ -336,6 +336,9 @@ def run(ctx: click.Context, **kwargs):
 @click.option(
     "-g", "--generate", is_flag=True, help="Call generate directly after init."
 )
+@click.option(
+    "-r", "--reset", is_flag=True, help="Call reset before running init."
+)
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
 @click.option(
     "-t",
@@ -346,6 +349,8 @@ def run(ctx: click.Context, **kwargs):
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.pass_context
 def init(ctx: click.Context, **kwargs):
+    if (kwargs.get("reset")):
+        reset_workspace(confirmed=False)
 
     # needs folder/.obr to exists before logger can be initialised
     ws_fold = kwargs.get("folder")
@@ -522,6 +527,27 @@ def apply(ctx: click.Context, **kwargs):
     logger.success("Successfully applied")
 
 
+def reset_workspace(confirmed):
+    def safe_delete(fn):
+        """This functions deletes the given path. If the path does not exist, it does nothing"""
+        path = Path(fn)
+        if path.exists():
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+    logger.warn(
+        f"Removing current obr workspace. This will remove all simulation results"
+    )
+    if not confirmed:
+        confirmed = click.confirm("Do you want to continue?", default=True)
+
+    safe_delete("workspace")
+    safe_delete("view")
+    safe_delete("signac.rc")
+    safe_delete(".signac")
+
+
 @cli.command()
 @common_params
 @click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
@@ -543,30 +569,13 @@ def apply(ctx: click.Context, **kwargs):
 def reset(ctx: click.Context, **kwargs):
     """deletes workspace or cases"""
 
-    def safe_delete(fn):
-        """This functions deletes the given path. If the path does not exist, it does nothing"""
-        path = Path(fn)
-        if path.exists():
-            if path.is_dir():
-                shutil.rmtree(path)
-            else:
-                path.unlink()
 
     project, jobs = cli_cmd_setup(kwargs)
 
     confirmed = kwargs.get("y", False)
     if kwargs.get("workspace"):
-        logger.warn(
-            f"Removing current obr workspace. This will remove all simulation results"
-        )
-        if not confirmed:
-            confirmed = click.confirm("Do you want to continue?", default=True)
-        if confirmed:
-            safe_delete("workspace")
-            safe_delete("view")
-            safe_delete("signac.rc")
-            safe_delete(".signac")
-            return
+        reset_workspace(confirmed)
+        return
 
     if kwargs.get("case"):
         jobids = [j.id for j in jobs]
