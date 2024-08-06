@@ -38,7 +38,6 @@ from .core.parse_yaml import read_yaml
 from .cli_util import (
     query_impl,
     check_cli_operations,
-    is_valid_workspace,
     cli_cmd_setup,
     copy_to_archive,
 )
