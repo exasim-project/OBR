@@ -2,8 +2,10 @@
 Changelog
 =========
 
-0.3.x (unreleased)
-------------------
+0.4.0 (Unreleased)
+- Add grouping of jobs: `obr status --summarize N`, see https://github.com/hpsim/OBR/pull/200.
+
+0.3.0 (2024-03-03)
 - Add warning if running obr init on existing workspace, see https://github.com/hpsim/OBR/pull/207
 - Fix issues with filters, see https://github.com/hpsim/OBR/pull/204
 - Add common notation see https://github.com/hpsim/OBR/pull/146
