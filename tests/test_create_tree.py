@@ -212,16 +212,18 @@ def test_group_jobs(tmpdir, emit_test_config):
             "operation": "op1",
             "schema": "path/{foo}",
             "common": {"c1": "v1"},
-            "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}]
+            "values": [{"foo": 1}, {"foo": 2}, {"foo": 3}],
         }]
     }
     emit_test_config.update(variation)
     create_tree(project, emit_test_config, {"folder": tmpdir}, skip_foam_src_check=True)
-    id_view_map = map_view_folder_to_job_id(os.path.join(project.path,"view"))
-    
+    id_view_map = map_view_folder_to_job_id(os.path.join(project.path, "view"))
+
     project.run(names=["fetchCase"])
     group = project.group_jobs(project.filter_jobs(filters=[]), id_view_map, 0)
-    non_base_jobs = [j.id for j in project.filter_jobs([]) if not j.statepoint.get("has_child")]
+    non_base_jobs = [
+        j.id for j in project.filter_jobs([]) if not j.statepoint.get("has_child")
+    ]
     group_ids = set()
     for job_g in group.values():
         for j in job_g:
