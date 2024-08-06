@@ -306,7 +306,7 @@ def init(ctx: click.Context, **kwargs):
     type=int,
     required=False,
     default=0,
-    help="summarize the by joining the last N views.",
+    help="summarize the by joining the last N view levels.",
 )
 @click.pass_context
 def status(ctx: click.Context, **kwargs):
