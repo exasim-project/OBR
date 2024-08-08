@@ -435,6 +435,82 @@ def apply(ctx: click.Context, **kwargs):
 
 
 @cli.command()
+@click.option("-c", "--config", required=True, help="Path to configuration file.")
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    default=[],
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
+        ' "solver==pisoFoam"'
+    ),
+)
+@click.pass_context
+def postProcess(ctx: click.Context, **kwargs):
+    from Owls.parser.LogFile import LogFile, transportEqn, customMatcher
+    from obr.core.core import get_latest_log, get_timestamp_from_log
+    from .core.queries import build_filter_query
+
+    def convert_to_numbers(df):                                        
+        """convert all columns to float if they dont have Name in it"""
+        return df.astype({col: "float" for col in df.columns if not "Name" in col})
+
+    project, filtered_jobs = cli_cmd_setup(kwargs)
+
+    config_str = read_yaml(kwargs)
+    config_str = config_str.replace("\n\n", "\n")
+    config = yaml.safe_load(config_str)
+
+    d = config["postProcess"]
+
+    matcher = {"transpEqn": lambda args: transportEqn(**args)}
+    matcher_args = {"transpEqn": ["name"]}
+
+    for m in d['matcher']:
+        regex = m['regexp']
+        matcher[m['name']] = lambda args: customMatcher(args['name'], regex.format(**args))  
+        matcher_args[m['name']] = m['args']
+
+    queries: list[Query] = build_filter_query(d['queries'])
+    query_results = project.query(jobs=filtered_jobs, query=queries)
+
+    records = []
+    for job in filtered_jobs:
+        record = {}
+        log = get_latest_log(job)
+        if not log:
+            continue
+        log_path = Path(job.path)/ "case"/ log
+
+        try:
+            record = query_results[job.id]
+            record['jobid'] = job.id
+            for l in d['log']:
+                matcher_name =l['matcher'] 
+                pass_args = {k:v for k,v in zip(matcher_args[matcher_name],l['args'])}
+                m = matcher[matcher_name](pass_args)
+
+                log_file_parser = LogFile(log_path, matcher=[m]) 
+                df = convert_to_numbers(log_file_parser.parse_to_df())
+                for col in df.columns:
+                    try:
+                        record[col] = df.iloc[1:][col].mean() 
+                    except:
+                        pass
+
+
+        except Exception as e:
+            print(e)
+        if record:
+            records.append(record)
+    
+    print(records)
+    logger.success("Successfully applied")
+
+
+@cli.command()
 @common_params
 @click.option("-w", "--workspace", is_flag=True, help="remove all obr project files")
 @click.option(
