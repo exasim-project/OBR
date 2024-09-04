@@ -333,7 +333,7 @@ class OpenFOAMCase(BlockMesh):
             )
 
         method = args["method"]
-        numberSubDomains = int(args.get("numberOfSubdomains", 0))
+        numberSubDomains = int(float(args.get("numberOfSubdomains", 0)))
         if method == "simple":
             distribute = args.get("simple", "distribute")
             if distribute == "distributed":
