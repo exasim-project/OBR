@@ -348,7 +348,7 @@ class OpenFOAMCase(BlockMesh):
                 "numberOfSubdomains": numberSubDomains,
                 "simpleCoeffs": {"n": coeffs},
             })
-        elif method == "simpleMultiLevel"
+        elif method == "simpleMultiLevel":
             numberSubDomains = int(args["numberOfSubdomains"])
             ratio = int(args["ratio"])
 
