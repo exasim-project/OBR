@@ -348,11 +348,37 @@ class OpenFOAMCase(BlockMesh):
                 "numberOfSubdomains": numberSubDomains,
                 "simpleCoeffs": {"n": coeffs},
             })
+        elif method == "simpleMultiLevel"
+            numberSubDomains = int(args["numberOfSubdomains"])
+            ratio = int(args["ratio"])
+
+            numberOuterSubdomains  = numberSubDomains / ratio
+            outerCoeffs = calculate_simple_partition(numberOuterSubDomains, [1, 1, 1])
+
+            cpuCoeffs = {
+                "method": "simple",
+                "numberOfSubdomains": numberOuterSubDomains,
+                "simpleCoeffs": {"n": outerCoeffs}}
+
+            coreCoeffs = {
+                "method": "scotch",
+                "numberOfSubdomains": ratio
+            }
+
+            self.decomposeParDict.set({
+                "method": "multiLevel",
+                "numberOfSubdomains": numberSubDomains,
+                "multiLevelCoeffs": {
+                    "cpus": cpuCoeffs,
+                    "cores": coreCoeffs,
+                },
+            })
         else:
             self.decomposeParDict.set({
                 "method": method,
                 "numberOfSubdomains": numberSubDomains,
             })
+
 
         log = self._exec_operation(["decomposePar", "-force"])
 
