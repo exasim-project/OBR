@@ -353,11 +353,12 @@ class OpenFOAMCase(BlockMesh):
             ratio = int(args["ratio"])
 
             numberOuterSubdomains  = numberSubDomains / ratio
-            outerCoeffs = calculate_simple_partition(numberOuterSubDomains, [1, 1, 1])
+            # TODO check if it cleanily divides
+            outerCoeffs = calculate_simple_partition(int(numberOuterSubdomains), [1, 1, 1])
 
             cpuCoeffs = {
                 "method": "simple",
-                "numberOfSubdomains": numberOuterSubDomains,
+                "numberOfSubdomains": numberOuterSubdomains,
                 "simpleCoeffs": {"n": outerCoeffs}}
 
             coreCoeffs = {
