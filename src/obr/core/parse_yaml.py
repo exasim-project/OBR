@@ -23,9 +23,12 @@ def read_yaml(kwargs: dict) -> str:
         config_str = add_includes(yaml_location, config_str)
 
     return parse_special_variables(
-        parse_special_variables(config_str, dict(os.environ), "env", kwargs.get("env", False)),
+        parse_special_variables(
+            config_str, dict(os.environ), "env", kwargs.get("env", False)
+        ),
         {"location": str(yaml_location)},
-        "yaml", kwargs.get("env", False)
+        "yaml",
+        kwargs.get("env", False),
     )
 
 
