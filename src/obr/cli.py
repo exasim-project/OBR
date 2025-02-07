@@ -456,7 +456,7 @@ def apply(ctx: click.Context, **kwargs):
 @click.pass_context
 def postProcess(ctx: click.Context, **kwargs):
     from Owls.parser.LogFile import LogFile, transportEqn, customMatcher
-    from obr.core.core import get_latest_log, get_timestamp_from_log
+    from obr.core.core import get_latest_log
     from .core.queries import build_filter_query
     from copy import deepcopy
     import json
