@@ -20,7 +20,7 @@ def owns_mesh(job):
 
 
 @FlowProject.label
-def unitialised(job):
+def uninitialised(job):
     has_ctrlDict = job.isfile("case/system/controlDict")
     return not has_ctrlDict
 
@@ -60,7 +60,7 @@ def final(job):
 
     NOTE as a side effect we check the number of cells
     """
-    if not unitialised(job):
+    if not uninitialised(job):
         final = not job.sp.get("has_child")
         if final:
             owner_path = f"{job.path}/case/constant/polyMesh/owner"
