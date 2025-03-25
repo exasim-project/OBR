@@ -701,7 +701,7 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     #     job.doc["state"]["global"] = "dirty"
     #     return "true"
 
-    solver = case.controlDict.get("application")
+    solver = case.solver
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
     res = job.doc["history"]
@@ -790,6 +790,11 @@ def runParallelSolver(job: Job, args={}) -> str:
             " {path}/case/{solver}_{timestamp}.log 2>&1"
         )
     )
+    # Check if a custom solver command is provided
+    custom_command = os.environ.get("OBR_CUSTOM_SOLVER_CMD")
+    # If a custom command is provided, replace {solver} in the template
+    if custom_command:
+        solver_cmd = solver_cmd.replace("{solver}", custom_command, 1)
     return run_cmd_builder(job, solver_cmd, args)
 
 
@@ -805,6 +810,11 @@ def runSerialSolver(job: Job, args={}):
         if env_run_template
         else "{solver} -case {path}/case > {path}/case/{solver}_{timestamp}.log 2>&1"
     )
+    # Check if a custom solver command is provided
+    custom_command = os.environ.get("OBR_CUSTOM_SOLVER_CMD")
+    # If a custom command is provided, replace {solver} in the template
+    if custom_command:
+        solver_cmd = solver_cmd.replace("{solver}", custom_command, 1)
     return run_cmd_builder(job, solver_cmd, args)
 
 

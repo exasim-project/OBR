@@ -233,7 +233,14 @@ class OpenFOAMCase(BlockMesh):
 
     @property
     def solver(self):
-        return self.controlDict.get("application")
+        # Check if a custom solver command is provided
+        custom_command = os.environ.get("OBR_CUSTOM_SOLVER_CMD")
+        # If a custom command is provided, replace {solver} in the template
+        if custom_command:
+            solver = custom_command.split()[0]
+        else:
+            solver = self.controlDict.get("application")
+        return solver
 
     def fetch_logs(self) -> list[Path]:
         solver = self.solver
