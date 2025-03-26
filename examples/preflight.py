@@ -1,21 +1,25 @@
 import os
 import re
 
-from pprint import pprint 
+
+from pprint import pprint
+
 from subprocess import check_output
 
 
 def is_mpich(env):
     print("Checking if MPI is MPICH")
-    assert 'mpich' in env['which mpirun']
+
+    assert "mpich" in env["which mpirun"]
 
 def is_mvapich2(env):
     print("Checking if MPI is MPICH")
-    assert 'mvapich2' in env['which mpirun']
+    assert "mvapich2" in env["which mpirun"]
+
 
 def validate_environ(environ):
     pprint(environ)
-    machine_alias = find_machine_alias(environ)  
+    machine_alias = find_machine_alias(environ)
     for requirement in requirements[machine_alias]:
         requirement(environ)
 
@@ -40,15 +44,10 @@ def main():
     version_checker(environ, "lscpu")
     validate_environ(environ)
 
-machine_alias = {
-        "guyot": ["guyot"],
-        "nla": ["nla-gpu2.ianm.kit.edu"]
-        }
 
-requirements = {
-        "guyot": [is_mpich],
-        "nla": [is_mvapich2]
-        }
+machine_alias = {"guyot": ["guyot"], "nla": ["nla-gpu2.ianm.kit.edu"]}
+
+requirements = {"guyot": [is_mpich], "nla": [is_mvapich2]}
 
 if __name__ == "__main__":
     main()

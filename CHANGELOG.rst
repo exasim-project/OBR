@@ -3,6 +3,7 @@ Changelog
 =========
 
 0.4.0 (Unreleased)
+- Add postprocess option: `obr postprocess -c <file>`, see https://github.com/exasim-project/OBR/pull/211.
 - Add grouping of jobs: `obr status --summarize N`, see https://github.com/hpsim/OBR/pull/200.
 
 0.3.0 (2024-03-03)
