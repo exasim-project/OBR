@@ -348,6 +348,40 @@ class OpenFOAMCase(BlockMesh):
                 "numberOfSubdomains": numberSubDomains,
                 "simpleCoeffs": {"n": coeffs},
             })
+        elif method == "simpleMultiLevel":
+            numberSubDomains = int(args["numberOfSubdomains"])
+            ranksPerNode = int(args["ranksPerNode"])
+            GPUsPerNode = int(args["GPUsPerNode"])
+
+            numberOuterSubdomains  = numberSubDomains / ranksPerNode
+            numberInnerSubdomains  = ranksPerNode / GPUsPerNode
+            # TODO check if it cleanily divides
+            #innerCoeffs = calculate_simple_partition(int(numberInnerSubdomains), [1, 1, 1])
+
+            nodeCoeffs = {
+                "method": "scotch",
+                "numberOfSubdomains": numberOuterSubdomains,
+                #"simpleCoeffs": {"n": [numberOuterSubdomains , 1 , 1]}
+                }
+            GPUCoeffs = {
+                "method": "scotch",
+                "numberOfSubdomains": GPUsPerNode,
+                #"simpleCoeffs": {"n": [GPUsPerNode , 1 , 1]}
+            }
+            CPUCoeffs = {
+                "method": "scotch",
+                "numberOfSubdomains": numberInnerSubdomains,
+                #"simpleCoeffs": {"n": innerCoeffs}
+            }
+            self.decomposeParDict.set({
+                "method": "multiLevel",
+                "numberOfSubdomains": numberSubDomains,
+                "multiLevelCoeffs": {
+                    "nodes": nodeCoeffs,
+                    "GPUs": GPUCoeffs,
+                    "CPUs": CPUCoeffs
+                },
+            })
         else:
             self.decomposeParDict.set({
                 "method": method,

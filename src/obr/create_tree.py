@@ -169,7 +169,8 @@ def expand_generator_block(operation):
                 # next k, v are the key values from the template record
                 # not to confused with the key value pair from the generator block
                 for k, v in template.items():
-                    gen_dict[k] = v.replace(key, str(val))
+                    if isinstance(v, str):
+                        gen_dict[k] = v.replace(key, str(val))
                     # additionally the original key and current
                     # val are added so that we can use it in schemas
                     gen_dict[key] = val
