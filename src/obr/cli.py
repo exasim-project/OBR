@@ -282,6 +282,7 @@ def run(ctx: click.Context, **kwargs):
     "-g", "--generate", is_flag=True, help="Call generate directly after init."
 )
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
+@click.option("-e", "--env", is_flag=True, help="Shows required environment variables and exits.")
 @click.option(
     "-e", "--env", is_flag=True, help="Shows required environment variables and exits."
 )
@@ -316,6 +317,7 @@ def init(ctx: click.Context, **kwargs):
 
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
+
     if kwargs.get("env"):
         sys.exit(0)
 
@@ -478,10 +480,11 @@ def apply(ctx: click.Context, **kwargs):
 @click.pass_context
 def postProcess(ctx: click.Context, **kwargs):
     from Owls.parser.LogFile import LogFile, transportEqn, customMatcher
-    from obr.core.core import get_latest_log
+    from obr.core.core import get_latest_log, get_timestamp_from_log
     from .core.queries import build_filter_query
     from copy import deepcopy
     import json
+
 
     def convert_to_numbers(df):
         """convert all columns to float if they dont have Name in it"""
@@ -499,6 +502,7 @@ def postProcess(ctx: click.Context, **kwargs):
     matcher_args = {"transpEqn": ["name"]}
     matcher_regex = {}
 
+
     for m in d["matcher"]:
         matcher[m["name"]] = lambda args, regex: customMatcher(
             args["name"], regex.format(**args)
@@ -515,6 +519,7 @@ def postProcess(ctx: click.Context, **kwargs):
         log = get_latest_log(job)
         if not log:
             continue
+
         log_path = Path(job.path) / "case" / log
 
         record = query_results[job.id]
