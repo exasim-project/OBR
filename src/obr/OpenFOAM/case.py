@@ -335,44 +335,65 @@ class OpenFOAMCase(BlockMesh):
         method = args["method"]
         numberSubDomains = int(args.get("numberOfSubdomains", 0))
         if method == "simple":
-            if not numberSubDomains:
-                coeffs = [int(i) for i in args["coeffs"]]
-                numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
-            else:
-                coeffs = args.get("coeffs", None)
-                if not coeffs:
-                    coeffs = calculate_simple_partition(numberSubDomains, [1, 1, 1])
+            distribute = args.get("simple", "distribute")
+            if distribute == "distributed":
+                if not numberSubDomains:
+                    coeffs = [int(i) for i in args["coeffs"]]
+                    numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
+                else:
+                    coeffs = args.get("coeffs", None)
+                    if not coeffs:
+                        coeffs = calculate_simple_partition(numberSubDomains, [1, 1, 1])
+            elif distribute == "x":
+                coeffs = [numberSubDomains, 1, 1]
+            elif distribute == "y":
+                coeffs = [1,numberSubDomains, 1]
+            elif distribute == "z":
+                coeffs = [1,1,numberSubDomains]
 
             self.decomposeParDict.set({
                 "method": method,
                 "numberOfSubdomains": numberSubDomains,
                 "simpleCoeffs": {"n": coeffs},
             })
-        elif method == "simpleMultiLevel":
-            numberSubDomains = int(args["numberOfSubdomains"])
-            ratio = int(args["ratio"])
+        elif method == "multiLevel":
+            numberSubDomainsTotal = int(args["numberOfSubdomains"])
+            ndomains = args["distribution"]
+            methods = args["methods"]
+            levels = args["levels"] # name of the level
 
-            numberOuterSubdomains  = numberSubDomains / ratio
-            # TODO check if it cleanily divides
-            outerCoeffs = calculate_simple_partition(int(numberOuterSubdomains), [1, 1, 1])
+            numberOfSubdomainsLast = numberSubDomains
+            dicts = []
 
-            cpuCoeffs = {
-                "method": "simple",
-                "numberOfSubdomains": numberOuterSubdomains,
-                "simpleCoeffs": {"n": outerCoeffs}}
+            ndCum = 1
+            ndConv = []
+            for nd in reversed(ndomains):
+                if nd == "auto":
+                    nCalc = numberSubDomainsTotal / ndCum
+                else:
+                    nCalc = int(nd)
+                ndCum *= nd
+                ndConv.insert(0, nCalc)
 
-            coreCoeffs = {
-                "method": "scotch",
-                "numberOfSubdomains": ratio
-            }
+
+            for nd, method in zip(ndConv, methods):
+                # compute Coeffs
+                if method == "scotch":
+                    dicts.append({
+                        "method": "scotch",
+                        "numberOfSubdomains": numberSubdomainsLevel
+                    })
+                if method == "simple":
+                    outerCoeffs = calculate_simple_partition(numberSubdomainsLevel, [1, 1, 1])
+                    dicts.append({
+                        "method": "simple",
+                        "numberOfSubdomains": numberSubdomainsLevel
+                        "simpleCoeffs": {"n": outerCoeffs}})
 
             self.decomposeParDict.set({
                 "method": "multiLevel",
-                "numberOfSubdomains": numberSubDomains,
-                "multiLevelCoeffs": {
-                    "cpus": cpuCoeffs,
-                    "cores": coreCoeffs,
-                },
+                "numberOfSubdomains": numberSubDomainsTotal,
+                "multiLevelCoeffs": {k: d for k,d in zip(levels,dicts)},
             })
         else:
             self.decomposeParDict.set({
