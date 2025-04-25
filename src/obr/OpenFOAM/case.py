@@ -294,6 +294,19 @@ class OpenFOAMCase(BlockMesh):
 
         self.job.doc["state"]["global"] = "ready"
 
+    def replaceMesh(self, args):
+        """Replace constant/polyMesh with a given polyMesh"""
+        source_path = Path(args["path"])
+        polyMeshPath =self.constant_folder / "polyMesh"
+        if polyMeshPath.exists():
+            shutil.rmtree(polyMeshPath)
+        if source_path.exists():
+            log = self._exec_operation(["cp", "-r", str(source_path), str(self.constant_folder)])
+        else:
+            raise FileNotFoundError(source_path)
+
+
+
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one
         gets created"""
@@ -336,7 +349,7 @@ class OpenFOAMCase(BlockMesh):
         numberSubDomains = int(float(args.get("numberOfSubdomains", 0)))
         if method == "simple":
             distribute = args.get("simple", "distribute")
-            if distribute == "distributed":
+            if distribute == "distribute":
                 if not numberSubDomains:
                     coeffs = [int(i) for i in args["coeffs"]]
                     numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
@@ -350,6 +363,9 @@ class OpenFOAMCase(BlockMesh):
                 coeffs = [1,numberSubDomains, 1]
             elif distribute == "z":
                 coeffs = [1,1,numberSubDomains]
+            else:
+                logger.error("Unknown distribution method " + distribute)
+
 
             self.decomposeParDict.set({
                 "method": method,
@@ -369,7 +385,7 @@ class OpenFOAMCase(BlockMesh):
             ndConv = []
             for nd in reversed(ndomains):
                 if nd == "auto":
-                    nCalc = numberSubDomainsTotal / ndCum
+                    nCalc =int( numberSubDomainsTotal / ndCum)
                 else:
                     nCalc = int(nd)
                 ndCum *= nd
@@ -381,18 +397,24 @@ class OpenFOAMCase(BlockMesh):
                 if method == "scotch":
                     dicts.append({
                         "method": "scotch",
-                        "numberOfSubdomains": numberSubdomainsLevel
+                        "numberOfSubdomains": nd
                     })
                 if method == "simple":
-                    outerCoeffs = calculate_simple_partition(numberSubdomainsLevel, [1, 1, 1])
+                    outerCoeffs = calculate_simple_partition(nd, [1, 1, 1])
                     dicts.append({
                         "method": "simple",
-                        "numberOfSubdomains": numberSubdomainsLevel
+                        "numberOfSubdomains": nd,
                         "simpleCoeffs": {"n": outerCoeffs}})
+                if method == "simpleX":
+                    outerCoeffs = calculate_simple_partition(nd, [1, 1, 1])
+                    dicts.append({
+                        "method": "simple",
+                        "numberOfSubdomains": nd,
+                        "simpleCoeffs": {"n": [nd, 1, 1]}})
 
             self.decomposeParDict.set({
                 "method": "multiLevel",
-                "numberOfSubdomains": numberSubDomainsTotal,
+                "numberOfSubdomains": int(numberSubDomainsTotal),
                 "multiLevelCoeffs": {k: d for k,d in zip(levels,dicts)},
             })
         else:

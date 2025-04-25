@@ -152,10 +152,15 @@ def expand_generator_block(operation):
     if generator := operation.get("generator"):
         if not (templates := generator.get("template")):
             raise AssertionError("No template section given.")
-        if not (values := generator.get("values")):
-            raise AssertionError("No value section given.")
         if not (key := generator.get("key")):
             raise AssertionError("No key given.")
+
+        values = generator.get("values")
+        range_ = generator.get("range")
+        if not values and not range:
+            raise AssertionError("Neither values nor a range was given.")
+        if not isinstance(values,list):
+            values = list(range(int(range_[0]),int(range_[1]),int(range_[2])))
 
         template_generated = []
         for val in values:
