@@ -63,12 +63,9 @@ def parse_special_variables(in_str: str, args: dict, domain: str, verbose: bool)
 def parse_queries(in_str: str, args: dict) -> str:
     """Replaces ${{ get.value }} expressions with environmental variable values"""
     ocurrances = re.findall(r"\${{get" + r"\.(\w+)}}", in_str)
-    print("parse_queries", in_str)
     for inst in ocurrances:
-        print("found inst", inst)
         if not args.get(inst, ""):
             logger.warning(f"warning get.{inst} query failed")
-        print("get", inst, args, str(args.get(inst, f"'{inst}'")))
         in_str = in_str.replace(
         "${{get." + inst + "}}", str(args.get(inst, f"'{inst}'"))
         )
