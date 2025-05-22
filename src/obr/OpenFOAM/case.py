@@ -357,7 +357,7 @@ class OpenFOAMCase(BlockMesh):
             })
         elif method == "simpleMultiLevel":
             numberSubDomains = int(args["numberOfSubdomains"])
-            ranksPerNode = int(args["ranksPerNode"])
+            ranksPerNode = int(args["tasksPerNode"])
             GPUsPerNode = int(args["GPUsPerNode"])
 
             numberOuterSubdomains  = numberSubDomains / ranksPerNode
