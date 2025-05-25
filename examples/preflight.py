@@ -1,15 +1,12 @@
 import os
 import re
 
-
 from pprint import pprint
-
 from subprocess import check_output
 
 
 def is_mpich(env):
     print("Checking if MPI is MPICH")
-
     assert "mpich" in env["which mpirun"]
 
 def is_mvapich2(env):

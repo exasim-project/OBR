@@ -301,6 +301,19 @@ class OpenFOAMCase(BlockMesh):
 
         self.job.doc["state"]["global"] = "ready"
 
+    def replaceMesh(self, args):
+        """Replace constant/polyMesh with a given polyMesh"""
+        source_path = Path(args["path"])
+        polyMeshPath =self.constant_folder / "polyMesh"
+        if polyMeshPath.exists():
+            shutil.rmtree(polyMeshPath)
+        if source_path.exists():
+            log = self._exec_operation(["cp", "-r", str(source_path), str(self.constant_folder)])
+        else:
+            raise FileNotFoundError(source_path)
+
+
+
     def decomposePar(self, args={}):
         """Sets decomposeParDict and calls decomposePar. If no decomposeParDict exists a new one
         gets created"""
@@ -342,58 +355,81 @@ class OpenFOAMCase(BlockMesh):
         method = args["method"]
         numberSubDomains = int(float(args.get("numberOfSubdomains", 0)))
         if method == "simple":
-            if not numberSubDomains:
-                coeffs = [int(i) for i in args["coeffs"]]
-                numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
+            distribute = args.get("simple", "distribute")
+            if distribute == "distribute":
+                if not numberSubDomains:
+                    coeffs = [int(i) for i in args["coeffs"]]
+                    numberSubDomains = coeffs[0] * coeffs[1] * coeffs[2]
+                else:
+                    coeffs = args.get("coeffs", None)
+                    if not coeffs:
+                        coeffs = calculate_simple_partition(numberSubDomains, [1, 1, 1])
+            elif distribute == "x":
+                coeffs = [numberSubDomains, 1, 1]
+            elif distribute == "y":
+                coeffs = [1,numberSubDomains, 1]
+            elif distribute == "z":
+                coeffs = [1,1,numberSubDomains]
             else:
-                coeffs = args.get("coeffs", None)
-                if not coeffs:
-                    coeffs = calculate_simple_partition(numberSubDomains, [1, 1, 1])
+                logger.error("Unknown distribution method " + distribute)
+
 
             self.decomposeParDict.set({
                 "method": method,
                 "numberOfSubdomains": numberSubDomains,
                 "simpleCoeffs": {"n": coeffs},
             })
-        elif method == "simpleMultiLevel":
-            numberSubDomains = int(args["numberOfSubdomains"])
-            ranksPerNode = int(args["tasksPerNode"])
-            GPUsPerNode = int(args["GPUsPerNode"])
+        elif method == "multiLevel":
+            numberSubDomainsTotal = int(args["numberOfSubdomains"])
+            ndomains = args["distribution"]
+            methods = args["methods"]
+            levels = args["levels"] # name of the level
 
-            numberOuterSubdomains  = numberSubDomains / ranksPerNode
-            numberInnerSubdomains  = ranksPerNode / GPUsPerNode
-            # TODO check if it cleanily divides
-            #innerCoeffs = calculate_simple_partition(int(numberInnerSubdomains), [1, 1, 1])
+            numberOfSubdomainsLast = numberSubDomains
+            dicts = []
 
-            nodeCoeffs = {
-                "method": "scotch",
-                "numberOfSubdomains": numberOuterSubdomains,
-                #"simpleCoeffs": {"n": [numberOuterSubdomains , 1 , 1]}
-                }
-            GPUCoeffs = {
-                "method": "scotch",
-                "numberOfSubdomains": GPUsPerNode,
-                #"simpleCoeffs": {"n": [GPUsPerNode , 1 , 1]}
-            }
-            CPUCoeffs = {
-                "method": "scotch",
-                "numberOfSubdomains": numberInnerSubdomains,
-                #"simpleCoeffs": {"n": innerCoeffs}
-            }
+            ndCum = 1
+            ndConv = []
+            for nd in reversed(ndomains):
+                if nd == "auto":
+                    nCalc =int( numberSubDomainsTotal / ndCum)
+                else:
+                    nCalc = int(nd)
+                ndCum *= nd
+                ndConv.insert(0, nCalc)
+
+
+            for nd, method in zip(ndConv, methods):
+                # compute Coeffs
+                if method == "scotch":
+                    dicts.append({
+                        "method": "scotch",
+                        "numberOfSubdomains": nd
+                    })
+                if method == "simple":
+                    outerCoeffs = calculate_simple_partition(nd, [1, 1, 1])
+                    dicts.append({
+                        "method": "simple",
+                        "numberOfSubdomains": nd,
+                        "simpleCoeffs": {"n": outerCoeffs}})
+                if method == "simpleX":
+                    outerCoeffs = calculate_simple_partition(nd, [1, 1, 1])
+                    dicts.append({
+                        "method": "simple",
+                        "numberOfSubdomains": nd,
+                        "simpleCoeffs": {"n": [nd, 1, 1]}})
+
             self.decomposeParDict.set({
                 "method": "multiLevel",
-                "numberOfSubdomains": numberSubDomains,
-                "multiLevelCoeffs": {
-                    "nodes": nodeCoeffs,
-                    "GPUs": GPUCoeffs,
-                    "CPUs": CPUCoeffs
-                },
+                "numberOfSubdomains": int(numberSubDomainsTotal),
+                "multiLevelCoeffs": {k: d for k,d in zip(levels,dicts)},
             })
         else:
             self.decomposeParDict.set({
                 "method": method,
                 "numberOfSubdomains": numberSubDomains,
             })
+
 
         log = self._exec_operation(["decomposePar", "-force"])
 

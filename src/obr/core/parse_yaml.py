@@ -23,7 +23,6 @@ def read_yaml(kwargs: dict) -> str:
         config_str = add_includes(yaml_location, config_str)
 
     return parse_special_variables(
-
         parse_special_variables(
             config_str, dict(os.environ), "env", kwargs.get("env", False)
         ),
@@ -58,6 +57,17 @@ def parse_special_variables(in_str: str, args: dict, domain: str, verbose: bool)
         print(f"setting {domain}.{inst} to {args.get(inst)}")
         in_str = in_str.replace(
             "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
+        )
+    return in_str
+
+def parse_queries(in_str: str, args: dict) -> str:
+    """Replaces ${{ get.value }} expressions with environmental variable values"""
+    ocurrances = re.findall(r"\${{get" + r"\.(\w+)}}", in_str)
+    for inst in ocurrances:
+        if not args.get(inst, ""):
+            logger.warning(f"warning get.{inst} query failed")
+        in_str = in_str.replace(
+        "${{get." + inst + "}}", str(args.get(inst, f"'{inst}'"))
         )
     return in_str
 
