@@ -678,6 +678,25 @@ def get_number_of_procs(job: Job) -> int:
         job.doc["cache"]["numberOfSubdomains"] = np
     return np
 
+def get_tasks_per_node(job: Job) -> int:
+    """Deduces the number of tasks per node if variable is set. Else assumes HoreKa full not o 76
+    """
+    tpn = statepoint_get(job.sp(), "tasksPerNode")
+    if tpn:
+        return int(tpn)
+    tpn = job.doc["cache"].get("tasksPerNode", False)
+    if tpn:
+        return int(tpn)
+    # Reading from numberOfSubdomains from the decomposeParDict should
+    # be the last resort since it is very expensive
+    tpn = int(
+        OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get(
+            "tasksPerNode"
+        )
+    )
+    if tpn:
+        job.doc["cache"]["tasksPerNode"] = tpn
+    return tpn
 
 def get_values(jobs: list, key: str) -> set:
     """find all different statepoint values"""
@@ -685,7 +704,7 @@ def get_values(jobs: list, key: str) -> set:
     return set(values)
 
 
-def run_cmd_builder(job: Job, cmd_format: str, overrides: dict | None = None) -> str:
+def run_cmd_builder(job: Job, cmd_format: str, overrides=None) -> str:
     """Builds the cli command to run a OpenFOAM application"""
 
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
@@ -712,6 +731,7 @@ def run_cmd_builder(job: Job, cmd_format: str, overrides: dict | None = None) ->
         "path": job.path,
         "timestamp": timestamp,
         "np": get_number_of_procs(job),
+        "tpn": get_tasks_per_node(job),
     }
     if overrides:
         cli_args.update(overrides)
@@ -788,8 +808,10 @@ def validateState(job: Job, args={}) -> None:
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.pre(has_pre_cmds)
 @OpenFOAMProject.operation(
-    cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
-)
+    cmd=True, directives={
+    "np": lambda job: get_number_of_procs(job),
+    "tpn": lambda job: get_tasks_per_node(job),
+    })
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelPre(job: Job, args={}) -> str:
     lines = []
@@ -818,8 +840,10 @@ def runParallelPre(job: Job, args={}) -> str:
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.pre.after(runParallelPre)
 @OpenFOAMProject.operation(
-    cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
-)
+    cmd=True, directives={
+    "np": lambda job: get_number_of_procs(job),
+    "tpn": lambda job: get_tasks_per_node(job),
+    })
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelSolver(job: Job, args={}) -> str:
     env_run_template = os.environ.get("OBR_RUN_CMD")
@@ -844,8 +868,10 @@ def runParallelSolver(job: Job, args={}) -> str:
 @OpenFOAMProject.pre(has_post_cmds)
 @OpenFOAMProject.pre.after(runParallelSolver)
 @OpenFOAMProject.operation(
-    cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
-)
+    cmd=True, directives={
+    "np": lambda job: get_number_of_procs(job),
+    "tpn": lambda job: get_tasks_per_node(job),
+    })
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelPost(job: Job, args={}) -> str:
     lines = []
