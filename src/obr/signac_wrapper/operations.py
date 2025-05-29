@@ -819,6 +819,9 @@ def runParallelPre(job: Job, args={}) -> str:
         )
     )
     pre_cmds= statepoint_get(job.sp(), "pre_cmds")
+    if not pre_cmds:
+        # Return an empty command or raise a controlled error to avoid crashing
+        return ":  # No pre_cmds, skipping execution"
     for raw in pre_cmds:
         lines.append(
             run_cmd_builder(
@@ -879,6 +882,9 @@ def runParallelPost(job: Job, args={}) -> str:
         )
     )
     post_cmds = statepoint_get(job.sp(), "post_cmds")
+    if not post_cmds:
+        # Return an empty command or raise a controlled error to avoid crashing
+        return ":  # No post_cmds, skipping execution"
     for raw in post_cmds:
         lines.append(
             run_cmd_builder(
