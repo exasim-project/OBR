@@ -399,6 +399,11 @@ class OpenFOAMCase(BlockMesh):
                         "method": "scotch",
                         "numberOfSubdomains": nd
                     })
+                if method == "kahip":
+                    dicts.append({
+                        "method": "kahip",
+                        "numberOfSubdomains": nd
+                    })
                 if method == "simple":
                     outerCoeffs = calculate_simple_partition(nd, [1, 1, 1])
                     dicts.append({
