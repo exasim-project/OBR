@@ -7,7 +7,7 @@ from subprocess import check_output
 from signac.job import Job
 from obr.signac_wrapper.operations import OpenFOAMProject
 from obr.core.queries import statepoint_query
-from obr.core.parse_yaml import eval_generator_expressions
+from obr.core.parse_yaml import eval_generator_expressions, parse_queries
 from obr.core.logger_setup import logger
 from copy import deepcopy
 
@@ -146,16 +146,21 @@ def to_dict(synced_dict) -> dict:
     return {k: v for k, v in synced_dict.items()}
 
 
-def expand_generator_block(operation):
+def expand_generator_block(operation, base_dict):
     """given an operation this function"""
     # check if we have a generator
     if generator := operation.get("generator"):
         if not (templates := generator.get("template")):
             raise AssertionError("No template section given.")
-        if not (values := generator.get("values")):
-            raise AssertionError("No value section given.")
         if not (key := generator.get("key")):
             raise AssertionError("No key given.")
+
+        values = generator.get("values")
+        range_ = generator.get("range")
+        if not values and not range:
+            raise AssertionError("Neither values nor a range was given.")
+        if not isinstance(values, list):
+            values = list(range(int(range_[0]), int(range_[1]), int(range_[2])))
 
         template_generated = []
         for val in values:
@@ -169,7 +174,10 @@ def expand_generator_block(operation):
                 # next k, v are the key values from the template record
                 # not to confused with the key value pair from the generator block
                 for k, v in template.items():
-                    gen_dict[k] = v.replace(key, str(val))
+                    if isinstance(v, str):
+                        # handle get. queries
+                        v = parse_queries(v, base_dict)
+                        gen_dict[k] = v.replace(key, str(val))
                     # additionally the original key and current
                     # val are added so that we can use it in schemas
                     gen_dict[key] = val
@@ -196,7 +204,8 @@ def add_variations(
         if not is_on_requested_parent(operation, parent_job):
             continue
 
-        values = expand_generator_block(operation)
+        base_dict = deepcopy(to_dict(parent_job.sp))
+        values = expand_generator_block(operation, base_dict)
 
         for value in values:
             # support if statetment when values are a subdictionary
@@ -218,7 +227,6 @@ def add_variations(
             }
 
             clean_path(parse_res["path"])
-            base_dict = deepcopy(to_dict(parent_job.sp))
 
             statepoint = {
                 "keys": parse_res["keys"],

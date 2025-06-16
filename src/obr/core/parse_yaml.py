@@ -61,6 +61,18 @@ def parse_special_variables(in_str: str, args: dict, domain: str, verbose: bool)
     return in_str
 
 
+def parse_queries(in_str: str, args: dict, domain: str) -> str:
+    """Replaces ${{ domain.value }} expressions with environmental variable values"""
+    ocurrances = re.findall(r"\${{get" + r"\.(\w+)}}", in_str)
+    for inst in ocurrances:
+        if not args.get(inst, ""):
+            logger.warning(f"warning {inst} not defined")
+        in_str = in_str.replace(
+            "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
+        )
+    return in_str
+
+
 def eval_generator_expressions(in_str: str) -> str:
     """Tries evaluate ${{ }} expressions"""
     expr = re.findall(r"\${{([\'\"\= 0.-9()*+A-Za-z_>!]*)}}", in_str)
