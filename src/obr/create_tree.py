@@ -159,8 +159,8 @@ def expand_generator_block(operation, base_dict):
         range_ = generator.get("range")
         if not values and not range:
             raise AssertionError("Neither values nor a range was given.")
-        if not isinstance(values,list):
-            values = list(range(int(range_[0]),int(range_[1]),int(range_[2])))
+        if not isinstance(values, list):
+            values = list(range(int(range_[0]), int(range_[1]), int(range_[2])))
 
         template_generated = []
         for val in values:

@@ -432,6 +432,7 @@ def blockMesh(job: Job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
 
+
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
@@ -443,8 +444,9 @@ def replaceMesh(job: Job, args={}):
     args = get_args(job, args)
     source_path = args["path"]
     mesh = args["mesh"]
-    OpenFOAMCase(str(job.path) + "/case", job).replaceMesh({"path": f"{source_path}/{mesh}/polyMesh"})
-
+    OpenFOAMCase(str(job.path) + "/case", job).replaceMesh(
+        {"path": f"{source_path}/{mesh}/polyMesh"}
+    )
 
 
 @generate
@@ -795,7 +797,7 @@ def resetCase(job: Job, args={}) -> None:
 def validateState(job: Job, args={}) -> None:
     """Dummy operation which forwards to validate_state_impl. The reason for keeping this function
     is that it can be called from the cli to force a detailed update"""
-    validate_state_impl("",job)
+    validate_state_impl("", job)
 
 @simulate
 @OpenFOAMProject.pre(final)

@@ -6,7 +6,6 @@ from subprocess import check_output
 import sys
 from pathlib import Path
 
-
 if TYPE_CHECKING:
 
     class OpenFOAMCase:
