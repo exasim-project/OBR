@@ -76,7 +76,12 @@ def submit_impl(
     else:
         eligible_jobs = []
         for operation in operations:
-            if operation in ["runParallelSolver","simulate","runParallelPre","runParallelPost"]:
+            if operation in [
+                "runParallelSolver",
+                "simulate",
+                "runParallelPre",
+                "runParallelPost",
+            ]:
                 for job in tqdm(jobs):
                     if final(job):
                         eligible_jobs.append(job)

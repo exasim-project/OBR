@@ -676,9 +676,9 @@ def get_number_of_procs(job: Job) -> int:
         job.doc["cache"]["numberOfSubdomains"] = np
     return np
 
+
 def get_tasks_per_node(job: Job) -> int:
-    """Deduces the number of tasks per node if variable is set. Else assumes HoreKa full not o 76
-    """
+    """Deduces the number of tasks per node if variable is set. Else assumes HoreKa full not o 76"""
     tpn = statepoint_get(job.sp(), "tasksPerNode")
     if tpn:
         return int(tpn)
@@ -688,13 +688,12 @@ def get_tasks_per_node(job: Job) -> int:
     # Reading from numberOfSubdomains from the decomposeParDict should
     # be the last resort since it is very expensive
     tpn = int(
-        OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get(
-            "tasksPerNode"
-        )
+        OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get("tasksPerNode")
     )
     if tpn:
         job.doc["cache"]["tasksPerNode"] = tpn
     return tpn
+
 
 def get_values(jobs: list, key: str) -> set:
     """find all different statepoint values"""
@@ -746,12 +745,12 @@ def run_cmd_builder(job: Job, cmd_format: str, overrides=None) -> str:
     })
     job.doc["history"] = res
 
-    #cli_args = {
+    # cli_args = {
     ##    "solver": solver,
     #    "path": job.path,
     #    "timestamp": timestamp,
     #    "np": get_number_of_procs(job),
-    #}
+    # }
     preflight = os.environ.get("OBR_PREFLIGHT")
     if preflight:
         preflight_cmd = f"{preflight} > {job.path}/case/preflight_{timestamp}.log && "
@@ -772,9 +771,12 @@ def validate_state_impl(_: str, job: Job) -> None:
     case = OpenFOAMCase(Path(job.path) / "case", job)
     case.detailed_update()
 
+
 def has_pre_cmds(job):
     """Return True only if the state point contains at least one pre command."""
     return bool(statepoint_get(job.sp(), "pre_cmds"))
+
+
 def has_post_cmds(job):
     """Return True only if the state point contains at least one post command."""
     return bool(statepoint_get(job.sp(), "post_cmds"))
@@ -799,15 +801,18 @@ def validateState(job: Job, args={}) -> None:
     is that it can be called from the cli to force a detailed update"""
     validate_state_impl("", job)
 
+
 @simulate
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.pre(has_pre_cmds)
 @OpenFOAMProject.operation(
-    cmd=True, directives={
-    "np": lambda job: get_number_of_procs(job),
-    "tpn": lambda job: get_tasks_per_node(job),
-    })
+    cmd=True,
+    directives={
+        "np": lambda job: get_number_of_procs(job),
+        "tpn": lambda job: get_tasks_per_node(job),
+    },
+)
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelPre(job: Job, args={}) -> str:
     lines = []
@@ -820,7 +825,7 @@ def runParallelPre(job: Job, args={}) -> str:
             " {path}/case/{solver}_{timestamp}.log 2>&1"
         )
     )
-    pre_cmds= statepoint_get(job.sp(), "pre_cmds")
+    pre_cmds = statepoint_get(job.sp(), "pre_cmds")
     if not pre_cmds:
         # Return an empty command or raise a controlled error to avoid crashing
         return ":  # No pre_cmds, skipping execution"
@@ -829,20 +834,26 @@ def runParallelPre(job: Job, args={}) -> str:
             run_cmd_builder(
                 job,
                 solver_cmd,
-                overrides={"solver": raw.split()[0],"solverargs": " ".join(raw.split()[1:])}, # raw may include extra CLI flags
+                overrides={
+                    "solver": raw.split()[0],
+                    "solverargs": " ".join(raw.split()[1:]),
+                },  # raw may include extra CLI flags
             )
         )
     return "\n".join(lines)
+
 
 @simulate
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.pre.after(runParallelPre)
 @OpenFOAMProject.operation(
-    cmd=True, directives={
-    "np": lambda job: get_number_of_procs(job),
-    "tpn": lambda job: get_tasks_per_node(job),
-    })
+    cmd=True,
+    directives={
+        "np": lambda job: get_number_of_procs(job),
+        "tpn": lambda job: get_tasks_per_node(job),
+    },
+)
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelSolver(job: Job, args={}) -> str:
     env_run_template = os.environ.get("OBR_RUN_CMD")
@@ -859,7 +870,8 @@ def runParallelSolver(job: Job, args={}) -> str:
     # If a custom command is provided, replace {solver} in the template
     if custom_command:
         solver_cmd = solver_cmd.replace("{solver}", custom_command, 1)
-    return run_cmd_builder(job, solver_cmd,args)
+    return run_cmd_builder(job, solver_cmd, args)
+
 
 @simulate
 @OpenFOAMProject.pre(final)
@@ -867,10 +879,12 @@ def runParallelSolver(job: Job, args={}) -> str:
 @OpenFOAMProject.pre(has_post_cmds)
 @OpenFOAMProject.pre.after(runParallelSolver)
 @OpenFOAMProject.operation(
-    cmd=True, directives={
-    "np": lambda job: get_number_of_procs(job),
-    "tpn": lambda job: get_tasks_per_node(job),
-    })
+    cmd=True,
+    directives={
+        "np": lambda job: get_number_of_procs(job),
+        "tpn": lambda job: get_tasks_per_node(job),
+    },
+)
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelPost(job: Job, args={}) -> str:
     lines = []
@@ -892,10 +906,14 @@ def runParallelPost(job: Job, args={}) -> str:
             run_cmd_builder(
                 job,
                 solver_cmd,
-                overrides={"solver": raw.split()[0],"solverargs": " ".join(raw.split()[1:])}, # raw may include extra CLI flags
+                overrides={
+                    "solver": raw.split()[0],
+                    "solverargs": " ".join(raw.split()[1:]),
+                },  # raw may include extra CLI flags
             )
         )
     return "\n".join(lines)
+
 
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)

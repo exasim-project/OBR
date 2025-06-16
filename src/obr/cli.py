@@ -104,7 +104,10 @@ def cli(ctx: click.Context, **kwargs):
     "--solver-cmd",
     type=str,
     default="",
-    help="Custom command to replace the solver in runParallelSolver, e.g., 'topoSetDict -latestTime'.",
+    help=(
+        "Custom command to replace the solver in runParallelSolver, e.g., 'topoSetDict"
+        " -latestTime'."
+    ),
 )
 @click.option(
     "--template",
@@ -151,7 +154,9 @@ def submit(ctx: click.Context, **kwargs):
     operations = kwargs.get("operations", "").split(",")
     custom_command = kwargs.get("solver_cmd", "")
     if custom_command:
-        os.environ["OBR_CUSTOM_SOLVER_CMD"] = custom_command  # Store command in an environment variable
+        os.environ["OBR_CUSTOM_SOLVER_CMD"] = (
+            custom_command  # Store command in an environment variable
+        )
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
@@ -189,7 +194,10 @@ def submit(ctx: click.Context, **kwargs):
     "--solver-cmd",
     type=str,
     default="",
-    help="Custom command to replace the solver in runParallelSolver, e.g., 'topoSetDict -latestTime'.",
+    help=(
+        "Custom command to replace the solver in runParallelSolver, e.g., 'topoSetDict"
+        " -latestTime'."
+    ),
 )
 @click.option(
     "-l",
@@ -220,7 +228,9 @@ def run(ctx: click.Context, **kwargs):
     operations = kwargs.get("operations", "").split(",")
     custom_command = kwargs.get("solver_cmd", "")
     if custom_command:
-        os.environ["OBR_CUSTOM_SOLVER_CMD"] = custom_command  # Store command in an environment variable
+        os.environ["OBR_CUSTOM_SOLVER_CMD"] = (
+            custom_command  # Store command in an environment variable
+        )
 
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
@@ -239,7 +249,7 @@ def run(ctx: click.Context, **kwargs):
         )
         return
 
-    #if kwargs.get("operations") == "runParallelSolver":
+    # if kwargs.get("operations") == "runParallelSolver":
     if "runParallelSolver" in operations:
         # NOTE if tasks is not set explicitly we set it to 1 for parallelSolverSolver
         # to avoid oversubsrciption
@@ -249,7 +259,7 @@ def run(ctx: click.Context, **kwargs):
             sys.argv.append(str(ntasks))
         project.run(
             jobs=jobs,
-           #names=operations,
+            # names=operations,
             names=["runParallelSolver"],
             progress=True,
             np=ntasks,
@@ -282,7 +292,9 @@ def run(ctx: click.Context, **kwargs):
     "-g", "--generate", is_flag=True, help="Call generate directly after init."
 )
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
-@click.option("-e", "--env", is_flag=True, help="Shows required environment variables and exits.")
+@click.option(
+    "-e", "--env", is_flag=True, help="Shows required environment variables and exits."
+)
 @click.option(
     "-e", "--env", is_flag=True, help="Shows required environment variables and exits."
 )
