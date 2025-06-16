@@ -259,9 +259,7 @@ def run(ctx: click.Context, **kwargs):
 @click.option(
     "-g", "--generate", is_flag=True, help="Call generate directly after init."
 )
-@click.option(
-    "-r", "--reset", is_flag=True, help="Call reset before running init."
-)
+@click.option("-r", "--reset", is_flag=True, help="Call reset before running init.")
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
 @click.option(
     "-e", "--env", is_flag=True, help="Shows required environment variables and exits."
@@ -275,7 +273,7 @@ def run(ctx: click.Context, **kwargs):
 @click.option("-u", "--url", default=None, help="Url to a configuration yaml")
 @click.pass_context
 def init(ctx: click.Context, **kwargs):
-    if (kwargs.get("reset")):
+    if kwargs.get("reset"):
         reset_workspace(confirmed=False)
     # needs folder/.obr to exists before logger can be initialised
     ws_fold = kwargs.get("folder")
@@ -454,6 +452,7 @@ def reset_workspace(confirmed):
                 shutil.rmtree(path)
             else:
                 path.unlink()
+
     logger.warn(
         f"Removing current obr workspace. This will remove all simulation results"
     )
@@ -571,7 +570,6 @@ def postProcess(ctx: click.Context, **kwargs):
 @click.pass_context
 def reset(ctx: click.Context, **kwargs):
     """deletes workspace or cases"""
-
 
     project, jobs = cli_cmd_setup(kwargs)
 
