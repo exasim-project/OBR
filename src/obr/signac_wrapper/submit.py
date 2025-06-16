@@ -78,7 +78,7 @@ def submit_impl(
         for operation in operations:
             if operation in [
                 "runParallelSolver",
-                "simulate",
+                "execute",
                 "runParallelPre",
                 "runParallelPost",
             ]:
