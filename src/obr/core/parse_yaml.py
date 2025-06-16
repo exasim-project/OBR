@@ -55,7 +55,6 @@ def parse_special_variables(in_str: str, args: dict, domain: str, verbose: bool)
         if not args.get(inst, ""):
             logger.warning(f"warning {inst} not defined")
         print(f"setting {domain}.{inst} to {args.get(inst)}")
-<<<<<<< feat/multilevel
         in_str = in_str.replace(
             "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
         )
@@ -68,8 +67,6 @@ def parse_queries(in_str: str, args: dict, domain: str) -> str:
     for inst in ocurrances:
         if not args.get(inst, ""):
             logger.warning(f"warning {inst} not defined")
-=======
->>>>>>> dev
         in_str = in_str.replace(
             "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
         )
