@@ -378,10 +378,7 @@ class OpenFOAMCase(BlockMesh):
             ndomains = args["distribution"]
             methods = args["methods"]
             levels = args["levels"]  # name of the level
-
-            numberOfSubdomainsLast = numberSubDomains
             dicts = []
-
             ndCum = 1
             ndConv = []
             for nd in reversed(ndomains):
