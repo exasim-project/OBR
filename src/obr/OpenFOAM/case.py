@@ -366,13 +366,11 @@ class OpenFOAMCase(BlockMesh):
             else:
                 logger.error("Unknown distribution method " + distribute)
 
-            self.decomposeParDict.set(
-                {
-                    "method": method,
-                    "numberOfSubdomains": numberSubDomains,
-                    "simpleCoeffs": {"n": coeffs},
-                }
-            )
+            self.decomposeParDict.set({
+                "method": method,
+                "numberOfSubdomains": numberSubDomains,
+                "simpleCoeffs": {"n": coeffs},
+            })
         elif method == "multiLevel":
             numberSubDomainsTotal = int(args["numberOfSubdomains"])
             ndomains = args["distribution"]
@@ -397,37 +395,29 @@ class OpenFOAMCase(BlockMesh):
                     dicts.append({"method": "kahip", "numberOfSubdomains": nd})
                 if method == "simple":
                     outerCoeffs = calculate_simple_partition(nd, [1, 1, 1])
-                    dicts.append(
-                        {
-                            "method": "simple",
-                            "numberOfSubdomains": nd,
-                            "simpleCoeffs": {"n": outerCoeffs},
-                        }
-                    )
+                    dicts.append({
+                        "method": "simple",
+                        "numberOfSubdomains": nd,
+                        "simpleCoeffs": {"n": outerCoeffs},
+                    })
                 if method == "simpleX":
                     outerCoeffs = calculate_simple_partition(nd, [1, 1, 1])
-                    dicts.append(
-                        {
-                            "method": "simple",
-                            "numberOfSubdomains": nd,
-                            "simpleCoeffs": {"n": [nd, 1, 1]},
-                        }
-                    )
+                    dicts.append({
+                        "method": "simple",
+                        "numberOfSubdomains": nd,
+                        "simpleCoeffs": {"n": [nd, 1, 1]},
+                    })
 
-            self.decomposeParDict.set(
-                {
-                    "method": "multiLevel",
-                    "numberOfSubdomains": int(numberSubDomainsTotal),
-                    "multiLevelCoeffs": {k: d for k, d in zip(levels, dicts)},
-                }
-            )
+            self.decomposeParDict.set({
+                "method": "multiLevel",
+                "numberOfSubdomains": int(numberSubDomainsTotal),
+                "multiLevelCoeffs": {k: d for k, d in zip(levels, dicts)},
+            })
         else:
-            self.decomposeParDict.set(
-                {
-                    "method": method,
-                    "numberOfSubdomains": numberSubDomains,
-                }
-            )
+            self.decomposeParDict.set({
+                "method": method,
+                "numberOfSubdomains": numberSubDomains,
+            })
 
         log = self._exec_operation(["decomposePar", "-force"])
 
