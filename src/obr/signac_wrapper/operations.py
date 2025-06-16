@@ -80,7 +80,7 @@ class OpenFOAMProject(flow.FlowProject):
 
 
 generate = OpenFOAMProject.make_group(name="generate")
-simulate = OpenFOAMProject.make_group(name="simulate")
+simulate = OpenFOAMProject.make_group(name="execute")
 
 
 def is_case(job: Job) -> bool:
