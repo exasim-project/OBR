@@ -749,12 +749,6 @@ def run_cmd_builder(job: Job, cmd_format: str, overrides=None) -> str:
     )
     job.doc["history"] = res
 
-    # cli_args = {
-    ##    "solver": solver,
-    #    "path": job.path,
-    #    "timestamp": timestamp,
-    #    "np": get_number_of_procs(job),
-    # }
     preflight = os.environ.get("OBR_PREFLIGHT")
     if preflight:
         preflight_cmd = f"{preflight} > {job.path}/case/preflight_{timestamp}.log && "

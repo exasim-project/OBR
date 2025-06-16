@@ -70,7 +70,7 @@ def check_cli_operations(
     """list available operations if none are specified or given the click option or an incorrect op is given"""
     if operations == ["generate"]:
         return True
-    if operations == ["simulate"]:
+    if operations == ["execute"]:
         return True
     if list_operations:
         project.print_operations()
