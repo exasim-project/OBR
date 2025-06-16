@@ -249,7 +249,6 @@ def run(ctx: click.Context, **kwargs):
         )
         return
 
-    # if kwargs.get("operations") == "runParallelSolver":
     if "runParallelSolver" in operations:
         # NOTE if tasks is not set explicitly we set it to 1 for parallelSolverSolver
         # to avoid oversubsrciption
@@ -292,9 +291,6 @@ def run(ctx: click.Context, **kwargs):
     "-g", "--generate", is_flag=True, help="Call generate directly after init."
 )
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
-@click.option(
-    "-e", "--env", is_flag=True, help="Shows required environment variables and exits."
-)
 @click.option(
     "-e", "--env", is_flag=True, help="Shows required environment variables and exits."
 )
