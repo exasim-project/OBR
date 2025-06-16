@@ -23,7 +23,6 @@ import logging
 import shutil
 import functools
 
-from signac.job import Job
 from pathlib import Path
 from subprocess import check_output
 
@@ -31,13 +30,17 @@ from git.repo import Repo
 from git.util import Actor
 from git import InvalidGitRepositoryError
 from datetime import datetime
-from typing import Union, Optional, Any
 
 from .signac_wrapper.operations import OpenFOAMProject, needs_initialization
 from .signac_wrapper.submit import submit_impl
 from .create_tree import create_tree
 from .core.parse_yaml import read_yaml
-from .cli_impl import query_impl
+from .cli_util import (
+    query_impl,
+    check_cli_operations,
+    cli_cmd_setup,
+    copy_to_archive,
+)
 from .core.core import map_view_folder_to_job_id, profile_call
 from .core.logger_setup import logger, setup_logging
 
@@ -66,85 +69,6 @@ def common_params(func):
         return func(*args, **kwargs)
 
     return wrapper
-
-
-def check_cli_operations(
-    project: OpenFOAMProject, operations: list[str], list_operations: Optional[Any]
-) -> bool:
-    """list available operations if none are specified or given the click option or an incorrect op is given"""
-    if operations == ["generate"]:
-        return True
-    if list_operations:
-        project.print_operations()
-        return False
-    elif not operations:
-        logger.warning("No operation(s) specified.")
-        project.print_operations()
-        logger.warning("Syntax: obr run [-o|--operation] <operation>(,<operation>)+")
-        return False
-    elif any((false_op := op) not in project.operations for op in operations):
-        logger.warning(f"Specified operation {false_op} is not a valid operation.")
-        project.print_operations()
-        return False
-    return True
-
-
-def is_valid_workspace(filters: list = []) -> bool:
-    """This function checks if:
-    - the `workspace` folder is not empty, and
-    - applying filters would return an empty list
-    """
-    project: OpenFOAMProject = OpenFOAMProject.get_project()
-    jobs: list[Job] = project.filter_jobs(filters=filters)
-    if len(jobs) == 0:
-        if filters == []:
-            logger.warning("No jobs found in workspace folder!")
-            return False
-        logger.warning(
-            f"Found no jobs that satisfy the given filter(s) {' and '.join(filters)}!"
-        )
-        return False
-    return True
-
-
-def cli_cmd_setup(kwargs: dict) -> tuple[OpenFOAMProject, Job]:
-    """This function performs the common pattern of checking project folders for existence and creating the project and extracting the jobs."""
-    if kwargs.get("folder"):
-        os.chdir(kwargs["folder"])
-        # ensure .obr exists
-        Path(".obr").mkdir(parents=True, exist_ok=True)
-    setup_logging()
-    project = OpenFOAMProject.get_project()
-    filters: list[str] = kwargs.get("filter", [])
-    if len(filters) > 0 and kwargs.get("job"):
-        raise AssertionError("Filters and job flags are mutually exclusive")
-
-    if sel := kwargs.get("job"):
-        jobs = [job for job in project if sel == job.id]
-    else:
-        jobs = project.filter_jobs(filters=filters)
-
-    # check if given path points to valid project
-    if not is_valid_workspace(filters):
-        logger.warning("Workspace is not valid! Exiting.")
-        sys.exit(1)
-    return project, jobs
-
-
-def copy_to_archive(
-    repo: Union[Repo, None], use_git_repo: bool, src_file: Path, target_file: Path
-) -> None:
-    """Copies files to archive repo"""
-    # ensure target directory exists()
-    target_path = target_file.parents[0]
-    if not target_path.exists():
-        target_path.mkdir(parents=True)
-    logger.debug(f"cp \\\n\t{src_file}\n\t{target_file.resolve()}")
-    if src_file.is_symlink():
-        src_file = Path(os.path.realpath(src_file))
-    check_output(["cp", src_file, target_file])
-    if use_git_repo and repo:
-        repo.git.add(target_file)  # NOTE do _not_ do repo.git.add(all=True)
 
 
 @click.group()
@@ -311,7 +235,6 @@ def run(ctx: click.Context, **kwargs):
         return
 
     if not kwargs.get("aggregate"):
-
         GLOBAL_UNINIT_COUNT = 0
         for job in jobs:
             if job.sp().get("operation") in operations and needs_initialization(job):
@@ -341,6 +264,9 @@ def run(ctx: click.Context, **kwargs):
 )
 @click.option("-c", "--config", required=True, help="Path to configuration file.")
 @click.option(
+    "-e", "--env", is_flag=True, help="Shows required environment variables and exits."
+)
+@click.option(
     "-t",
     "--tasks",
     default=-1,
@@ -351,7 +277,6 @@ def run(ctx: click.Context, **kwargs):
 def init(ctx: click.Context, **kwargs):
     if (kwargs.get("reset")):
         reset_workspace(confirmed=False)
-
     # needs folder/.obr to exists before logger can be initialised
     ws_fold = kwargs.get("folder")
 
@@ -374,6 +299,9 @@ def init(ctx: click.Context, **kwargs):
 
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
+    if kwargs.get("env"):
+        sys.exit(0)
+
     config = yaml.safe_load(config_str)
 
     project = OpenFOAMProject.init_project(path=ws_fold)
@@ -393,46 +321,36 @@ def init(ctx: click.Context, **kwargs):
 @cli.command()
 @common_params
 @click.option("-d", "--detailed", is_flag=True)
+@click.option("-S", "--summarize", type=int, default=0)
 @click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    default=[],
-    help=(
-        "Pass a <key><predicate><value> value pair per occurrence of --filter."
-        " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
-        ' "solver==pisoFoam"'
-    ),
+    "-S",
+    "--summarize",
+    type=int,
+    required=False,
+    default=0,
+    help="summarize the by joining the last N view levels.",
 )
 @click.pass_context
 def status(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
-
-    # project.print_status(detailed=kwargs["detailed"], pretty=True)
+    sum = int(kwargs.get("summarize", 0))
     id_view_map = map_view_folder_to_job_id("view")
+    grouped_jobs = project.group_jobs(jobs, id_view_map, summarize=sum)
 
-    finished, unfinished = [], []
-    max_view_len = 0
-    logger.info("Detailed overview:\n" + "=" * 90)
-    for job in jobs:
-        jobid = job.id
-        job.doc["state"]["view"] = id_view_map.get(jobid)
-        if view := id_view_map.get(jobid):
-            labels = project.labels(job)
-            max_view_len = max(len(view), max_view_len)
-            if "finished" in labels:
-                finished.append((view, jobid, labels))
+    if len(grouped_jobs) == 0:
+        logger.warning(f"No jobs can be displayed for summarize depth {sum}")
+        return
+
+    max_view_len = len(max(grouped_jobs.keys(), key=lambda k: len(k)))
+    for view, jobs in sorted(grouped_jobs.items()):
+        finished = unfinished = 0
+        for job in jobs:
+            if "finished" in project.labels(job):
+                finished += 1
             else:
-                unfinished.append((view, jobid, labels))
-    finished.sort()
-    for view, jobid, labels in finished:
+                unfinished += 1
         pad = " " * (max_view_len - len(view) + 1)
-        logger.info(f"{view}:{pad}| C | {jobid}")
-    unfinished.sort()
-    for view, jobid, labels in unfinished:
-        pad = " " * (max_view_len - len(view) + 1)
-        logger.info(f"{view}:{pad}| I | {jobid}")
-    logger.info("Flags: C - Completed, I - Incomplete")
+        logger.info(f"{view}:{pad}| {finished}x Completed | {unfinished}x Incomplete |")
 
 
 @cli.command()
@@ -546,6 +464,91 @@ def reset_workspace(confirmed):
     safe_delete("view")
     safe_delete("signac.rc")
     safe_delete(".signac")
+
+
+@cli.command()
+@click.option("-c", "--config", required=True, help="Path to configuration file.")
+@click.option(
+    "--filter",
+    type=str,
+    multiple=True,
+    default=[],
+    help=(
+        "Pass a <key><predicate><value> value pair per occurrence of --filter."
+        " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
+        ' "solver==pisoFoam"'
+    ),
+)
+@click.pass_context
+def postProcess(ctx: click.Context, **kwargs):
+    from Owls.parser.LogFile import LogFile, transportEqn, customMatcher
+    from obr.core.core import get_latest_log
+    from .core.queries import build_filter_query
+    from copy import deepcopy
+    import json
+
+    def convert_to_numbers(df):
+        """convert all columns to float if they dont have Name in it"""
+        return df.astype({col: "float" for col in df.columns if not "Name" in col})
+
+    project, filtered_jobs = cli_cmd_setup(kwargs)
+
+    config_str = read_yaml(kwargs)
+    config_str = config_str.replace("\n\n", "\n")
+    config = yaml.safe_load(config_str)
+
+    d = config["postProcess"]
+
+    matcher = {"transpEqn": lambda args: transportEqn(**args)}
+    matcher_args = {"transpEqn": ["name"]}
+    matcher_regex = {}
+
+    for m in d["matcher"]:
+        matcher[m["name"]] = lambda args, regex: customMatcher(
+            args["name"], regex.format(**args)
+        )
+        matcher_args[m["name"]] = deepcopy(m["args"])
+        matcher_regex[m["name"]] = deepcopy(m["regexp"])
+
+    queries: list[Query] = build_filter_query(d["queries"])
+    query_results = project.query(jobs=filtered_jobs, query=queries)
+
+    records = []
+    for job in filtered_jobs:
+        record = {}
+        log = get_latest_log(job)
+        if not log:
+            continue
+        log_path = Path(job.path) / "case" / log
+
+        record = query_results[job.id]
+        record["jobid"] = job.id
+        for l in d["log"]:
+            try:
+                matcher_name = l["matcher"]
+                pass_args = {
+                    k: v for k, v in zip(matcher_args[matcher_name], l["args"])
+                }
+                if m_regex := matcher_regex.get(matcher_name):
+                    m = matcher[matcher_name](pass_args, matcher_regex[matcher_name])
+                else:
+                    m = matcher[matcher_name](pass_args)
+
+                log_file_parser = LogFile(log_path, matcher=[m])
+                df = convert_to_numbers(log_file_parser.parse_to_df())
+                for col in df.columns:
+                    try:
+                        record[col] = df.iloc[1:][col].mean()
+                    except:
+                        pass
+            except Exception as e:
+                print(e)
+        if record:
+            records.append(record)
+
+    with open("postpro.json", "w") as f:
+        json.dump(records, f)
+    logger.success("Successfully applied")
 
 
 @cli.command()

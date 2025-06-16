@@ -6,7 +6,6 @@ from subprocess import check_output
 import sys
 from pathlib import Path
 
-
 if TYPE_CHECKING:
 
     class OpenFOAMCase:
@@ -135,6 +134,10 @@ class BlockMesh(_Base):
         if controlDictArgs:
             modifies_file(self.controlDict.path)
             self.controlDict.set(controlDictArgs)
+        fvSolutionDictArgs = args.pop("fvSolution", False)
+        if fvSolutionDictArgs:
+            modifies_file(self.fvSolution.path)
+            self.fvSolution.set(fvSolutionDictArgs)
         if args.get("modifyBlock"):
             self.modifyBlockMesh(args)
         self._exec_operation(["blockMesh"])
