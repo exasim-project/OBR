@@ -61,6 +61,7 @@ def parse_special_variables(in_str: str, args: dict, domain: str, verbose: bool)
         )
     return in_str
 
+
 def parse_queries(in_str: str, args: dict, domain: str) -> str:
     """Replaces ${{ domain.value }} expressions with environmental variable values"""
     ocurrances = re.findall(r"\${{get" + r"\.(\w+)}}", in_str)

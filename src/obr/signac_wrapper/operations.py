@@ -370,11 +370,13 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
         return
     if uses := args.pop("uses", False):
         if path:
-            check_output([
-                "cp",
-                "{}/case/{}/{}".format(job.path, path, uses),
-                "{}/case/{}/{}".format(job.path, path, target),
-            ])
+            check_output(
+                [
+                    "cp",
+                    "{}/case/{}/{}".format(job.path, path, uses),
+                    "{}/case/{}/{}".format(job.path, path, target),
+                ]
+            )
         else:
             src_path = "{}/case/{}".format(job.path, uses)
             trg_path = "{}/case/{}".format(job.path, target)
@@ -432,6 +434,7 @@ def blockMesh(job: Job, args={}):
     args = get_args(job, args)
     OpenFOAMCase(str(job.path) + "/case", job).blockMesh(args)
 
+
 @generate
 @OpenFOAMProject.operation_hooks.on_start(dispatch_pre_hooks)
 @OpenFOAMProject.operation_hooks.on_success(dispatch_post_hooks)
@@ -443,8 +446,9 @@ def replaceMesh(job: Job, args={}):
     args = get_args(job, args)
     source_path = args["path"]
     mesh = args["mesh"]
-    OpenFOAMCase(str(job.path) + "/case", job).replaceMesh({"path": f"{source_path}/{mesh}/polyMesh"})
-
+    OpenFOAMCase(str(job.path) + "/case", job).replaceMesh(
+        {"path": f"{source_path}/{mesh}/polyMesh"}
+    )
 
 
 @generate
@@ -709,15 +713,17 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
         "np": get_number_of_procs(job),
     }
     cmd_str = cmd_format.format(**cli_args)
-    res.append({
-        "cmd": cmd_str,
-        "type": "shell",
-        "log": f"{solver}_{timestamp}.log",
-        "state": "started",
-        "timestamp": timestamp,
-        "user": os.environ.get("USER"),
-        "hostname": os.environ.get("HOST"),
-    })
+    res.append(
+        {
+            "cmd": cmd_str,
+            "type": "shell",
+            "log": f"{solver}_{timestamp}.log",
+            "state": "started",
+            "timestamp": timestamp,
+            "user": os.environ.get("USER"),
+            "hostname": os.environ.get("HOST"),
+        }
+    )
     job.doc["history"] = res
 
     cli_args = {
@@ -764,7 +770,7 @@ def resetCase(job: Job, args={}) -> None:
 def validateState(job: Job, args={}) -> None:
     """Dummy operation which forwards to validate_state_impl. The reason for keeping this function
     is that it can be called from the cli to force a detailed update"""
-    validate_state_impl("",job)
+    validate_state_impl("", job)
 
 
 @simulate
