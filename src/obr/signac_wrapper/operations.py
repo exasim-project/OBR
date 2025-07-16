@@ -800,10 +800,9 @@ def validateState(job: Job, args={}) -> None:
     validate_state_impl("", job)
 
 
-@simulate
-@OpenFOAMProject.pre(final)
-@OpenFOAMProject.pre(is_job)
-@OpenFOAMProject.pre(has_pre_cmds)
+# @OpenFOAMProject.pre(final)
+# @OpenFOAMProject.pre(is_job)
+# @OpenFOAMProject.pre(has_pre_cmds)
 @OpenFOAMProject.operation(
     cmd=True,
     directives={
@@ -868,10 +867,17 @@ def runParallelSolver(job: Job, args={}) -> str:
     # If a custom command is provided, replace {solver} in the template
     if custom_command:
         solver_cmd = solver_cmd.replace("{solver}", custom_command, 1)
-    return run_cmd_builder(job, solver_cmd, args)
+    ret = run_cmd_builder(job, solver_cmd, args)
+    if has_pre_cmds(job.id):
+        pre_cmd = runParallelPre(job, args)
+        ret = pre_cmd + " && " + ret
+    if has_post_cmds(job.id):
+        post_cmd = runParallelPost(job, args)
+        ret = ret + " && "  + post_cmd
+    print("execute: " , ret)
+    return ret
 
 
-@simulate
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.pre(has_post_cmds)
