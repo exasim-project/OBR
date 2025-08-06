@@ -368,7 +368,9 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
     """copies the file specified in args['uses'] to path/target"""
     if isinstance(args, str):
         return
-    if uses := args.pop("uses", False):
+    if not args:
+        return
+    if uses := args.get("uses", False):
         if path:
             check_output(
                 [
@@ -868,13 +870,13 @@ def runParallelSolver(job: Job, args={}) -> str:
     if custom_command:
         solver_cmd = solver_cmd.replace("{solver}", custom_command, 1)
     ret = run_cmd_builder(job, solver_cmd, args)
-    if has_pre_cmds(job.id):
-        pre_cmd = runParallelPre(job, args)
-        ret = pre_cmd + " && " + ret
-    if has_post_cmds(job.id):
-        post_cmd = runParallelPost(job, args)
-        ret = ret + " && "  + post_cmd
-    print("execute: " , ret)
+    # if has_pre_cmds(job.id):
+    #     pre_cmd = runParallelPre(job, args)
+    #     ret = pre_cmd + " && " + ret
+    # if has_post_cmds(job.id):
+    #     post_cmd = runParallelPost(job, args)
+    #     ret = ret + " && "  + post_cmd
+    # print("execute: " , ret)
     return ret
 
 
