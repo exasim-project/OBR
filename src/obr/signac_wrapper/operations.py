@@ -368,8 +368,6 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
     """copies the file specified in args['uses'] to path/target"""
     if isinstance(args, str):
         return
-    if not args:
-        return
     if uses := args.get("uses", False):
         if path:
             check_output(
