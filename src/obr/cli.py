@@ -557,9 +557,26 @@ def postProcess(ctx: click.Context, **kwargs):
 
                 log_file_parser = LogFile(log_path, matcher=[m])
                 df = convert_to_numbers(log_file_parser.parse_to_df())
+                agg_type = l.get("type", "average").lower()
+
                 for col in df.columns:
                     try:
-                        record[col] = df.iloc[1:][col].mean()
+                        if "Name" in col:
+                            continue
+                        if agg_type == "average":
+                            # keep old behavior: skip the very first row like you did before
+                            value = df.iloc[1:][col].mean()
+                        elif agg_type in ("diff_mean", "mean_diff", "diff-mean"):
+                            # take consecutive differences, then mean
+                            # (no need to skip first row; diff() already drops the first)
+                            s = df[col]
+                            # ensure numeric (just in case convert_to_numbers missed something)
+                            #s = pd.to_numeric(s, errors="coerce")
+                            value = s.diff().dropna().mean()
+                        else:
+                            # Unknown type -> fall back to prior behavior
+                            value = df.iloc[1:][col].mean()
+                        record[col] = value
                     except:
                         pass
             except Exception as e:
