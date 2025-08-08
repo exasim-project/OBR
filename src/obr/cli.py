@@ -558,24 +558,38 @@ def postProcess(ctx: click.Context, **kwargs):
                 log_file_parser = LogFile(log_path, matcher=[m])
                 df = convert_to_numbers(log_file_parser.parse_to_df())
                 agg_type = l.get("type", "average").lower()
-
                 for col in df.columns:
                     try:
                         if "Name" in col:
                             continue
+                        # Work around for standard matches coming from Owls
+                        if (col == "PIMPLEIteration") or (col == "Time") or (col == "PIMPLE_count"):
+                            agg_type="average"
                         if agg_type == "average":
                             # keep old behavior: skip the very first row like you did before
                             value = df.iloc[1:][col].mean()
-                        elif agg_type in ("diff_mean", "mean_diff", "diff-mean"):
+                        elif agg_type == "diff_mean":
                             # take consecutive differences, then mean
                             # (no need to skip first row; diff() already drops the first)
                             s = df[col]
-                            # ensure numeric (just in case convert_to_numbers missed something)
-                            #s = pd.to_numeric(s, errors="coerce")
                             value = s.diff().dropna().mean()
                         else:
-                            # Unknown type -> fall back to prior behavior
-                            value = df.iloc[1:][col].mean()
+                            diff_match = re.fullmatch(r"^diff_mean_(skip|use)(\d+)$", agg_type)
+                            if diff_match:
+                                mode, n_str = diff_match.group(1), diff_match.group(2)
+                                N = int(n_str)
+                                s = df[col]
+                                d = s.diff().dropna().reset_index(drop=True)
+                                if N > 1 and not d.empty:
+                                    write_mask = (d.index % N) == (N - 1)
+                                    seq = d[~write_mask] if mode == "skip" else d[write_mask]
+                                else:
+                                    # Degenerate: N<=1 or nothing to slice; fall back to plain diff mean
+                                    seq = d
+                                value = seq.mean() if not seq.empty else float("nan")
+                            else:
+                                # Unknown type -> fallback to old behavior
+                                value = df.iloc[1:][col].mean()
                         record[col] = value
                     except:
                         pass
