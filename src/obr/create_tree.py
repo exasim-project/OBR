@@ -224,8 +224,6 @@ def add_variations(
                         parsed = parse_queries(v, base_dict)
                         value[key] = parsed
 
-
-
             # derive path name from schema or key value
             parse_res = extract_from_operation(operation, value)
 

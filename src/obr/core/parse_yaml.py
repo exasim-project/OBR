@@ -6,11 +6,12 @@ import sys
 
 from .logger_setup import logger
 
+
 def find_first(d, key_in):
-    """ recursively scan dictionary dictionary for k """
+    """recursively scan dictionary dictionary for k"""
     res = {}
     if d.get(key_in):
-        return {key_in:d[key_in]}
+        return {key_in: d[key_in]}
     for k, v in d.items():
         if isinstance(v, dict):
             res = find_first(v, key_in)

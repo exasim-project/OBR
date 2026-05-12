@@ -151,7 +151,9 @@ def submit(ctx: click.Context, **kwargs):
     operations = kwargs.get("operations", "").split(",")
     custom_command = kwargs.get("solver_cmd", "")
     if custom_command:
-        os.environ["OBR_CUSTOM_SOLVER_CMD"] = custom_command  # Store command in an environment variable
+        os.environ["OBR_CUSTOM_SOLVER_CMD"] = (
+            custom_command  # Store command in an environment variable
+        )
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
@@ -220,7 +222,9 @@ def run(ctx: click.Context, **kwargs):
     operations = kwargs.get("operations", "").split(",")
     custom_command = kwargs.get("solver_cmd", "")
     if custom_command:
-        os.environ["OBR_CUSTOM_SOLVER_CMD"] = custom_command  # Store command in an environment variable
+        os.environ["OBR_CUSTOM_SOLVER_CMD"] = (
+            custom_command  # Store command in an environment variable
+        )
 
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
@@ -239,7 +243,7 @@ def run(ctx: click.Context, **kwargs):
         )
         return
 
-    #if kwargs.get("operations") == "runParallelSolver":
+    # if kwargs.get("operations") == "runParallelSolver":
     if "runParallelSolver" in operations:
         # NOTE if tasks is not set explicitly we set it to 1 for parallelSolverSolver
         # to avoid oversubsrciption
@@ -249,7 +253,7 @@ def run(ctx: click.Context, **kwargs):
             sys.argv.append(str(ntasks))
         project.run(
             jobs=jobs,
-           #names=operations,
+            # names=operations,
             names=["runParallelSolver"],
             progress=True,
             np=ntasks,
@@ -563,8 +567,12 @@ def postProcess(ctx: click.Context, **kwargs):
                         if "Name" in col:
                             continue
                         # Work around for standard matches coming from Owls
-                        if (col == "PIMPLEIteration") or (col == "Time") or (col == "PIMPLE_count"):
-                            agg_type="average"
+                        if (
+                            (col == "PIMPLEIteration")
+                            or (col == "Time")
+                            or (col == "PIMPLE_count")
+                        ):
+                            agg_type = "average"
                         if agg_type == "average":
                             # keep old behavior: skip the very first row like you did before
                             value = df.iloc[1:][col].mean()
@@ -574,7 +582,9 @@ def postProcess(ctx: click.Context, **kwargs):
                             s = df[col]
                             value = s.diff().dropna().mean()
                         else:
-                            diff_match = re.fullmatch(r"^diff_mean_(skip|use)(\d+)$", agg_type)
+                            diff_match = re.fullmatch(
+                                r"^diff_mean_(skip|use)(\d+)$", agg_type
+                            )
                             if diff_match:
                                 mode, n_str = diff_match.group(1), diff_match.group(2)
                                 N = int(n_str)
@@ -582,7 +592,11 @@ def postProcess(ctx: click.Context, **kwargs):
                                 d = s.diff().dropna().reset_index(drop=True)
                                 if N > 1 and not d.empty:
                                     write_mask = (d.index % N) == (N - 1)
-                                    seq = d[~write_mask] if mode == "skip" else d[write_mask]
+                                    seq = (
+                                        d[~write_mask]
+                                        if mode == "skip"
+                                        else d[write_mask]
+                                    )
                                 else:
                                     # Degenerate: N<=1 or nothing to slice; fall back to plain diff mean
                                     seq = d
@@ -624,7 +638,7 @@ def postProcess(ctx: click.Context, **kwargs):
     from copy import deepcopy
     import json
 
-    def convert_to_numbers(df):                                        
+    def convert_to_numbers(df):
         """convert all columns to float if they dont have Name in it"""
         return df.astype({col: "float" for col in df.columns if not "Name" in col})
 
@@ -640,12 +654,14 @@ def postProcess(ctx: click.Context, **kwargs):
     matcher_args = {"transpEqn": ["name"]}
     matcher_regex = {}
 
-    for m in d['matcher']:
-        matcher[m['name']] = lambda args, regex: customMatcher(args['name'], regex.format(**args))  
-        matcher_args[m['name']] = deepcopy(m['args'])
-        matcher_regex[m['name']] = deepcopy(m['regexp'])
+    for m in d["matcher"]:
+        matcher[m["name"]] = lambda args, regex: customMatcher(
+            args["name"], regex.format(**args)
+        )
+        matcher_args[m["name"]] = deepcopy(m["args"])
+        matcher_regex[m["name"]] = deepcopy(m["regexp"])
 
-    queries: list[Query] = build_filter_query(d['queries'])
+    queries: list[Query] = build_filter_query(d["queries"])
     query_results = project.query(jobs=filtered_jobs, query=queries)
 
     records = []
@@ -654,32 +670,34 @@ def postProcess(ctx: click.Context, **kwargs):
         log = get_latest_log(job)
         if not log:
             continue
-        log_path = Path(job.path)/ "case"/ log
+        log_path = Path(job.path) / "case" / log
 
         record = query_results[job.id]
-        record['jobid'] = job.id
-        for l in d['log']:
+        record["jobid"] = job.id
+        for l in d["log"]:
             try:
-                matcher_name = l['matcher'] 
-                pass_args = {k:v for k,v in zip(matcher_args[matcher_name], l['args'])}
+                matcher_name = l["matcher"]
+                pass_args = {
+                    k: v for k, v in zip(matcher_args[matcher_name], l["args"])
+                }
                 if m_regex := matcher_regex.get(matcher_name):
                     m = matcher[matcher_name](pass_args, matcher_regex[matcher_name])
                 else:
                     m = matcher[matcher_name](pass_args)
 
-                log_file_parser = LogFile(log_path, matcher=[m]) 
+                log_file_parser = LogFile(log_path, matcher=[m])
                 df = convert_to_numbers(log_file_parser.parse_to_df())
                 for col in df.columns:
                     try:
-                        record[col] = df.iloc[1:][col].mean() 
+                        record[col] = df.iloc[1:][col].mean()
                     except:
                         pass
             except Exception as e:
                 print(e)
         if record:
             records.append(record)
-    
-    with open('postpro.json', 'w') as f:
+
+    with open("postpro.json", "w") as f:
         json.dump(records, f)
     logger.success("Successfully applied")
 
