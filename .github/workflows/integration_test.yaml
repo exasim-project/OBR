@@ -35,11 +35,11 @@ jobs:
       run: |
         apt-get update
         apt install -y pip rename
-        python3 -m pip install --upgrade pip
+        python3 -m pip install --upgrade pip  --break-system-packages
 
     - name: Install package
       run: |
-        python3 -m pip install .
+        python3 -m pip install . --break-system-packages
 
     - name: Source OF enviroment
       run: |
