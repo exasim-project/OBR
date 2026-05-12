@@ -27,4 +27,4 @@ Options:
   --help             Show this message and exit.
 ```
 
-Make sure to have openfoam sourced. 
+Make sure to have openfoam sourced.

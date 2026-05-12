@@ -91,7 +91,7 @@ On HPC cluster OBR can submit operations via the job queue. For example
 
     obr submit -o blockMesh
 
-will submit the `blockMesh` operation to the cluster manager for every job that is eligible. OBR detects the installed job queuing system, eg. slurm, pbs, etc. A jobs ubmission script will be generated automatically. For fine grained control over the submission script the `--template` argument allows to specify the location of a submission script template. Since OBR uses signac for job submission more details on how to write job submission templates can be found [here](https://docs.signac.io/en/latest/templates.html). To avoid submitting numereous jobs individually, the `--bundling-key` argument can be used to bundle all jobs for which the bundling key has the same value into the same job.
+will submit the `blockMesh` operation to the cluster manager for every job that is eligible. OBR detects the installed job queuing system, eg. slurm, pbs, etc. A jobs ubmission script will be generated automatically. For fine grained control over the submission script the `--template` argument allows to specify the location of a submission script template. Since OBR uses signac for job submission more details on how to write job submission templates can be found [here](https://docs.signac.io/en/latest/templates.html). To avoid submitting numerous jobs individually, the `--bundling-key` argument can be used to bundle all jobs for which the bundling key has the same value into the same job.
 
 ### 4. Postprocessing cases
 
@@ -113,7 +113,7 @@ The mandatory `--campaign` argument is used to separate (families of) experiment
         │       ├── decomposePar_2024-01-05_17:38:44.log
         │       ├── instrumentedPimpleFoam_2024-01-05_17:44:32.log
         │       └── solverExitCode.log
-        └── campaign2    
+        └── campaign2
 
 ## Workspace
 

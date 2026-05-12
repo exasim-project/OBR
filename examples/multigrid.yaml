@@ -1,9 +1,9 @@
 case:
     type: GitRepo
     url: https://develop.openfoam.com/committees/hpc.git
-    folder: Lid_driven_cavity-3d/S 
+    folder: Lid_driven_cavity-3d/S
     cache_folder: ${{env.LidDrivenCavityS}}
-    commit: f9594d16aa6993bb3690ec47b2ca624b37ea40cd  
+    commit: f9594d16aa6993bb3690ec47b2ca624b37ea40cd
     uses:
       - fvSolution: fvSolution.fixedNORM
     post_build:
@@ -48,7 +48,7 @@ variation:
         common:
             method: simple
         generator:
-            key: coeff 
+            key: coeff
             values: [1, 2, 4]
             template:
               - numberOfSubdomains: ${{ coeff * ${{env.NGPUS}} }}

@@ -24,8 +24,8 @@ GLOBAL_UNINIT_COUNT = 0
 
 
 def parse_variables_impl(in_str, args, domain):
-    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
-    for inst in ocurrances:
+    occurrences = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
+    for inst in occurrences:
         in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
     return in_str
 
@@ -98,16 +98,18 @@ def logged_execute(cmd, path, doc) -> Path:
         log = fn
         log_path = path / fn
 
-    d.append({
-        "cmd": cmd_str,
-        "type": "shell",
-        "log": log,
-        "state": state,
-        "flags": flags,
-        "timestamp": timestamp,
-        "user": os.environ.get("USER"),
-        "hostname": os.environ.get("HOST"),
-    })
+    d.append(
+        {
+            "cmd": cmd_str,
+            "type": "shell",
+            "log": log,
+            "state": state,
+            "flags": flags,
+            "timestamp": timestamp,
+            "user": os.environ.get("USER"),
+            "hostname": os.environ.get("HOST"),
+        }
+    )
 
     doc["history"] = d
 

@@ -34,12 +34,13 @@ jobs:
     - name: Install dependencies
       run: |
         apt-get update
-        apt install -y pip rename
-        python3 -m pip install --upgrade pip
+        apt install -y python3-venv rename
 
     - name: Install package
       run: |
-        python3 -m pip install .
+        python3 -m venv .venv
+        .venv/bin/pip install --upgrade pip
+        .venv/bin/pip install .
 
     - name: Source OF enviroment
       run: |
@@ -57,14 +58,14 @@ jobs:
         export PATH=$WM_PROJECT_DIR/platforms/linux64GccDPInt32Opt/bin:$PATH
         export LD_LIBRARY_PATH=$FOAM_USER_LIBBIN:$WM_PROJECT_DIR/platforms/linux64GccDPInt32Opt/lib:$WM_PROJECT_DIR/platforms/linux64GccDPInt32Opt/lib/sys-openmpi/:$WM_PROJECT_DIR/platforms/linux64GccDPInt32Opt/lib/dummy/:$LD_LIBRARY_PATH
 
-        obr init --config tests/cavity.yaml
-        obr run -o generate
-        obr run -o runSerialSolver
-        obr status
+        .venv/bin/obr init --config tests/cavity.yaml
+        .venv/bin/obr run -o generate
+        .venv/bin/obr run -o runSerialSolver
+        .venv/bin/obr status
 
     - name: Validate state of simulations
       run: |
-        obr query -q global --filter global==completed --validate_against tests/cavity_results.json
+        .venv/bin/obr query -q global --filter global==completed --validate_against tests/cavity_results.json
 
     - name: Rename log files
       if: always()
