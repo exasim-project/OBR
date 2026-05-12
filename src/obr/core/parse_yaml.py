@@ -50,8 +50,8 @@ def add_includes(yaml_location: Path, config_str: str) -> str:
 
 def parse_special_variables(in_str: str, args: dict, domain: str, verbose: bool) -> str:
     """Replaces ${{ domain.value }} expressions with environmental variable values"""
-    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
-    for inst in ocurrances:
+    occurrences = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
+    for inst in occurrences:
         if not args.get(inst, ""):
             logger.warning(f"warning {inst} not defined")
         print(f"setting {domain}.{inst} to {args.get(inst)}")
@@ -63,8 +63,8 @@ def parse_special_variables(in_str: str, args: dict, domain: str, verbose: bool)
 
 def parse_queries(in_str: str, args: dict, domain: str) -> str:
     """Replaces ${{ domain.value }} expressions with environmental variable values"""
-    ocurrances = re.findall(r"\${{get" + r"\.(\w+)}}", in_str)
-    for inst in ocurrances:
+    occurrences = re.findall(r"\${{get" + r"\.(\w+)}}", in_str)
+    for inst in occurrences:
         if not args.get(inst, ""):
             logger.warning(f"warning {inst} not defined")
         in_str = in_str.replace(

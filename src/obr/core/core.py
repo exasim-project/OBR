@@ -24,8 +24,8 @@ GLOBAL_UNINIT_COUNT = 0
 
 
 def parse_variables_impl(in_str, args, domain):
-    ocurrances = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
-    for inst in ocurrances:
+    occurrences = re.findall(r"\${{" + domain + r"\.(\w+)}}", in_str)
+    for inst in occurrences:
         in_str = in_str.replace("${{" + domain + "." + inst + "}}", args.get(inst, ""))
     return in_str
 

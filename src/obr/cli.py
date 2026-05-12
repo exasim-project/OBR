@@ -102,7 +102,7 @@ def cli(ctx: click.Context, **kwargs):
 @click.option(
     "--template",
     default="",
-    help="Path to sumbission script template.",
+    help="Path to submission script template.",
 )
 @click.option(
     "-l",
