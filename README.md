@@ -113,7 +113,7 @@ The mandatory `--campaign` argument is used to separate (families of) experiment
         │       ├── decomposePar_2024-01-05_17:38:44.log
         │       ├── instrumentedPimpleFoam_2024-01-05_17:44:32.log
         │       └── solverExitCode.log
-        └── campaign2    
+        └── campaign2
 
 ## Workspace
 

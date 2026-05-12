@@ -27,11 +27,11 @@ Options:
 
 ### Understanding obr run
 
-A set of operations can be passed after the `-o` flag. 
+A set of operations can be passed after the `-o` flag.
 
 ```Example: obr run -o fetchCase,runParallelSolver```
 
-It is important to note, that there can be no whitespace in between. Otherwise, 
+It is important to note, that there can be no whitespace in between. Otherwise,
 the `runParallelSolver` will be parsed as separate commandline argument.
 
 To list all available operations, run `obr run --list-operations`, `obr run [--operations|-o] --help` or [`obr operations`](#obr-operations).
