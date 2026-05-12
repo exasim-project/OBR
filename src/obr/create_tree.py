@@ -146,7 +146,7 @@ def to_dict(synced_dict) -> dict:
     return {k: v for k, v in synced_dict.items()}
 
 
-def expand_generator_block(operation, base_dict):
+def expand_generator_block(operation, base_dict={}):
     """given an operation this function"""
     # check if we have a generator
     if generator := operation.get("generator"):
