@@ -176,7 +176,7 @@ def expand_generator_block(operation, base_dict):
                 for k, v in template.items():
                     if isinstance(v, str):
                         # handle get. queries
-                        v = parse_queries(v, base_dict)
+                        v = parse_queries(v, base_dict, "get")
                         gen_dict[k] = v.replace(key, str(val))
                     # additionally the original key and current
                     # val are added so that we can use it in schemas
