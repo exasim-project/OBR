@@ -703,6 +703,22 @@ def get_values(jobs: list, key: str) -> set:
     return set(values)
 
 
+def select_solver_cmd(job: Job, parallel_default: str, serial_default: str) -> str:
+    """Choose the mpirun or serial command template based on numberOfSubdomains.
+
+    np > 1  -> parallel template (OBR_RUN_CMD overrides the default)
+    np <= 1 -> serial   template (OBR_SERIAL_RUN_CMD overrides the default)
+
+    This lets a single study using runParallelSolver cover a numberOfSubdomains
+    sweep: the np==1 point degrades to a serial run instead of launching
+    'mpirun -np 1 <solver> -parallel ...' on an undecomposed case.
+    """
+    np = get_number_of_procs(job)
+    if np and int(np) > 1:
+        return os.environ.get("OBR_RUN_CMD") or parallel_default
+    return os.environ.get("OBR_SERIAL_RUN_CMD") or serial_default
+
+
 def run_cmd_builder(job: Job, cmd_format: str, overrides=None) -> str:
     """Builds the cli command to run a OpenFOAM application"""
 
@@ -813,14 +829,16 @@ def validateState(job: Job, args={}) -> None:
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelPre(job: Job, args={}) -> str:
     lines = []
-    env_run_template = os.environ.get("OBR_RUN_CMD")
-    solver_cmd = (
-        env_run_template
-        if env_run_template
-        else (
+    solver_cmd = select_solver_cmd(
+        job,
+        parallel_default=(
             "mpirun -np {np} {solver} {solverargs} -parallel -case {path}/case >"
             " {path}/case/{solver}_{timestamp}.log 2>&1"
-        )
+        ),
+        serial_default=(
+            "{solver} {solverargs} -case {path}/case >"
+            " {path}/case/{solver}_{timestamp}.log 2>&1"
+        ),
     )
     pre_cmds = statepoint_get(job.sp(), "pre_cmds")
     if not pre_cmds:
@@ -853,14 +871,16 @@ def runParallelPre(job: Job, args={}) -> str:
 )
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelSolver(job: Job, args={}) -> str:
-    env_run_template = os.environ.get("OBR_RUN_CMD")
-    solver_cmd = (
-        env_run_template
-        if env_run_template
-        else (
+    solver_cmd = select_solver_cmd(
+        job,
+        parallel_default=(
             "mpirun -np {np} {solver} -parallel -case {path}/case >"
             " {path}/case/{solver}_{timestamp}.log 2>&1"
-        )
+        ),
+        serial_default=(
+            "{solver} -case {path}/case >"
+            " {path}/case/{solver}_{timestamp}.log 2>&1"
+        ),
     )
     # Check if a custom solver command is provided
     custom_command = os.environ.get("OBR_CUSTOM_SOLVER_CMD")
@@ -892,14 +912,16 @@ def runParallelSolver(job: Job, args={}) -> str:
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelPost(job: Job, args={}) -> str:
     lines = []
-    env_run_template = os.environ.get("OBR_RUN_CMD")
-    solver_cmd = (
-        env_run_template
-        if env_run_template
-        else (
+    solver_cmd = select_solver_cmd(
+        job,
+        parallel_default=(
             "mpirun -np {np} {solver} {solverargs} -parallel -case {path}/case >"
             " {path}/case/{solver}_{timestamp}.log 2>&1"
-        )
+        ),
+        serial_default=(
+            "{solver} {solverargs} -case {path}/case >"
+            " {path}/case/{solver}_{timestamp}.log 2>&1"
+        ),
     )
     post_cmds = statepoint_get(job.sp(), "post_cmds")
     if not post_cmds:
