@@ -680,21 +680,28 @@ def get_number_of_procs(job: Job) -> int:
 
 
 def get_tasks_per_node(job: Job) -> int:
-    """Deduces the number of tasks per node if variable is set. Else assumes HoreKa full not o 76"""
+    """Deduces the number of tasks per node.
+
+    Resolution order: statepoint -> job cache -> decomposeParDict. If
+    tasksPerNode is not specified anywhere, fall back to the number of procs
+    (i.e. assume a single node holds all ranks) instead of crashing.
+    """
     tpn = statepoint_get(job.sp(), "tasksPerNode")
     if tpn:
         return int(tpn)
     tpn = job.doc["cache"].get("tasksPerNode", False)
     if tpn:
         return int(tpn)
-    # Reading from numberOfSubdomains from the decomposeParDict should
-    # be the last resort since it is very expensive
-    tpn = int(
-        OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict.get("tasksPerNode")
-    )
+    # Reading tasksPerNode from the decomposeParDict should be the last resort
+    # since it is very expensive. The key is usually absent, so guard the None.
+    decomposeParDict = OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict
+    tpn = decomposeParDict.get("tasksPerNode") if decomposeParDict else None
     if tpn:
+        tpn = int(tpn)
         job.doc["cache"]["tasksPerNode"] = tpn
-    return tpn
+        return tpn
+    # Not specified anywhere -> default to one node holding all ranks
+    return get_number_of_procs(job)
 
 
 def get_values(jobs: list, key: str) -> set:
