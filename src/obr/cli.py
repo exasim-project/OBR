@@ -566,130 +566,44 @@ def postProcess(ctx: click.Context, **kwargs):
                     try:
                         if "Name" in col:
                             continue
-                        # Work around for standard matches coming from Owls
-                        if (
-                            (col == "PIMPLEIteration")
-                            or (col == "Time")
-                            or (col == "PIMPLE_count")
-                        ):
-                            agg_type = "average"
-                        if agg_type == "average":
+                        # Resolve the aggregation per column. Standard columns
+                        # coming from Owls are always averaged, but this must not
+                        # clobber agg_type for the remaining (user) columns.
+                        col_agg = agg_type
+                        if col in ("PIMPLEIteration", "Time", "PIMPLE_count"):
+                            col_agg = "average"
+                        if col_agg == "average":
                             # keep old behavior: skip the very first row like you did before
                             value = df.iloc[1:][col].mean()
-                        elif agg_type == "diff_mean":
+                        elif col_agg == "diff_mean":
                             # take consecutive differences, then mean
                             # (no need to skip first row; diff() already drops the first)
                             s = df[col]
                             value = s.diff().dropna().mean()
                         else:
                             diff_match = re.fullmatch(
-                                r"^diff_mean_(skip|use)(\d+)$", agg_type
+                                r"^diff_mean_(skip|use)(\d+)$", col_agg
                             )
                             if diff_match:
                                 mode, n_str = diff_match.group(1), diff_match.group(2)
                                 N = int(n_str)
                                 s = df[col]
-                                d = s.diff().dropna().reset_index(drop=True)
-                                if N > 1 and not d.empty:
-                                    write_mask = (d.index % N) == (N - 1)
+                                deltas = s.diff().dropna().reset_index(drop=True)
+                                if N > 1 and not deltas.empty:
+                                    write_mask = (deltas.index % N) == (N - 1)
                                     seq = (
-                                        d[~write_mask]
+                                        deltas[~write_mask]
                                         if mode == "skip"
-                                        else d[write_mask]
+                                        else deltas[write_mask]
                                     )
                                 else:
                                     # Degenerate: N<=1 or nothing to slice; fall back to plain diff mean
-                                    seq = d
+                                    seq = deltas
                                 value = seq.mean() if not seq.empty else float("nan")
                             else:
                                 # Unknown type -> fallback to old behavior
                                 value = df.iloc[1:][col].mean()
                         record[col] = value
-                    except:
-                        pass
-            except Exception as e:
-                print(e)
-        if record:
-            records.append(record)
-
-    with open("postpro.json", "w") as f:
-        json.dump(records, f)
-    logger.success("Successfully applied")
-
-
-@cli.command()
-@click.option("-c", "--config", required=True, help="Path to configuration file.")
-@click.option(
-    "--filter",
-    type=str,
-    multiple=True,
-    default=[],
-    help=(
-        "Pass a <key><predicate><value> value pair per occurrence of --filter."
-        " Predicates include ==, !=, <=, <, >=, >. For instance, obr submit --filter"
-        ' "solver==pisoFoam"'
-    ),
-)
-@click.pass_context
-def postProcess(ctx: click.Context, **kwargs):
-    from Owls.parser.LogFile import LogFile, transportEqn, customMatcher
-    from obr.core.core import get_latest_log, get_timestamp_from_log
-    from .core.queries import build_filter_query
-    from copy import deepcopy
-    import json
-
-    def convert_to_numbers(df):
-        """convert all columns to float if they dont have Name in it"""
-        return df.astype({col: "float" for col in df.columns if not "Name" in col})
-
-    project, filtered_jobs = cli_cmd_setup(kwargs)
-
-    config_str = read_yaml(kwargs)
-    config_str = config_str.replace("\n\n", "\n")
-    config = yaml.safe_load(config_str)
-
-    d = config["postProcess"]
-
-    matcher = {"transpEqn": lambda args: transportEqn(**args)}
-    matcher_args = {"transpEqn": ["name"]}
-    matcher_regex = {}
-
-    for m in d["matcher"]:
-        matcher[m["name"]] = lambda args, regex: customMatcher(
-            args["name"], regex.format(**args)
-        )
-        matcher_args[m["name"]] = deepcopy(m["args"])
-        matcher_regex[m["name"]] = deepcopy(m["regexp"])
-
-    queries: list[Query] = build_filter_query(d["queries"])
-    query_results = project.query(jobs=filtered_jobs, query=queries)
-
-    records = []
-    for job in filtered_jobs:
-        record = {}
-        log = get_latest_log(job)
-        if not log:
-            continue
-        log_path = Path(job.path) / "case" / log
-
-        record = query_results[job.id]
-        record["jobid"] = job.id
-        for l in d["log"]:
-            try:
-                matcher_name = l["matcher"]
-                pass_args = {
-                    k: v for k, v in zip(matcher_args[matcher_name], l["args"])
-                }
-                if m_regex := matcher_regex.get(matcher_name):
-                    m = matcher[matcher_name](pass_args, matcher_regex[matcher_name])
-                else:
-                    m = matcher[matcher_name](pass_args)
-
-                log_file_parser = LogFile(log_path, matcher=[m])
-                df = convert_to_numbers(log_file_parser.parse_to_df())
-                for col in df.columns:
-                    try:
-                        record[col] = df.iloc[1:][col].mean()
                     except:
                         pass
             except Exception as e:
