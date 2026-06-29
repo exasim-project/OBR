@@ -523,7 +523,7 @@ def postProcess(ctx: click.Context, **kwargs):
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
-    pimple_parser_config = config["pimpleParser"]
+    pimple_parser_config = config.get("pimpleParser")
     d = config["postProcess"]
 
     matcher = {"transpEqn": lambda args: transportEqn(**args)}
