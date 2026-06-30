@@ -1,4 +1,4 @@
-from glob import glob
+import glob
 import numpy as np
 import re
 import logging
