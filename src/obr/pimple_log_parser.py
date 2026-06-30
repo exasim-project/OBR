@@ -3,7 +3,6 @@ import numpy as np
 import re
 import logging
 import gzip
-import os
 
 logger = logging.getLogger("foam-parser")
 
