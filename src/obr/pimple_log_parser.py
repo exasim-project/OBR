@@ -1,12 +1,9 @@
 from glob import glob
-import os
 import numpy as np
 import re
 import logging
 import gzip
-import json
 import os
-import threading
 
 logger = logging.getLogger("foam-parser")
 
