@@ -803,6 +803,60 @@ def has_post_cmds(job):
     return bool(statepoint_get(job.sp(), "post_cmds"))
 
 
+def get_raw_cmds(job: Job, key: str) -> list:
+    """Return the raw shell lines stored under key ('pre_cmds'/'post_cmds'), VERBATIM.
+
+    No .format(), no wrapping, no redirection — shell constructs like
+    'of_watchdog.sh --loop &' or 'watchdog_pid=${!}' must survive untouched.
+    A single string is promoted to a one-element list. Keys defined on a
+    parent statepoint (e.g. the case block) are inherited via statepoint_get.
+    """
+    cmds = statepoint_get(job.sp(), key)
+    if not cmds:
+        return []
+    if isinstance(cmds, str):
+        cmds = [cmds]
+    return [str(c) for c in cmds]
+
+
+def record_raw_cmds(job: Job, cmds: list, kind: str) -> None:
+    """Append lightweight provenance entries for raw pre/post commands."""
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    res = job.doc["history"]
+    for cmd in cmds:
+        res.append(
+            {
+                "cmd": cmd,
+                "type": kind,
+                "log": "",
+                "state": "started",
+                "timestamp": timestamp,
+                "user": os.environ.get("USER"),
+                "hostname": os.environ.get("HOST"),
+            }
+        )
+    job.doc["history"] = res
+
+
+def wrap_raw_cmds(job: Job, cmd: str) -> str:
+    """Prepend pre_cmds and append post_cmds verbatim around cmd.
+
+    Newline-joined (never '&&' — 'foo & && bar' is a shell syntax error) so
+    that the whole composite runs in ONE shell, in order, and shell variables
+    set by a pre command (e.g. watchdog_pid=${!}) remain visible to the
+    post commands.
+    """
+    pre_cmds = get_raw_cmds(job, "pre_cmds")
+    post_cmds = get_raw_cmds(job, "post_cmds")
+    if pre_cmds:
+        record_raw_cmds(job, pre_cmds, "pre_cmd")
+        cmd = "\n".join(pre_cmds) + "\n" + cmd
+    if post_cmds:
+        record_raw_cmds(job, post_cmds, "post_cmd")
+        cmd = cmd + "\n" + "\n".join(post_cmds)
+    return cmd
+
+
 @OpenFOAMProject.pre(parent_job_is_ready)
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
@@ -823,52 +877,26 @@ def validateState(job: Job, args={}) -> None:
     validate_state_impl("", job)
 
 
-# @OpenFOAMProject.pre(final)
-# @OpenFOAMProject.pre(is_job)
-# @OpenFOAMProject.pre(has_pre_cmds)
-@OpenFOAMProject.operation(
-    cmd=True,
-    directives={
-        "np": lambda job: get_number_of_procs(job),
-        "tpn": lambda job: get_tasks_per_node(job),
-    },
-)
-@OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.pre(is_job)
+@OpenFOAMProject.pre(has_pre_cmds)
+@OpenFOAMProject.operation(cmd=True)
 def runParallelPre(job: Job, args={}) -> str:
-    lines = []
-    solver_cmd = select_solver_cmd(
-        job,
-        parallel_default=(
-            "mpirun -np {np} {solver} {solverargs} -parallel -case {path}/case >"
-            " {path}/case/{solver}_{timestamp}.log 2>&1"
-        ),
-        serial_default=(
-            "{solver} {solverargs} -case {path}/case >"
-            " {path}/case/{solver}_{timestamp}.log 2>&1"
-        ),
-    )
-    pre_cmds = statepoint_get(job.sp(), "pre_cmds")
+    """Emit the pre_cmds statepoint entries verbatim.
+
+    NOTE: 'obr run/submit -o execute' (runParallelSolver) already inlines
+    pre_cmds/post_cmds around the solver in one shell. This operation only
+    exists to (re)run the pre commands independently."""
+    pre_cmds = get_raw_cmds(job, "pre_cmds")
     if not pre_cmds:
-        # Return an empty command or raise a controlled error to avoid crashing
         return ":  # No pre_cmds, skipping execution"
-    for raw in pre_cmds:
-        lines.append(
-            run_cmd_builder(
-                job,
-                solver_cmd,
-                overrides={
-                    "solver": raw.split()[0],
-                    "solverargs": " ".join(raw.split()[1:]),
-                },  # raw may include extra CLI flags
-            )
-        )
-    return "\n".join(lines)
+    record_raw_cmds(job, pre_cmds, "pre_cmd")
+    return "\n".join(pre_cmds)
 
 
 @simulate
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
-@OpenFOAMProject.pre.after(runParallelPre)
 @OpenFOAMProject.operation(
     cmd=True,
     directives={
@@ -895,57 +923,27 @@ def runParallelSolver(job: Job, args={}) -> str:
     if custom_command:
         solver_cmd = solver_cmd.replace("{solver}", custom_command, 1)
     ret = run_cmd_builder(job, solver_cmd, args)
-    # if has_pre_cmds(job.id):
-    #     pre_cmd = runParallelPre(job, args)
-    #     ret = pre_cmd + " && " + ret
-    # if has_post_cmds(job.id):
-    #     post_cmd = runParallelPost(job, args)
-    #     ret = ret + " && "  + post_cmd
-    # print("execute: " , ret)
-    return ret
+    if ret == "true":
+        # OBR_SKIP_COMPLETE short-circuit: skip pre/post as well
+        return ret
+    return wrap_raw_cmds(job, ret)
 
 
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.pre(has_post_cmds)
-@OpenFOAMProject.pre.after(runParallelSolver)
-@OpenFOAMProject.operation(
-    cmd=True,
-    directives={
-        "np": lambda job: get_number_of_procs(job),
-        "tpn": lambda job: get_tasks_per_node(job),
-    },
-)
-@OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
+@OpenFOAMProject.operation(cmd=True)
 def runParallelPost(job: Job, args={}) -> str:
-    lines = []
-    solver_cmd = select_solver_cmd(
-        job,
-        parallel_default=(
-            "mpirun -np {np} {solver} {solverargs} -parallel -case {path}/case >"
-            " {path}/case/{solver}_{timestamp}.log 2>&1"
-        ),
-        serial_default=(
-            "{solver} {solverargs} -case {path}/case >"
-            " {path}/case/{solver}_{timestamp}.log 2>&1"
-        ),
-    )
-    post_cmds = statepoint_get(job.sp(), "post_cmds")
+    """Emit the post_cmds statepoint entries verbatim.
+
+    NOTE: 'obr run/submit -o execute' (runParallelSolver) already inlines
+    pre_cmds/post_cmds around the solver in one shell. This operation only
+    exists to (re)run the post commands independently."""
+    post_cmds = get_raw_cmds(job, "post_cmds")
     if not post_cmds:
-        # Return an empty command or raise a controlled error to avoid crashing
         return ":  # No post_cmds, skipping execution"
-    for raw in post_cmds:
-        lines.append(
-            run_cmd_builder(
-                job,
-                solver_cmd,
-                overrides={
-                    "solver": raw.split()[0],
-                    "solverargs": " ".join(raw.split()[1:]),
-                },  # raw may include extra CLI flags
-            )
-        )
-    return "\n".join(lines)
+    record_raw_cmds(job, post_cmds, "post_cmd")
+    return "\n".join(post_cmds)
 
 
 @OpenFOAMProject.pre(final)
@@ -964,7 +962,10 @@ def runSerialSolver(job: Job, args={}):
     # If a custom command is provided, replace {solver} in the template
     if custom_command:
         solver_cmd = solver_cmd.replace("{solver}", custom_command, 1)
-    return run_cmd_builder(job, solver_cmd, args)
+    ret = run_cmd_builder(job, solver_cmd, args)
+    if ret == "true":
+        return ret
+    return wrap_raw_cmds(job, ret)
 
 
 @OpenFOAMProject.operation

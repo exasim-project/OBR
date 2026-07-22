@@ -127,6 +127,8 @@ OBR workflows often rely on environmental variables to adapt a workflow to speci
 
 Additionally, `OBR_SKIP_COMPLETE` defines if a already complete run should be repeated.
 
+Beyond environmental variables, arbitrary shell lines can be executed before and after the solver within a single submission by adding `pre_cmds`/`post_cmds` lists to the workflow yaml — see [the submit documentation](docs/source/commandLine/submit.md) for details and caveats.
+
 
 ## Contributing
 
