@@ -46,7 +46,7 @@ from .core.core import map_view_folder_to_job_id, profile_call
 from .core.logger_setup import logger, setup_logging
 
 from .core.core import map_view_folder_to_job_id
-from .pimple_log_parser import LogParser
+from .log_parser import LogParser
 
 def common_params(func):
     @click.option(
@@ -521,7 +521,7 @@ def postProcess(ctx: click.Context, **kwargs):
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
-    pimple_parser_config = config.get("pimpleParser")
+    general_parser_config = config["generalParser"]
     d = config["postProcess"]
 
     matcher = {"transpEqn": lambda args: transportEqn(**args)}
@@ -539,7 +539,7 @@ def postProcess(ctx: click.Context, **kwargs):
     query_results = project.query(jobs=filtered_jobs, query=queries)
 
     records = []
-    pimple_records = []
+    general_records = []
     for job in filtered_jobs:
         record = {}
         log = get_latest_log(job)
@@ -612,29 +612,28 @@ def postProcess(ctx: click.Context, **kwargs):
         if record:
             records.append(record)
 
-        if pimple_parser_config is not None and LogParser.is_pimple_log(log_path):
+        if general_parser_config is not None:
             parser = LogParser(
                 log_file_path=log_path,
-                lin_tol=pimple_parser_config["lin_tol"],
-                n_cells= pimple_parser_config["n_cells"],
-                n_cells_search_dir=pimple_parser_config["n_cells_path"],
-                t_skip=pimple_parser_config["t_skip"],
-                write_interval=pimple_parser_config["write_interval"],
-                write_interval_search_dir=pimple_parser_config["write_interval_path"],
+                lin_tol=general_parser_config["lin_tol"],
+                n_cells= general_parser_config["n_cells"],
+                n_cells_search_dir=general_parser_config["n_cells_path"],
+                t_skip=general_parser_config["t_skip"],
+                write_interval=general_parser_config["write_interval"],
+                write_interval_search_dir=general_parser_config["write_interval_path"],
             )
-            try:
-                parser_output = parser.get_all_info()
-                pimple_records.append({job.id:parser_output})
-            except Exception as E:
-                print(E) 
-                raise E
-                logger.error(f"Unable to pimple-parse {log_path} !")
+            if parser.is_compatible_log():
+                try:
+                    parser_output = parser.run_parser()
+                    general_records.append({job.id:parser_output})
+                except Exception as E:
+                    logger.error(f"Unable to parse {log_path}: {E}")
             
     with open("postpro.json", "w") as f:
         json.dump(records, f)
-    if len(pimple_records) > 0:
-        with open("pimple_logs.json","w") as f:
-            json.dump(pimple_records,f)
+    if len(general_records) > 0:
+        with open("general_logs.json","w") as f:
+            json.dump(general_records,f)
     logger.success("Successfully applied")
 
 
