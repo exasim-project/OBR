@@ -624,7 +624,7 @@ class LogParser:
                 return None
             minlength_p=nSubIters*minlength_nOuterCorr
 
-        # Determine the timeStep to show in the plots (Three time steps before the last - this prevents from any plot error due to interupted logs)
+        # Determine the timeStep to show in the plots (Three time steps before the last - this prevents from any plot error due to interrupted logs)
         if len(simTime) <= 3:
             print(simTime)
             someTimeStep=simTime[0]
@@ -714,7 +714,7 @@ class LogParser:
             idx_write_restart=np.arange(writeInterval-intervalStart-2,len(tPerDt),writeInterval)
         if len(tPerDt) == writeInterval-1:
             np.put(mask_restart,-1,np.ones(1,dtype=bool))
-            self.logger.debug('Could not determine OH of writing and excuting functionObjects. At least 2 writeIntervals are necessary!')
+            self.logger.debug('Could not determine OH of writing and executing functionObjects. At least 2 writeIntervals are necessary!')
         else:
             np.put(mask_fobjs,idx_write_fobjs,np.ones(len(idx_write_fobjs),dtype=bool))
             np.put(mask_restart,idx_write_restart,np.ones(len(idx_write_restart),dtype=bool))
@@ -782,7 +782,7 @@ class LogParser:
         else:
             upcco_mean=0.0
 
-        # Calcualte linear solver tolerances
+        # Calculate linear solver tolerances
         if self.lin_tol:
             relTolDict={}
             absTolMeanDict={}
