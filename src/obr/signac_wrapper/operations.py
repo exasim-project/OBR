@@ -80,7 +80,7 @@ class OpenFOAMProject(flow.FlowProject):
 
 
 generate = OpenFOAMProject.make_group(name="generate")
-simulate = OpenFOAMProject.make_group("execute")
+simulate = OpenFOAMProject.make_group(name="execute")
 
 
 def is_case(job: Job) -> bool:
@@ -679,13 +679,54 @@ def get_number_of_procs(job: Job) -> int:
     return np
 
 
+def get_tasks_per_node(job: Job) -> int:
+    """Deduces the number of tasks per node.
+
+    Resolution order: statepoint -> job cache -> decomposeParDict. If
+    tasksPerNode is not specified anywhere, fall back to the number of procs
+    (i.e. assume a single node holds all ranks) instead of crashing.
+    """
+    tpn = statepoint_get(job.sp(), "tasksPerNode")
+    if tpn:
+        return int(tpn)
+    tpn = job.doc["cache"].get("tasksPerNode", False)
+    if tpn:
+        return int(tpn)
+    # Reading tasksPerNode from the decomposeParDict should be the last resort
+    # since it is very expensive. The key is usually absent, so guard the None.
+    decomposeParDict = OpenFOAMCase(str(job.path) + "/case", job).decomposeParDict
+    tpn = decomposeParDict.get("tasksPerNode") if decomposeParDict else None
+    if tpn:
+        tpn = int(tpn)
+        job.doc["cache"]["tasksPerNode"] = tpn
+        return tpn
+    # Not specified anywhere -> default to one node holding all ranks
+    return get_number_of_procs(job)
+
+
 def get_values(jobs: list, key: str) -> set:
     """find all different statepoint values"""
     values = [job.sp().get(key) for job in jobs if job.sp().get(key)]
     return set(values)
 
 
-def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
+def select_solver_cmd(job: Job, parallel_default: str, serial_default: str) -> str:
+    """Choose the mpirun or serial command template based on numberOfSubdomains.
+
+    np > 1  -> parallel template (OBR_RUN_CMD overrides the default)
+    np <= 1 -> serial   template (OBR_SERIAL_RUN_CMD overrides the default)
+
+    This lets a single study using runParallelSolver cover a numberOfSubdomains
+    sweep: the np==1 point degrades to a serial run instead of launching
+    'mpirun -np 1 <solver> -parallel ...' on an undecomposed case.
+    """
+    np = get_number_of_procs(job)
+    if np and int(np) > 1:
+        return os.environ.get("OBR_RUN_CMD") or parallel_default
+    return os.environ.get("OBR_SERIAL_RUN_CMD") or serial_default
+
+
+def run_cmd_builder(job: Job, cmd_format: str, overrides=None) -> str:
     """Builds the cli command to run a OpenFOAM application"""
 
     skip_complete = os.environ.get("OBR_SKIP_COMPLETE")
@@ -701,23 +742,28 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     #     job.doc["state"]["global"] = "dirty"
     #     return "true"
 
-    solver = case.controlDict.get("application")
+    solver = case.solver
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
     res = job.doc["history"]
 
     cli_args = {
         "solver": solver,
+        "solverargs": "",
         "path": job.path,
         "timestamp": timestamp,
         "np": get_number_of_procs(job),
+        "tpn": get_tasks_per_node(job),
     }
+    if overrides:
+        cli_args.update(overrides)
+
     cmd_str = cmd_format.format(**cli_args)
     res.append(
         {
             "cmd": cmd_str,
             "type": "shell",
-            "log": f"{solver}_{timestamp}.log",
+            "log": f"{cli_args['solver']}_{timestamp}.log",
             "state": "started",
             "timestamp": timestamp,
             "user": os.environ.get("USER"),
@@ -726,12 +772,6 @@ def run_cmd_builder(job: Job, cmd_format: str, args: dict) -> str:
     )
     job.doc["history"] = res
 
-    cli_args = {
-        "solver": solver,
-        "path": job.path,
-        "timestamp": timestamp,
-        "np": get_number_of_procs(job),
-    }
     preflight = os.environ.get("OBR_PREFLIGHT")
     if preflight:
         preflight_cmd = f"{preflight} > {job.path}/case/preflight_{timestamp}.log && "
@@ -751,6 +791,70 @@ def validate_state_impl(_: str, job: Job) -> None:
     """Perform a detailed update of the job state"""
     case = OpenFOAMCase(Path(job.path) / "case", job)
     case.detailed_update()
+
+
+def has_pre_cmds(job):
+    """Return True only if the state point contains at least one pre command."""
+    return bool(statepoint_get(job.sp(), "pre_cmds"))
+
+
+def has_post_cmds(job):
+    """Return True only if the state point contains at least one post command."""
+    return bool(statepoint_get(job.sp(), "post_cmds"))
+
+
+def get_raw_cmds(job: Job, key: str) -> list:
+    """Return the raw shell lines stored under key ('pre_cmds'/'post_cmds'), VERBATIM.
+
+    No .format(), no wrapping, no redirection — shell constructs like
+    'of_watchdog.sh --loop &' or 'watchdog_pid=${!}' must survive untouched.
+    A single string is promoted to a one-element list. Keys defined on a
+    parent statepoint (e.g. the case block) are inherited via statepoint_get.
+    """
+    cmds = statepoint_get(job.sp(), key)
+    if not cmds:
+        return []
+    if isinstance(cmds, str):
+        cmds = [cmds]
+    return [str(c) for c in cmds]
+
+
+def record_raw_cmds(job: Job, cmds: list, kind: str) -> None:
+    """Append lightweight provenance entries for raw pre/post commands."""
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    res = job.doc["history"]
+    for cmd in cmds:
+        res.append(
+            {
+                "cmd": cmd,
+                "type": kind,
+                "log": "",
+                "state": "started",
+                "timestamp": timestamp,
+                "user": os.environ.get("USER"),
+                "hostname": os.environ.get("HOST"),
+            }
+        )
+    job.doc["history"] = res
+
+
+def wrap_raw_cmds(job: Job, cmd: str) -> str:
+    """Prepend pre_cmds and append post_cmds verbatim around cmd.
+
+    Newline-joined (never '&&' — 'foo & && bar' is a shell syntax error) so
+    that the whole composite runs in ONE shell, in order, and shell variables
+    set by a pre command (e.g. watchdog_pid=${!}) remain visible to the
+    post commands.
+    """
+    pre_cmds = get_raw_cmds(job, "pre_cmds")
+    post_cmds = get_raw_cmds(job, "post_cmds")
+    if pre_cmds:
+        record_raw_cmds(job, pre_cmds, "pre_cmd")
+        cmd = "\n".join(pre_cmds) + "\n" + cmd
+    if post_cmds:
+        record_raw_cmds(job, post_cmds, "post_cmd")
+        cmd = cmd + "\n" + "\n".join(post_cmds)
+    return cmd
 
 
 @OpenFOAMProject.pre(parent_job_is_ready)
@@ -773,27 +877,75 @@ def validateState(job: Job, args={}) -> None:
     validate_state_impl("", job)
 
 
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.pre(is_job)
+@OpenFOAMProject.pre(has_pre_cmds)
+@OpenFOAMProject.operation(cmd=True)
+def runParallelPre(job: Job, args={}) -> str:
+    """Emit the pre_cmds statepoint entries verbatim.
+
+    NOTE: 'obr run/submit -o execute' (runParallelSolver) already inlines
+    pre_cmds/post_cmds around the solver in one shell. This operation only
+    exists to (re)run the pre commands independently."""
+    pre_cmds = get_raw_cmds(job, "pre_cmds")
+    if not pre_cmds:
+        return ":  # No pre_cmds, skipping execution"
+    record_raw_cmds(job, pre_cmds, "pre_cmd")
+    return "\n".join(pre_cmds)
+
+
 @simulate
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.operation(
-    cmd=True, directives={"np": lambda job: get_number_of_procs(job)}
+    cmd=True,
+    directives={
+        "np": lambda job: get_number_of_procs(job),
+        "tpn": lambda job: get_tasks_per_node(job),
+    },
 )
 @OpenFOAMProject.operation_hooks.on_exit(validate_state_impl)
 def runParallelSolver(job: Job, args={}) -> str:
-    env_run_template = os.environ.get("OBR_RUN_CMD")
-    solver_cmd = (
-        env_run_template
-        if env_run_template
-        else (
+    solver_cmd = select_solver_cmd(
+        job,
+        parallel_default=(
             "mpirun -np {np} {solver} -parallel -case {path}/case >"
             " {path}/case/{solver}_{timestamp}.log 2>&1"
-        )
+        ),
+        serial_default=(
+            "{solver} -case {path}/case >"
+            " {path}/case/{solver}_{timestamp}.log 2>&1"
+        ),
     )
-    return run_cmd_builder(job, solver_cmd, args)
+    # Check if a custom solver command is provided
+    custom_command = os.environ.get("OBR_CUSTOM_SOLVER_CMD")
+    # If a custom command is provided, replace {solver} in the template
+    if custom_command:
+        solver_cmd = solver_cmd.replace("{solver}", custom_command, 1)
+    ret = run_cmd_builder(job, solver_cmd, args)
+    if ret == "true":
+        # OBR_SKIP_COMPLETE short-circuit: skip pre/post as well
+        return ret
+    return wrap_raw_cmds(job, ret)
 
 
-@simulate
+@OpenFOAMProject.pre(final)
+@OpenFOAMProject.pre(is_job)
+@OpenFOAMProject.pre(has_post_cmds)
+@OpenFOAMProject.operation(cmd=True)
+def runParallelPost(job: Job, args={}) -> str:
+    """Emit the post_cmds statepoint entries verbatim.
+
+    NOTE: 'obr run/submit -o execute' (runParallelSolver) already inlines
+    pre_cmds/post_cmds around the solver in one shell. This operation only
+    exists to (re)run the post commands independently."""
+    post_cmds = get_raw_cmds(job, "post_cmds")
+    if not post_cmds:
+        return ":  # No post_cmds, skipping execution"
+    record_raw_cmds(job, post_cmds, "post_cmd")
+    return "\n".join(post_cmds)
+
+
 @OpenFOAMProject.pre(final)
 @OpenFOAMProject.pre(is_job)
 @OpenFOAMProject.operation(cmd=True)
@@ -805,7 +957,15 @@ def runSerialSolver(job: Job, args={}):
         if env_run_template
         else "{solver} -case {path}/case > {path}/case/{solver}_{timestamp}.log 2>&1"
     )
-    return run_cmd_builder(job, solver_cmd, args)
+    # Check if a custom solver command is provided
+    custom_command = os.environ.get("OBR_CUSTOM_SOLVER_CMD")
+    # If a custom command is provided, replace {solver} in the template
+    if custom_command:
+        solver_cmd = solver_cmd.replace("{solver}", custom_command, 1)
+    ret = run_cmd_builder(job, solver_cmd, args)
+    if ret == "true":
+        return ret
+    return wrap_raw_cmds(job, ret)
 
 
 @OpenFOAMProject.operation

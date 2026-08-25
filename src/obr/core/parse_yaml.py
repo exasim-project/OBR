@@ -7,6 +7,19 @@ import sys
 from .logger_setup import logger
 
 
+def find_first(d, key_in):
+    """recursively scan dictionary dictionary for k"""
+    res = {}
+    if d.get(key_in):
+        return {key_in: d[key_in]}
+    for k, v in d.items():
+        if isinstance(v, dict):
+            res = find_first(v, key_in)
+            if res:
+                return res
+    return res
+
+
 def read_yaml(kwargs: dict) -> str:
     if kwargs.get("url"):
         with urllib.request.urlopen(kwargs["url"]) as f:
@@ -61,14 +74,13 @@ def parse_special_variables(in_str: str, args: dict, domain: str, verbose: bool)
     return in_str
 
 
-def parse_queries(in_str: str, args: dict, domain: str) -> str:
-    """Replaces ${{ domain.value }} expressions with environmental variable values"""
+def parse_queries(in_str: str, args: dict) -> str:
+    """Replaces ${{ get.value }} expressions with values from yaml"""
     occurrences = re.findall(r"\${{get" + r"\.(\w+)}}", in_str)
     for inst in occurrences:
-        if not args.get(inst, ""):
-            logger.warning(f"warning {inst} not defined")
+        value = find_first(args, inst)
         in_str = in_str.replace(
-            "${{" + domain + "." + inst + "}}", args.get(inst, f"'{inst}'")
+            "${{get." + inst + "}}", str(value.get(inst, f"'{inst}'"))
         )
     return in_str
 
@@ -77,6 +89,8 @@ def eval_generator_expressions(in_str: str) -> str:
     """Tries evaluate ${{ }} expressions"""
     expr = re.findall(r"\${{([\'\"\= 0.-9()*+A-Za-z_>!]*)}}", in_str)
     for inst in expr:
+        if inst.startswith("get"):
+            continue
         try:
             in_str = in_str.replace("${{" + inst + "}}", str(eval(inst)))
         except Exception as e:

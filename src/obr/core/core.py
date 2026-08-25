@@ -211,7 +211,7 @@ def get_latest_log(job: Job) -> str:
         return ""
 
     case = OpenFOAMCase(case_path, job)
-    solver = case.controlDict.get("application")
+    solver = case.solver
 
     history = job.doc["history"]
     for entry in history[::-1]:

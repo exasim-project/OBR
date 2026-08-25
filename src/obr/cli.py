@@ -22,6 +22,7 @@ import sys
 import logging
 import shutil
 import functools
+import re
 
 from pathlib import Path
 from subprocess import check_output
@@ -44,6 +45,8 @@ from .cli_util import (
 from .core.core import map_view_folder_to_job_id, profile_call
 from .core.logger_setup import logger, setup_logging
 
+from .core.core import map_view_folder_to_job_id
+from .log_parser import LogParser
 
 def common_params(func):
     @click.option(
@@ -100,6 +103,12 @@ def cli(ctx: click.Context, **kwargs):
     ),
 )
 @click.option(
+    "--solver-cmd",
+    type=str,
+    default="",
+    help="Custom command to replace the solver in runParallelSolver, e.g., 'topoSetDict -latestTime'.",
+)
+@click.option(
     "--template",
     default="",
     help="Path to submission script template.",
@@ -142,6 +151,11 @@ def cli(ctx: click.Context, **kwargs):
 def submit(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
     operations = kwargs.get("operations", "").split(",")
+    custom_command = kwargs.get("solver_cmd", "")
+    if custom_command:
+        os.environ["OBR_CUSTOM_SOLVER_CMD"] = (
+            custom_command  # Store command in an environment variable
+        )
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
@@ -176,6 +190,12 @@ def submit(ctx: click.Context, **kwargs):
     ),
 )
 @click.option(
+    "--solver-cmd",
+    type=str,
+    default="",
+    help="Custom command to replace the solver in runParallelSolver, e.g., 'topoSetDict -latestTime'.",
+)
+@click.option(
     "-l",
     "--list_operations",
     is_flag=True,
@@ -202,6 +222,12 @@ def run(ctx: click.Context, **kwargs):
     project, jobs = cli_cmd_setup(kwargs)
 
     operations = kwargs.get("operations", "").split(",")
+    custom_command = kwargs.get("solver_cmd", "")
+    if custom_command:
+        os.environ["OBR_CUSTOM_SOLVER_CMD"] = (
+            custom_command  # Store command in an environment variable
+        )
+
     list_operations = kwargs.get("list_operations")
     if not check_cli_operations(project, operations, list_operations):
         return
@@ -219,8 +245,8 @@ def run(ctx: click.Context, **kwargs):
         )
         return
 
-    if kwargs.get("operations") == "runParallelSolver":
-        # NOTE if tasks is not set explicitly we set it to 1 for parallelSolverSolver
+    if "runParallelSolver" in operations or "execute" in operations:
+        # NOTE if tasks is not set explicitly we set it to 1 for runParallelSolver
         # to avoid oversubsrciption
         ntasks: int = kwargs["tasks"] if kwargs.get("tasks", 0) >= 1 else 1
         if not kwargs.get("tasks", False):
@@ -495,7 +521,7 @@ def postProcess(ctx: click.Context, **kwargs):
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
-
+    general_parser_config = config["generalParser"]
     d = config["postProcess"]
 
     matcher = {"transpEqn": lambda args: transportEqn(**args)}
@@ -513,6 +539,7 @@ def postProcess(ctx: click.Context, **kwargs):
     query_results = project.query(jobs=filtered_jobs, query=queries)
 
     records = []
+    general_records = []
     for job in filtered_jobs:
         record = {}
         log = get_latest_log(job)
@@ -535,9 +562,49 @@ def postProcess(ctx: click.Context, **kwargs):
 
                 log_file_parser = LogFile(log_path, matcher=[m])
                 df = convert_to_numbers(log_file_parser.parse_to_df())
+                agg_type = l.get("type", "average").lower()
                 for col in df.columns:
                     try:
-                        record[col] = df.iloc[1:][col].mean()
+                        if "Name" in col:
+                            continue
+                        # Resolve the aggregation per column. Standard columns
+                        # coming from Owls are always averaged, but this must not
+                        # clobber agg_type for the remaining (user) columns.
+                        col_agg = agg_type
+                        if col in ("PIMPLEIteration", "Time", "PIMPLE_count"):
+                            col_agg = "average"
+                        if col_agg == "average":
+                            # keep old behavior: skip the very first row like you did before
+                            value = df.iloc[1:][col].mean()
+                        elif col_agg == "diff_mean":
+                            # take consecutive differences, then mean
+                            # (no need to skip first row; diff() already drops the first)
+                            s = df[col]
+                            value = s.diff().dropna().mean()
+                        else:
+                            diff_match = re.fullmatch(
+                                r"^diff_mean_(skip|use)(\d+)$", col_agg
+                            )
+                            if diff_match:
+                                mode, n_str = diff_match.group(1), diff_match.group(2)
+                                N = int(n_str)
+                                s = df[col]
+                                deltas = s.diff().dropna().reset_index(drop=True)
+                                if N > 1 and not deltas.empty:
+                                    write_mask = (deltas.index % N) == (N - 1)
+                                    seq = (
+                                        deltas[~write_mask]
+                                        if mode == "skip"
+                                        else deltas[write_mask]
+                                    )
+                                else:
+                                    # Degenerate: N<=1 or nothing to slice; fall back to plain diff mean
+                                    seq = deltas
+                                value = seq.mean() if not seq.empty else float("nan")
+                            else:
+                                # Unknown type -> fallback to old behavior
+                                value = df.iloc[1:][col].mean()
+                        record[col] = value
                     except:
                         pass
             except Exception as e:
@@ -545,8 +612,28 @@ def postProcess(ctx: click.Context, **kwargs):
         if record:
             records.append(record)
 
+        if general_parser_config is not None:
+            parser = LogParser(
+                log_file_path=log_path,
+                lin_tol=general_parser_config["lin_tol"],
+                n_cells= general_parser_config["n_cells"],
+                n_cells_search_dir=general_parser_config["n_cells_path"],
+                t_skip=general_parser_config["t_skip"],
+                write_interval=general_parser_config["write_interval"],
+                write_interval_search_dir=general_parser_config["write_interval_path"],
+            )
+            if parser.is_compatible_log():
+                try:
+                    parser_output = parser.run_parser()
+                    general_records.append({job.id:parser_output})
+                except Exception as E:
+                    logger.error(f"Unable to parse {log_path}: {E}")
+            
     with open("postpro.json", "w") as f:
         json.dump(records, f)
+    if len(general_records) > 0:
+        with open("general_logs.json","w") as f:
+            json.dump(general_records,f)
     logger.success("Successfully applied")
 
 
