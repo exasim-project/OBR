@@ -946,7 +946,7 @@ class LogParser:
             "decomp_method":      decompMethod,
             "comment":            f"Case: {casename}"
                                 f"OFversion: {OFversion} | turbModel: {turbModel} | ",
-            "started_at": started_at,
+"started_at": started_at.isoformat(),
             # ── IO ────────────────────────────────────────────────────────────────────
             "io_write_interval":              float(writeInterval),
             "io_t_writes_mean":               float(tWrites_mean),
