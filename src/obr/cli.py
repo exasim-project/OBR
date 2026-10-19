@@ -521,7 +521,7 @@ def postProcess(ctx: click.Context, **kwargs):
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
-    general_parser_config = config["generalParser"]
+general_parser_config = config.get("generalParser")
     d = config["postProcess"]
 
     matcher = {"transpEqn": lambda args: transportEqn(**args)}
