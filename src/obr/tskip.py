@@ -20,10 +20,10 @@ import numpy as np
 
 @dataclass
 class TransientResult:
-    t_skip: float                # value for the existing `simTime > t_skip` cutoff
-    n_skip: int                  # number of leading timesteps that cutoff drops
-    indicator_indices: dict      # per-indicator truncation index (in timesteps)
-    dominating_indicator: str    # indicator that produced the final (max) index
+    t_skip: float  # value for the existing `simTime > t_skip` cutoff
+    n_skip: int  # number of leading timesteps that cutoff drops
+    indicator_indices: dict  # per-indicator truncation index (in timesteps)
+    dominating_indicator: str  # indicator that produced the final (max) index
 
 
 def mser(series, batch_size=5, max_fraction=0.5, _allow_detrend=True):
@@ -55,17 +55,19 @@ def mser(series, batch_size=5, max_fraction=0.5, _allow_detrend=True):
     n_batches = x.size // batch_size
     if n_batches < 4:
         return 0
-    batch_means = x[: n_batches * batch_size].reshape(n_batches, batch_size).mean(axis=1)
+    batch_means = (
+        x[: n_batches * batch_size].reshape(n_batches, batch_size).mean(axis=1)
+    )
     if np.allclose(batch_means, batch_means[0]):
         return 0
     d_max = max(1, int(n_batches * max_fraction))
-    mser_values = [
-        np.var(batch_means[d:]) / (n_batches - d) for d in range(d_max + 1)
-    ]
+    mser_values = [np.var(batch_means[d:]) / (n_batches - d) for d in range(d_max + 1)]
     d_star = int(np.argmin(mser_values))
     if d_star == d_max and _allow_detrend:
         return mser(
-            np.diff(x), batch_size=batch_size, max_fraction=max_fraction,
+            np.diff(x),
+            batch_size=batch_size,
+            max_fraction=max_fraction,
             _allow_detrend=False,
         )
     return d_star * batch_size
@@ -111,7 +113,8 @@ def transient_report(n_skip, quantities):
         steady_mean = np.nanmean(x[n_skip:])
         bias_pct = (
             100.0 * (full_mean - steady_mean) / steady_mean
-            if steady_mean != 0 else float("nan")
+            if steady_mean != 0
+            else float("nan")
         )
         excess = np.nansum(x[:n_skip] - steady_mean)
         total = np.nansum(x)

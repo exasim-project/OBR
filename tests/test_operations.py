@@ -62,7 +62,9 @@ def test_pre_post_ops_emit_verbatim(job_with_cmds):
 
 
 def test_wrap_raw_cmds_order_and_verbatim(job_with_cmds):
-    solver_line = "mpirun -np 2 icoFoam -parallel -case c > log 2>&1|| true && echo $? > e "
+    solver_line = (
+        "mpirun -np 2 icoFoam -parallel -case c > log 2>&1|| true && echo $? > e "
+    )
     body = wrap_raw_cmds(job_with_cmds, solver_line)
     assert body.splitlines() == WATCHDOG_PRE + [solver_line] + WATCHDOG_POST
     # provenance recorded, raw lines untouched

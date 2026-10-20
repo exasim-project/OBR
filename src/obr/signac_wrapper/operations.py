@@ -913,8 +913,7 @@ def runParallelSolver(job: Job, args={}) -> str:
             " {path}/case/{solver}_{timestamp}.log 2>&1"
         ),
         serial_default=(
-            "{solver} -case {path}/case >"
-            " {path}/case/{solver}_{timestamp}.log 2>&1"
+            "{solver} -case {path}/case >" " {path}/case/{solver}_{timestamp}.log 2>&1"
         ),
     )
     # Check if a custom solver command is provided
