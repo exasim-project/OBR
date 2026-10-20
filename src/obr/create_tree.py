@@ -176,7 +176,7 @@ def expand_generator_block(operation, base_dict={}):
                 for k, v in template.items():
                     if isinstance(v, str):
                         # handle get. queries
-                        v = parse_queries(v, base_dict, "get")
+                        # v = parse_queries(v, base_dict)
                         gen_dict[k] = v.replace(key, str(val))
                     # additionally the original key and current
                     # val are added so that we can use it in schemas
@@ -216,6 +216,13 @@ def add_variations(
                 for k, v in value.items():
                     if isinstance(v, str):
                         value[k] = eval_generator_expressions(v)
+
+            if isinstance(value, dict):
+                for key, v in value.items():
+                    if isinstance(v, str):
+                        # handle get. queries
+                        parsed = parse_queries(v, base_dict)
+                        value[key] = parsed
 
             # derive path name from schema or key value
             parse_res = extract_from_operation(operation, value)
