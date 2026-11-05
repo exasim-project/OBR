@@ -7,6 +7,7 @@ import traceback
 import logging
 import json
 import shutil
+import copy
 
 from pathlib import Path
 from subprocess import check_output
@@ -151,9 +152,19 @@ def parent_job_is_ready(job: Job) -> str:
     return ""
 
 
-def _link_path(base: Path, dst: Path, parent_id: str, copy_instead_link: bool):
+def _link_path(
+    base: Path,
+    dst: Path,
+    parent_id: str,
+    copy_instead_link: bool,
+    copy_proc_constant: bool = False,
+):
     """creates file tree under dst with same folder structure as base but all
     files are relative symlinks
+
+    copy_proc_constant: copy processor*/constant instead of linking it, so that
+    a parallel renumberMesh -overwrite in this job does not write through the
+    symlink into the parent case (see renumber: parallel)
     """
     # NOTE if copy instead linking is requested we
     # just copy the full tree and are done
@@ -181,7 +192,13 @@ def _link_path(base: Path, dst: Path, parent_id: str, copy_instead_link: bool):
                 # to reduce the resulting folder size
                 trgt_proc_fold = f"{dst}/{fold}"
                 for proc_cont in proc_folder:
-                    if proc_cont == "constant":
+                    if proc_cont == "constant" and copy_proc_constant:
+                        shutil.copytree(
+                            src=f"{proc_root}/{proc_cont}",
+                            dst=f"{trgt_proc_fold}/{proc_cont}",
+                            symlinks=False,
+                        )
+                    elif proc_cont == "constant":
                         check_output(["mkdir", "-p", trgt_proc_fold])
                         check_output(
                             [
@@ -231,6 +248,56 @@ def _link_path(base: Path, dst: Path, parent_id: str, copy_instead_link: bool):
                 )
 
 
+def renumber_mode(job: Job) -> str:
+    """Value of the (inherited) 'renumber' statepoint key, '' if not set"""
+    return str(statepoint_get(job.sp(), "renumber") or "")
+
+
+def needs_own_proc_mesh(job: Job) -> bool:
+    """Final jobs of a 'renumber: parallel' study get their own copy of
+    processor*/constant since the mesh is renumbered in place before the solve.
+    Intermediate levels keep the cheap symlinks."""
+    return renumber_mode(job) == "parallel" and not job.sp().get("has_child")
+
+
+def renumber_cmd(job: Job, timestamp: str) -> str:
+    """Shell line that renumbers the decomposed mesh once in parallel, in the
+    same allocation as the solver. A marker file prevents renumbering again
+    on resubmission. OBR_RENUMBER_CMD overrides the launch template, the
+    optional 'renumber_env' file is sourced in a subshell for this step only."""
+    np = get_number_of_procs(job)
+    if renumber_mode(job) != "parallel" or not np or int(np) <= 1:
+        return ""
+    case = f"{job.path}/case"
+    template = os.environ.get("OBR_RENUMBER_CMD") or (
+        "mpirun -np {np} renumberMesh -overwrite -parallel -case {case}"
+        " > {case}/renumberMesh_{timestamp}.log 2>&1"
+    )
+    run = template.format(
+        np=np, tpn=get_tasks_per_node(job), case=case, timestamp=timestamp
+    )
+    if env := statepoint_get(job.sp(), "renumber_env"):
+        run = f"source {env} && {run}"
+    res = job.doc["history"]
+    res.append(
+        {
+            "cmd": run,
+            "type": "renumber",
+            "log": f"renumberMesh_{timestamp}.log",
+            "state": "started",
+            "timestamp": timestamp,
+            "user": os.environ.get("USER"),
+            "hostname": os.environ.get("HOST"),
+        }
+    )
+    job.doc["history"] = res
+    return (
+        f"[ -f {case}/renumber.done ] || {{ ( {run} ) && touch {case}/renumber.done"
+        f' || {{ echo "renumberMesh failed, see {case}/renumberMesh_{timestamp}.log";'
+        " exit 1; }; }"
+    )
+
+
 def needs_initialization(job: Job) -> bool:
     """Check if this job has been initialized already, without performing the initialization"""
     if parent_id := job.sp().get("parent_id"):
@@ -259,7 +326,13 @@ def initialize_if_required(job: Job) -> bool:
         # instead of linking to avoid side effects in future it might make sense to
         # specify the files which are modified in the yaml file
         copy_instead_link = job.sp().get("operation") == "shell"
-        _link_path(base_path, dst_path, parent_id, copy_instead_link)
+        _link_path(
+            base_path,
+            dst_path,
+            parent_id,
+            copy_instead_link,
+            copy_proc_constant=needs_own_proc_mesh(job),
+        )
         job.doc["state"]["is_initialized"] = True
         if GLOBAL_UNINIT_COUNT:
             logger.info(
@@ -317,7 +390,9 @@ def execute_post_build(operation_name: str, job: Job):
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
     """
-    operations = job.sp.get("post_build", [])
+    # deep copy: operations pop entries like "uses" from their args, which must not
+    # modify the statepoint (that would change the job id)
+    operations = copy.deepcopy(job.sp().get("post_build", []))
     execute_operation(job, operation_name, operations)
 
 
@@ -327,7 +402,9 @@ def execute_pre_build(operation_name: str, job: Job):
     operation can be simple operations defined by a keyword like blockMesh
     or operations with parameters defined by a dictionary
     """
-    operations = job.sp.get("pre_build", [])
+    # deep copy: operations pop entries like "uses" from their args, which must not
+    # modify the statepoint (that would change the job id)
+    operations = copy.deepcopy(job.sp().get("pre_build", []))
     execute_operation(job, operation_name, operations)
 
 
@@ -370,6 +447,11 @@ def copy_on_uses(args: dict, job: Job, path: str, target: str):
         return
     if uses := args.pop("uses", False):
         if path:
+            # in linked jobs the target is a symlink to the parent case, cp would
+            # write through it and change the file for all sibling jobs
+            target_path = Path(job.path) / "case" / path / target
+            if target_path.is_symlink():
+                target_path.unlink()
             check_output(
                 [
                     "cp",
@@ -925,6 +1007,8 @@ def runParallelSolver(job: Job, args={}) -> str:
     if ret == "true":
         # OBR_SKIP_COMPLETE short-circuit: skip pre/post as well
         return ret
+    if renumber := renumber_cmd(job, datetime.now().strftime("%Y-%m-%d_%H:%M:%S")):
+        ret = renumber + "\n" + ret
     return wrap_raw_cmds(job, ret)
 
 
