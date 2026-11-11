@@ -6,6 +6,11 @@ Changelog
 - Add postprocess option: `obr postprocess -c <file>`, see https://github.com/exasim-project/OBR/pull/211.
 - Add grouping of jobs: `obr status --summarize N`, see https://github.com/hpsim/OBR/pull/200.
 - Add multiLevel option to decomposePar, see https://github.com/exasim-project/OBR/pull/213.
+- Add `runtime` section to `obr postprocess`: NCT, time per timestep, write time and initial transient
+  (MSER-5) of each job from foamLog.py, added to postpro.json. Replaces the `generalParser` section
+  (log_parser.py, tskip.py, general_logs.json).
+- Add `renumber: parallel`: final jobs own processor*/constant and renumber it in the solver job.
+- Fix `uses` in post_build changing the statepoint (job id) and writing through linked files.
 
 0.3.0 (2024-03-03)
 - Add warning if running obr init on existing workspace, see https://github.com/hpsim/OBR/pull/207

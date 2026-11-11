@@ -21,6 +21,7 @@ dependencies = [
     "signac-flow==0.26.1",
     "GitPython==3.1.31",
     "pandas",
+    "numpy",
     "DeepDiff",
     "jsonschema==4.19.1",
     "coloredlogs",

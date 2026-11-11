@@ -46,7 +46,6 @@ from .core.core import map_view_folder_to_job_id, profile_call
 from .core.logger_setup import logger, setup_logging
 
 from .core.core import map_view_folder_to_job_id
-from .log_parser import LogParser
 
 
 def common_params(func):
@@ -510,6 +509,7 @@ def postProcess(ctx: click.Context, **kwargs):
     from Owls.parser.LogFile import LogFile, transportEqn, customMatcher
     from obr.core.core import get_latest_log
     from .core.queries import build_filter_query
+    from .postPro.runtime import runtime_record
     from copy import deepcopy
     import json
 
@@ -522,26 +522,28 @@ def postProcess(ctx: click.Context, **kwargs):
     config_str = read_yaml(kwargs)
     config_str = config_str.replace("\n\n", "\n")
     config = yaml.safe_load(config_str)
-    general_parser_config = config.get("generalParser")
 
     d = config["postProcess"]
+    # foamLog runtime statistics (NCT, time per step, write time, ...), see postPro/runtime.py
+    runtime_config = d.get("runtime")
+    if "runtime" in d and runtime_config is None:
+        runtime_config = {}
 
     matcher = {"transpEqn": lambda args: transportEqn(**args)}
     matcher_args = {"transpEqn": ["name"]}
     matcher_regex = {}
 
-    for m in d["matcher"]:
+    for m in d.get("matcher", []):
         matcher[m["name"]] = lambda args, regex: customMatcher(
             args["name"], regex.format(**args)
         )
         matcher_args[m["name"]] = deepcopy(m["args"])
         matcher_regex[m["name"]] = deepcopy(m["regexp"])
 
-    queries: list[Query] = build_filter_query(d["queries"])
+    queries: list[Query] = build_filter_query(d.get("queries", []))
     query_results = project.query(jobs=filtered_jobs, query=queries)
 
     records = []
-    general_records = []
     for job in filtered_jobs:
         record = {}
         log = get_latest_log(job)
@@ -551,7 +553,7 @@ def postProcess(ctx: click.Context, **kwargs):
 
         record = query_results[job.id]
         record["jobid"] = job.id
-        for l in d["log"]:
+        for l in d.get("log", []):
             try:
                 matcher_name = l["matcher"]
                 pass_args = {
@@ -611,31 +613,15 @@ def postProcess(ctx: click.Context, **kwargs):
                         pass
             except Exception as e:
                 print(e)
+        if runtime_config is not None:
+            record.update(
+                runtime_record(log_path, Path(job.path) / "case", runtime_config)
+            )
         if record:
             records.append(record)
 
-        if general_parser_config is not None:
-            parser = LogParser(
-                log_file_path=log_path,
-                lin_tol=general_parser_config["lin_tol"],
-                n_cells=general_parser_config["n_cells"],
-                n_cells_search_dir=general_parser_config["n_cells_path"],
-                t_skip=general_parser_config["t_skip"],
-                write_interval=general_parser_config["write_interval"],
-                write_interval_search_dir=general_parser_config["write_interval_path"],
-            )
-            if parser.is_compatible_log():
-                try:
-                    parser_output = parser.run_parser()
-                    general_records.append({job.id: parser_output})
-                except Exception as E:
-                    logger.error(f"Unable to parse {log_path}: {E}")
-
     with open("postpro.json", "w") as f:
         json.dump(records, f)
-    if len(general_records) > 0:
-        with open("general_logs.json", "w") as f:
-            json.dump(general_records, f)
     logger.success("Successfully applied")
 
 
