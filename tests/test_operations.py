@@ -8,6 +8,9 @@ from obr.signac_wrapper.operations import (
     has_pre_cmds,
     runParallelPost,
     runParallelPre,
+    needs_own_proc_mesh,
+    prepare_cmds,
+    raw_cmd_env,
     solver_args,
     wrap_raw_cmds,
 )
@@ -58,8 +61,9 @@ def job_with_cmds(tmpdir):
 
 
 def test_pre_post_ops_emit_verbatim(job_with_cmds):
-    assert runParallelPre(job_with_cmds) == "of_watchdog.sh --loop &\nwatchdog_pid=${!}"
-    assert runParallelPost(job_with_cmds) == "kill $watchdog_pid"
+    env = raw_cmd_env(job_with_cmds)
+    assert runParallelPre(job_with_cmds) == env + "\nof_watchdog.sh --loop &\nwatchdog_pid=${!}"
+    assert runParallelPost(job_with_cmds) == env + "\nkill $watchdog_pid"
 
 
 def test_wrap_raw_cmds_order_and_verbatim(job_with_cmds):
@@ -67,7 +71,7 @@ def test_wrap_raw_cmds_order_and_verbatim(job_with_cmds):
         "mpirun -np 2 icoFoam -parallel -case c > log 2>&1|| true && echo $? > e "
     )
     body = wrap_raw_cmds(job_with_cmds, solver_line)
-    assert body.splitlines() == WATCHDOG_PRE + [solver_line] + WATCHDOG_POST
+    assert body.splitlines() == [raw_cmd_env(job_with_cmds)] + WATCHDOG_PRE + [solver_line] + WATCHDOG_POST
     # provenance recorded, raw lines untouched
     hist = [e["cmd"] for e in job_with_cmds.doc["history"]]
     assert "watchdog_pid=${!}" in hist
@@ -100,3 +104,48 @@ def test_solver_args(tmpdir):
     assert solver_args(job) == pool
     job = make_job(tmpdir, {"solver_args": ["-pool", "fixedSizeMemoryPool"], "has_child": False})
     assert solver_args(job) == "-pool fixedSizeMemoryPool"
+
+
+def test_raw_cmd_env(tmpdir):
+    job = make_job(tmpdir, {"numberOfSubdomains": 8, "has_child": False})
+    env = raw_cmd_env(job)
+    assert env.startswith("export OBR_JOB=")
+    assert f"OBR_CASE={job.path}/case" in env
+    assert "OBR_NP=8" in env
+
+
+def test_needs_own_proc_mesh(tmpdir):
+    assert not needs_own_proc_mesh(make_job(tmpdir, {"has_child": False}))
+    flag = {"copy_proc_constant": True}
+    assert needs_own_proc_mesh(make_job(tmpdir, {"parent": flag, "has_child": False}))
+    # intermediate levels keep the symlinks
+    assert not needs_own_proc_mesh(make_job(tmpdir, {"parent": flag, "has_child": True}))
+    # former key still selects the copy
+    assert needs_own_proc_mesh(make_job(tmpdir, {"renumber": "parallel", "has_child": False}))
+
+
+PREPARE = [{"parallel": "renumberMesh -overwrite"}, {"run": "cfdPrepare --launcher 'srun -n'"}]
+
+
+def test_prepare_cmds_parallel_and_run(tmpdir):
+    job = make_job(tmpdir, {"prepare": PREPARE, "numberOfSubdomains": 8, "has_child": False})
+    lines = prepare_cmds(job, "t")
+    case = f"{job.path}/case"
+    assert lines[0] == f"mkdir -p {case}/.obr"
+    assert f"( cd {case} && mpirun -np 8 renumberMesh -overwrite -parallel -case {case} ) > {case}/log.renumberMesh 2>&1" in lines[1]
+    assert f"[ -f {case}/.obr/prepare_1_renumberMesh.done ] ||" in lines[1]
+    assert "exit 1" in lines[1]
+    assert f"( cd {case} && cfdPrepare --launcher 'srun -n' ) > {case}/log.cfdPrepare 2>&1" in lines[2]
+    assert [e["type"] for e in job.doc["history"]].count("prepare") == 2
+
+
+def test_prepare_cmds_serial_and_none(tmpdir):
+    job = make_job(tmpdir, {"parent": {"prepare": PREPARE[:1]}, "numberOfSubdomains": 1, "has_child": False})
+    assert f"( cd {job.path}/case && renumberMesh -overwrite -case {job.path}/case )" in prepare_cmds(job, "t")[1]
+    assert prepare_cmds(make_job(tmpdir, {"has_child": False}), "t") == []
+
+
+def test_prepare_cmds_invalid(tmpdir):
+    job = make_job(tmpdir, {"prepare": [{"source": "env"}], "has_child": False})
+    with pytest.raises(ValueError):
+        prepare_cmds(job, "t")

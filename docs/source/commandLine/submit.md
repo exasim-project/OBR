@@ -62,6 +62,7 @@ compute node, the `runParallelSolver` operation composes one shell command
 with the pre and post lines inlined verbatim around the solver call:
 
 ```sh
+export OBR_JOB=<path> OBR_CASE=<path>/case OBR_NP=N OBR_TPN=M
 of_watchdog.sh --loop &
 watchdog_pid=${!}
 mpirun -np N <solver> -parallel -case <path>/case > <path>/case/<solver>_<timestamp>.log 2>&1|| true && echo $? > <path>/case/solverExitCode.log
@@ -70,6 +71,52 @@ kill $watchdog_pid || true
 
 All lines run in a single shell, so shell variables set by a pre command (such
 as `watchdog_pid`) remain visible to the post commands.
+
+The first line exports the job directory `$OBR_JOB`, its case `$OBR_CASE`, the number of MPI
+ranks `$OBR_NP` (numberOfSubdomains) and the ranks per node `$OBR_TPN`, so the verbatim
+commands can address the case. The commands run in the directory `obr run` is called from, not
+in the case.
+
+### Preparing the decomposed mesh in the solver job: `prepare`
+
+Steps that change the decomposed mesh in place before the solve, e.g. `renumberMesh -overwrite` or a
+solver specific preparation, are listed under `prepare` (on the case or a variation `values` entry,
+inherited). They run in the solver allocation after `pre_cmds` (so with the environment loaded there)
+and before the solver:
+
+```yaml
+values:
+  - code: CODE_A
+    pre_cmds: ["source <env>"]
+    prepare:
+      - parallel: renumberMesh -overwrite
+  - code: CODE_B
+    pre_cmds: ["source <env>"]
+    prepare:
+      - run: cfdPrepare --launcher "srun -n"
+```
+
+- `parallel: <app> <args>` is launched like the solver: `mpirun -np N <app> <args> -parallel -case <case>`
+  (the launcher is the part of `OBR_RUN_CMD` before `{solver}` if that is set), serial runs get
+  `<app> <args> -case <case>`.
+- `run: <command>` runs the command as written.
+
+Every step runs in the job's case directory, once per job (marker `case/.obr/prepare_<i>_<app>.done`,
+so a resubmission skips it), with its output in `case/log.<app>`. A failing step stops the job before
+the solver. The generated lines look like
+
+```sh
+mkdir -p <case>/.obr
+[ -f <case>/.obr/prepare_1_renumberMesh.done ] || { ( cd <case> && mpirun -np N renumberMesh -overwrite -parallel -case <case> ) > <case>/log.renumberMesh 2>&1 && touch <case>/.obr/prepare_1_renumberMesh.done || { echo "prepare step 1 (renumberMesh) failed, see <case>/log.renumberMesh"; exit 1; }; }
+```
+
+By default the final jobs link `processor*/constant` to the decomposition they come from, so an
+in-place change would write into the shared parent case. `copy_proc_constant: true` (on the case or a
+variation, inherited) gives every final job its own copy of `processor*/constant`; intermediate levels
+keep the links.
+
+The OBR job keys `pre_cmds`, `post_cmds`, `solver_args`, `prepare` and `copy_proc_constant` are not
+written into the controlDict.
 
 Caveats:
 

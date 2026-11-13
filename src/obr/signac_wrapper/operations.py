@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import flow
 import os
+import shlex
 import sys
 import obr.core.caseOrigins as caseOrigins
 import traceback
@@ -163,8 +164,8 @@ def _link_path(
     files are relative symlinks
 
     copy_proc_constant: copy processor*/constant instead of linking it, so that
-    a parallel renumberMesh -overwrite in this job does not write through the
-    symlink into the parent case (see renumber: parallel)
+    a step that changes the decomposed mesh in place (e.g. renumberMesh -overwrite
+    in pre_cmds) does not write through the symlink into the parent case
     """
     # NOTE if copy instead linking is requested we
     # just copy the full tree and are done
@@ -248,54 +249,123 @@ def _link_path(
                 )
 
 
-def renumber_mode(job: Job) -> str:
-    """Value of the (inherited) 'renumber' statepoint key, '' if not set"""
-    return str(statepoint_get(job.sp(), "renumber") or "")
+def _is_true(value) -> bool:
+    return value is True or str(value).strip().lower() in ("true", "yes", "on", "1")
 
 
 def needs_own_proc_mesh(job: Job) -> bool:
-    """Final jobs of a 'renumber: parallel' study get their own copy of
-    processor*/constant since the mesh is renumbered in place before the solve.
-    Intermediate levels keep the cheap symlinks."""
-    return renumber_mode(job) == "parallel" and not job.sp().get("has_child")
+    """Final jobs get their own copy of processor*/constant if the (inherited) statepoint
+    key copy_proc_constant is true, so that pre_cmds can change the decomposed mesh in
+    place (renumberMesh -overwrite, solver specific preparation). Intermediate levels
+    keep the cheap symlinks. The former key 'renumber: parallel' still selects the copy,
+    but OBR no longer runs renumberMesh itself (see legacy_renumber_warning)."""
+    if job.sp().get("has_child"):
+        return False
+    return _is_true(statepoint_get(job.sp(), "copy_proc_constant")) or (
+        str(statepoint_get(job.sp(), "renumber") or "") == "parallel"
+    )
 
 
-def renumber_cmd(job: Job, timestamp: str) -> str:
-    """Shell line that renumbers the decomposed mesh once in parallel, in the
-    same allocation as the solver. A marker file prevents renumbering again
-    on resubmission. OBR_RENUMBER_CMD overrides the launch template, the
-    optional 'renumber_env' file is sourced in a subshell for this step only."""
-    np = get_number_of_procs(job)
-    if renumber_mode(job) != "parallel" or not np or int(np) <= 1:
-        return ""
+# statepoint keys that configure how OBR runs a job, never written into case files
+OBR_JOB_KEYS = ("pre_cmds", "post_cmds", "solver_args", "prepare", "copy_proc_constant")
+
+
+def _launcher(job: Job, np: int) -> str:
+    """Launch prefix of the solver command (part before {solver} of OBR_RUN_CMD /
+    OBR_SERIAL_RUN_CMD, default 'mpirun -np {np}' or nothing for a serial run)"""
+    if np > 1:
+        template = os.environ.get("OBR_RUN_CMD") or "mpirun -np {np} {solver}"
+    else:
+        template = os.environ.get("OBR_SERIAL_RUN_CMD") or "{solver}"
+    prefix = template.split("{solver}", 1)[0]
+    return prefix.format(np=np, tpn=get_tasks_per_node(job) if "{tpn}" in prefix else "")
+
+
+def prepare_steps(job: Job) -> list:
+    """(kind, command) of the inherited statepoint key 'prepare', a list of
+    {parallel: <app> <args>} or {run: <command>} entries"""
+    steps = statepoint_get(job.sp(), "prepare") or []
+    if isinstance(steps, (str, dict)):
+        steps = [steps]
+    out = []
+    for step in steps:
+        if not isinstance(step, dict) or len(step) != 1:
+            raise ValueError(f"prepare step {step!r}: use 'parallel: <app> <args>' or 'run: <command>'")
+        kind, cmd = next(iter(step.items()))
+        if kind not in ("parallel", "run") or not str(cmd).strip():
+            raise ValueError(f"prepare step {step!r}: use 'parallel: <app> <args>' or 'run: <command>'")
+        out.append((kind, str(cmd).strip()))
+    return out
+
+
+def prepare_cmds(job: Job, timestamp: str) -> list:
+    """Shell lines of the prepare steps, run after pre_cmds and before the solver.
+
+    Every step runs in the job's case directory, once per job (marker
+    case/.obr/prepare_<i>_<name>.done), with its output in case/log.<name>; a failing
+    step stops the job. 'parallel' steps are launched like the solver:
+    '<launcher> <app> <args> -parallel -case <case>' (serial: '<app> <args> -case <case>').
+    """
+    steps = prepare_steps(job)
+    if not steps:
+        return []
     case = f"{job.path}/case"
-    template = os.environ.get("OBR_RENUMBER_CMD") or (
-        "mpirun -np {np} renumberMesh -overwrite -parallel -case {case}"
-        " > {case}/renumberMesh_{timestamp}.log 2>&1"
-    )
-    run = template.format(
-        np=np, tpn=get_tasks_per_node(job), case=case, timestamp=timestamp
-    )
-    if env := statepoint_get(job.sp(), "renumber_env"):
-        run = f"source {env} && {run}"
+    np = int(get_number_of_procs(job) or 1)
+    lines = [f"mkdir -p {shlex.quote(case)}/.obr"]
     res = job.doc["history"]
-    res.append(
-        {
-            "cmd": run,
-            "type": "renumber",
-            "log": f"renumberMesh_{timestamp}.log",
-            "state": "started",
-            "timestamp": timestamp,
-            "user": os.environ.get("USER"),
-            "hostname": os.environ.get("HOST"),
-        }
-    )
+    for i, (kind, cmd) in enumerate(steps, 1):
+        name = os.path.basename(cmd.split()[0])
+        if kind == "parallel":
+            flag = " -parallel" if np > 1 else ""
+            run = f"{_launcher(job, np)}{cmd}{flag} -case {shlex.quote(case)}".strip()
+        else:
+            run = cmd
+        log = shlex.quote(f"{case}/log.{name}")
+        marker = shlex.quote(f"{case}/.obr/prepare_{i}_{name}.done")
+        lines.append(
+            f"[ -f {marker} ] || {{ ( cd {shlex.quote(case)} && {run} ) > {log} 2>&1"
+            f" && touch {marker}"
+            f' || {{ echo "prepare step {i} ({name}) failed, see {case}/log.{name}"; exit 1; }}; }}'
+        )
+        res.append(
+            {
+                "cmd": run,
+                "type": "prepare",
+                "log": f"log.{name}",
+                "state": "started",
+                "timestamp": timestamp,
+                "user": os.environ.get("USER"),
+                "hostname": os.environ.get("HOST"),
+            }
+        )
     job.doc["history"] = res
-    return (
-        f"[ -f {case}/renumber.done ] || {{ ( {run} ) && touch {case}/renumber.done"
-        f' || {{ echo "renumberMesh failed, see {case}/renumberMesh_{timestamp}.log";'
-        " exit 1; }; }"
-    )
+    return lines
+
+
+def legacy_renumber_warning(job: Job) -> None:
+    if str(statepoint_get(job.sp(), "renumber") or "") == "parallel":
+        logger.warning(
+            f"Job {job.id}: 'renumber: parallel' no longer runs renumberMesh. Use"
+            " 'copy_proc_constant: true' and a prepare step,"
+            " prepare: [{parallel: renumberMesh -overwrite}]"
+        )
+
+
+def raw_cmd_env(job: Job) -> str:
+    """export line run before pre_cmds: job case path and MPI ranks for verbatim commands"""
+    def safe(get):
+        try:
+            return get(job) or ""
+        except Exception:  # no case or decomposeParDict (yet)
+            return ""
+
+    values = {
+        "OBR_JOB": str(job.path),
+        "OBR_CASE": f"{job.path}/case",
+        "OBR_NP": safe(get_number_of_procs),
+        "OBR_TPN": safe(get_tasks_per_node),
+    }
+    return "export " + " ".join(f"{k}={shlex.quote(str(v))}" for k, v in values.items())
 
 
 def needs_initialization(job: Job) -> bool:
@@ -482,6 +552,9 @@ def controlDict(job: Job, args={}):
     # if this was a variation. In any case this could be a decorator
     args = get_args(job, args)
     copy_on_uses(args, job, "system", "controlDict")
+    # job keys of OBR itself are no controlDict entries (lists of shell lines or dicts
+    # would make the controlDict unreadable for OpenFOAM)
+    args = {k: v for k, v in args.items() if k not in OBR_JOB_KEYS}
     OpenFOAMCase(str(job.path) + "/case", job).controlDict.set(args)
 
 
@@ -946,6 +1019,9 @@ def wrap_raw_cmds(job: Job, cmd: str) -> str:
     if post_cmds:
         record_raw_cmds(job, post_cmds, "post_cmd")
         cmd = cmd + "\n" + "\n".join(post_cmds)
+    if pre_cmds or post_cmds:
+        # $OBR_JOB, $OBR_CASE, $OBR_NP, $OBR_TPN for the verbatim commands
+        cmd = raw_cmd_env(job) + "\n" + cmd
     return cmd
 
 
@@ -983,7 +1059,7 @@ def runParallelPre(job: Job, args={}) -> str:
     if not pre_cmds:
         return ":  # No pre_cmds, skipping execution"
     record_raw_cmds(job, pre_cmds, "pre_cmd")
-    return "\n".join(pre_cmds)
+    return raw_cmd_env(job) + "\n" + "\n".join(pre_cmds)
 
 
 @simulate
@@ -1018,8 +1094,9 @@ def runParallelSolver(job: Job, args={}) -> str:
     if ret == "true":
         # OBR_SKIP_COMPLETE short-circuit: skip pre/post as well
         return ret
-    if renumber := renumber_cmd(job, datetime.now().strftime("%Y-%m-%d_%H:%M:%S")):
-        ret = renumber + "\n" + ret
+    legacy_renumber_warning(job)
+    if prepare := prepare_cmds(job, datetime.now().strftime("%Y-%m-%d_%H:%M:%S")):
+        ret = "\n".join(prepare) + "\n" + ret
     return wrap_raw_cmds(job, ret)
 
 
@@ -1037,7 +1114,7 @@ def runParallelPost(job: Job, args={}) -> str:
     if not post_cmds:
         return ":  # No post_cmds, skipping execution"
     record_raw_cmds(job, post_cmds, "post_cmd")
-    return "\n".join(post_cmds)
+    return raw_cmd_env(job) + "\n" + "\n".join(post_cmds)
 
 
 @OpenFOAMProject.pre(final)
@@ -1059,6 +1136,8 @@ def runSerialSolver(job: Job, args={}):
     ret = run_cmd_builder(job, solver_cmd, args)
     if ret == "true":
         return ret
+    if prepare := prepare_cmds(job, datetime.now().strftime("%Y-%m-%d_%H:%M:%S")):
+        ret = "\n".join(prepare) + "\n" + ret
     return wrap_raw_cmds(job, ret)
 
 

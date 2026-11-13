@@ -9,7 +9,15 @@ Changelog
 - Add `runtime` section to `obr postprocess`: NCT, time per timestep, write time and initial transient
   (MSER-5) of each job from foamLog.py, added to postpro.json. Replaces the `generalParser` section
   (log_parser.py, tskip.py, general_logs.json).
-- Add `renumber: parallel`: final jobs own processor*/constant and renumber it in the solver job.
+- Add `prepare` steps run once per job in its case before the solver: `parallel: <app> <args>` launched
+  like the solver (e.g. renumberMesh -overwrite) or `run: <command>` as written; log case/log.<app>,
+  a failing step stops the job.
+- Add `copy_proc_constant: true`: final jobs own a copy of processor*/constant, so prepare steps can
+  change the decomposed mesh in place. pre/post commands get `$OBR_JOB`, `$OBR_CASE`, `$OBR_NP`,
+  `$OBR_TPN`. The former `renumber: parallel` only selects the copy now (with a warning).
+- OBR job keys (pre_cmds, post_cmds, solver_args, prepare, copy_proc_constant) are no longer written
+  into the controlDict.
+- Add `solver_args`: extra solver arguments per job (e.g. a GPU memory pool).
 - Fix `uses` in post_build changing the statepoint (job id) and writing through linked files.
 
 0.3.0 (2024-03-03)
