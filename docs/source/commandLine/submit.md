@@ -25,6 +25,23 @@ Options:
   --help                 Show this message and exit.
 ```
 
+### Extra solver arguments
+
+Arguments that the solver itself needs, e.g. the GPU memory pool of a GPU code, are given by a
+`solver_args` entry (string or list) on the case or a variation `values` entry. Like `pre_cmds` it
+is inherited from parent jobs:
+
+```yaml
+values:
+  - code: GPU_CODE
+    application: pimpleFoam
+    solver_args: "-pool fixedSizeMemoryPool -poolSize 200"
+```
+
+`runParallelSolver` and `runSerialSolver` place them after the solver name:
+`mpirun -np N <solver> <solver_args> -parallel -case ...`. A custom `OBR_RUN_CMD` or
+`OBR_SERIAL_RUN_CMD` template must contain `{solverargs}` to pass them on.
+
 ### Running custom commands before/after the solver
 
 Arbitrary shell lines can be executed before and after the solver within the

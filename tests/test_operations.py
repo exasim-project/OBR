@@ -8,6 +8,7 @@ from obr.signac_wrapper.operations import (
     has_pre_cmds,
     runParallelPost,
     runParallelPre,
+    solver_args,
     wrap_raw_cmds,
 )
 from obr.create_tree import setup_job_doc
@@ -90,3 +91,12 @@ def test_single_string_promoted(tmpdir):
 def test_parent_statepoint_inheritance(tmpdir):
     job = make_job(tmpdir, {"parent": {"pre_cmds": WATCHDOG_PRE}, "has_child": False})
     assert get_raw_cmds(job, "pre_cmds") == WATCHDOG_PRE
+
+
+def test_solver_args(tmpdir):
+    assert solver_args(make_job(tmpdir, {"has_child": False})) == ""
+    pool = "-pool fixedSizeMemoryPool -poolSize 200"
+    job = make_job(tmpdir, {"parent": {"solver_args": pool}, "has_child": False})
+    assert solver_args(job) == pool
+    job = make_job(tmpdir, {"solver_args": ["-pool", "fixedSizeMemoryPool"], "has_child": False})
+    assert solver_args(job) == "-pool fixedSizeMemoryPool"

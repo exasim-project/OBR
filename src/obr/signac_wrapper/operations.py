@@ -808,6 +808,14 @@ def select_solver_cmd(job: Job, parallel_default: str, serial_default: str) -> s
     return os.environ.get("OBR_SERIAL_RUN_CMD") or serial_default
 
 
+def solver_args(job: Job) -> str:
+    """Extra solver arguments from the statepoint key solver_args (str or list), '' if unset."""
+    args = statepoint_get(job.sp(), "solver_args")
+    if not args:
+        return ""
+    return " ".join(str(a) for a in args) if isinstance(args, (list, tuple)) else str(args)
+
+
 def run_cmd_builder(job: Job, cmd_format: str, overrides=None) -> str:
     """Builds the cli command to run a OpenFOAM application"""
 
@@ -831,7 +839,9 @@ def run_cmd_builder(job: Job, cmd_format: str, overrides=None) -> str:
 
     cli_args = {
         "solver": solver,
-        "solverargs": "",
+        # extra solver arguments of the statepoint (key solver_args, inherited from parents like
+        # pre_cmds), e.g. a GPU memory pool; command templates place them with {solverargs}
+        "solverargs": solver_args(job),
         "path": job.path,
         "timestamp": timestamp,
         "np": get_number_of_procs(job),
@@ -991,11 +1001,12 @@ def runParallelSolver(job: Job, args={}) -> str:
     solver_cmd = select_solver_cmd(
         job,
         parallel_default=(
-            "mpirun -np {np} {solver} -parallel -case {path}/case >"
+            "mpirun -np {np} {solver} {solverargs} -parallel -case {path}/case >"
             " {path}/case/{solver}_{timestamp}.log 2>&1"
         ),
         serial_default=(
-            "{solver} -case {path}/case >" " {path}/case/{solver}_{timestamp}.log 2>&1"
+            "{solver} {solverargs} -case {path}/case >"
+            " {path}/case/{solver}_{timestamp}.log 2>&1"
         ),
     )
     # Check if a custom solver command is provided
@@ -1038,7 +1049,7 @@ def runSerialSolver(job: Job, args={}):
     solver_cmd = (
         env_run_template
         if env_run_template
-        else "{solver} -case {path}/case > {path}/case/{solver}_{timestamp}.log 2>&1"
+        else "{solver} {solverargs} -case {path}/case > {path}/case/{solver}_{timestamp}.log 2>&1"
     )
     # Check if a custom solver command is provided
     custom_command = os.environ.get("OBR_CUSTOM_SOLVER_CMD")
